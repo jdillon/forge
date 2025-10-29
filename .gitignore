@@ -25,3 +25,6 @@ test-home/.local/share/forge
 test-home/.local/state/
 test-home/.config/
 test-home/.cache/
+
+# Dependencies
+node_modules/
