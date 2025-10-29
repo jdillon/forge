@@ -26,6 +26,7 @@ program
   .version(pkg.version)
   .option('-r, --root <path>', 'Project root directory')
   .option('-v, --verbose', 'Verbose output')
+  .allowUnknownOption() // Allow command-specific options to pass through
   .hook('preAction', async (thisCommand) => {
     // This runs before every command
     const options = thisCommand.opts();
