@@ -1,0 +1,6 @@
+# User-specific state (don't commit)
+state.local.json
+
+# Bun runtime files
+node_modules/
+bun.lockb

@@ -1,0 +1,49 @@
+#!/usr/bin/env bun
+
+/**
+ * Forge v2 - Pure Bun/TypeScript Implementation
+ *
+ * Entry point for forge2 command
+ */
+
+import { Forge, discoverProject, getProjectRoot } from './lib/core';
+
+async function main() {
+  // Check for --root flag or FORGE_PROJECT env var
+  let projectRoot = getProjectRoot();
+
+  // Check for --root flag in args
+  const rootFlagIdx = process.argv.indexOf('--root');
+  if (rootFlagIdx !== -1 && process.argv[rootFlagIdx + 1]) {
+    projectRoot = process.argv[rootFlagIdx + 1];
+    // Remove --root and its value from args
+    process.argv.splice(rootFlagIdx, 2);
+  }
+
+  // Otherwise discover by walking up from CWD
+  if (!projectRoot) {
+    projectRoot = await discoverProject();
+  }
+
+  // No project found
+  if (!projectRoot) {
+    console.error('ERROR: No .forge2/ directory found');
+    console.error('');
+    console.error('Run this command from within a forge project directory,');
+    console.error('or set FORGE_PROJECT environment variable,');
+    console.error('or use --root flag: forge2 --root=/path/to/project');
+    process.exit(1);
+  }
+
+  // Extract command and args
+  const [, , commandName, ...commandArgs] = process.argv;
+
+  // Create forge instance and run
+  const forge = new Forge(projectRoot);
+  await forge.run(commandName, commandArgs);
+}
+
+main().catch((err) => {
+  console.error('FATAL ERROR:', err);
+  process.exit(1);
+});
