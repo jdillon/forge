@@ -10,7 +10,7 @@ test-home/  (simulates ~/)
 │   ├── bin/
 │   │   └── forge2 -> ../../forge2  (symlink to executable)
 │   ├── share/
-│   │   └── forge -> ../..          (symlink to repo root)
+│   │   └── forge2 -> ../..         (symlink to repo root)
 │   └── state/
 ├── .config/
 └── .cache/
@@ -108,12 +108,12 @@ forge2 --version
 rm ~/.local/bin/forge2
 
 # Remove application data
-rm -rf ~/.local/share/forge
+rm -rf ~/.local/share/forge2
 
 # Optionally remove config/cache/state
-rm -rf ~/.config/forge
-rm -rf ~/.cache/forge
-rm -rf ~/.local/state/forge
+rm -rf ~/.config/forge2
+rm -rf ~/.cache/forge2
+rm -rf ~/.local/state/forge2
 ```
 
 ## Why This Structure?
