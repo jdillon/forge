@@ -99,16 +99,16 @@ function getXDGStateHome(): string {
 }
 
 /**
- * Get forge installation paths (XDG-compliant)
+ * Get forge2 installation paths (XDG-compliant)
  */
 export function getForgePaths() {
   return {
-    data: join(getXDGDataHome(), 'forge'),
-    config: join(getXDGConfigHome(), 'forge'),
-    cache: join(getXDGCacheHome(), 'forge'),
-    state: join(getXDGStateHome(), 'forge'),
-    modules: join(getXDGDataHome(), 'forge', 'modules'),
-    runtime: join(getXDGDataHome(), 'forge', 'runtime'),
+    data: join(getXDGDataHome(), 'forge2'),
+    config: join(getXDGConfigHome(), 'forge2'),
+    cache: join(getXDGCacheHome(), 'forge2'),
+    state: join(getXDGStateHome(), 'forge2'),
+    modules: join(getXDGDataHome(), 'forge2', 'modules'),
+    runtime: join(getXDGDataHome(), 'forge2', 'runtime'),
   };
 }
 
@@ -119,7 +119,7 @@ export function getForgePaths() {
 /**
  * Find module path in search order:
  * 1. Project modules: <project>/.forge2/modules/<name>/
- * 2. User modules: ~/.local/share/forge/modules/<name>/
+ * 2. User modules: ~/.local/share/forge2/modules/<name>/
  * 3. System modules: (future)
  */
 export function findModulePath(moduleName: string, projectRoot: string): string | null {

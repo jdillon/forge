@@ -22,13 +22,13 @@ In a real installation:
 
 ```bash
 # User clones repo to XDG data directory
-git clone https://github.com/jdillon/forge ~/.local/share/forge
+git clone https://github.com/jdillon/forge ~/.local/share/forge2
 
 # Symlink executable to PATH
-ln -s ~/.local/share/forge/forge2 ~/.local/bin/forge2
+ln -s ~/.local/share/forge2/forge2 ~/.local/bin/forge2
 
 # Directory structure:
-~/.local/share/forge/       # This repo
+~/.local/share/forge2/       # This repo
 ├── lib/core.ts
 ├── forge2
 └── ...
@@ -77,12 +77,12 @@ When modules are added:
 
 ```bash
 # Create a test module
-mkdir -p test-home/.local/share/forge/modules/aws-test
-echo 'export default { ... }' > test-home/.local/share/forge/modules/aws-test/module.ts
+mkdir -p test-home/.local/share/forge2/modules/aws-test
+echo 'export default { ... }' > test-home/.local/share/forge2/modules/aws-test/module.ts
 
 # Module will be found in search path:
 # 1. <project>/.forge2/modules/aws-test/
-# 2. test-home/.local/share/forge/modules/aws-test/  <- Found here
+# 2. test-home/.local/share/forge2/modules/aws-test/  <- Found here
 ```
 
 ## Installation Script (Future)
@@ -94,8 +94,8 @@ Eventually, users will install like this:
 curl -fsSL https://forge.sh/install.sh | bash
 
 # Or manual install
-git clone https://github.com/jdillon/forge ~/.local/share/forge
-ln -s ~/.local/share/forge/forge2 ~/.local/bin/forge2
+git clone https://github.com/jdillon/forge ~/.local/share/forge2
+ln -s ~/.local/share/forge2/forge2 ~/.local/bin/forge2
 
 # Verify
 forge2 --version

@@ -39,18 +39,18 @@ cd dist
 ### Directory Structure (XDG Standard)
 
 ```
-~/.local/share/forge/       # Application data
+~/.local/share/forge2/       # Application data
 ├── modules/                # Shared modules
 └── runtime/
     └── bin/bun            # Bundled Bun runtime
 
 ~/.local/bin/forge2         # Executable (in PATH)
 
-~/.config/forge/            # User configuration (optional)
+~/.config/forge2/            # User configuration (optional)
 
-~/.cache/forge/             # Cache (safe to delete)
+~/.cache/forge2/             # Cache (safe to delete)
 
-~/.local/state/forge/       # Logs, history
+~/.local/state/forge2/       # Logs, history
 
 # Project structure (unchanged)
 project/
@@ -160,11 +160,11 @@ if (dryRun) {
 
 ```bash
 # Install Bun to XDG location
-export BUN_INSTALL="$HOME/.local/share/forge/runtime"
+export BUN_INSTALL="$HOME/.local/share/forge2/runtime"
 curl -fsSL https://bun.sh/install | bash
 
 # Symlink to PATH
-ln -s ~/.local/share/forge/runtime/bin/bun ~/.local/bin/bun
+ln -s ~/.local/share/forge2/runtime/bin/bun ~/.local/bin/bun
 
 # Verify
 bun --version
@@ -174,10 +174,10 @@ bun --version
 
 ```bash
 # Clone to XDG data directory
-git clone https://github.com/jdillon/forge ~/.local/share/forge
+git clone https://github.com/jdillon/forge ~/.local/share/forge2
 
 # Symlink executable
-ln -s ~/.local/share/forge/bin/forge2 ~/.local/bin/forge2
+ln -s ~/.local/share/forge2/bin/forge2 ~/.local/bin/forge2
 
 # Verify
 forge2 --version
