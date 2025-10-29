@@ -20,3 +20,8 @@ local.bash
 # Testing
 test-output/
 sandbox/
+test-home/.local/bin/
+test-home/.local/share/forge
+test-home/.local/state/
+test-home/.config/
+test-home/.cache/

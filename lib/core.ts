@@ -79,20 +79,54 @@ export function getProjectRoot(): string | null {
 }
 
 // ============================================================================
+// XDG Base Directory Paths
+// ============================================================================
+
+function getXDGDataHome(): string {
+  return process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share');
+}
+
+function getXDGConfigHome(): string {
+  return process.env.XDG_CONFIG_HOME || join(homedir(), '.config');
+}
+
+function getXDGCacheHome(): string {
+  return process.env.XDG_CACHE_HOME || join(homedir(), '.cache');
+}
+
+function getXDGStateHome(): string {
+  return process.env.XDG_STATE_HOME || join(homedir(), '.local', 'state');
+}
+
+/**
+ * Get forge installation paths (XDG-compliant)
+ */
+export function getForgePaths() {
+  return {
+    data: join(getXDGDataHome(), 'forge'),
+    config: join(getXDGConfigHome(), 'forge'),
+    cache: join(getXDGCacheHome(), 'forge'),
+    state: join(getXDGStateHome(), 'forge'),
+    modules: join(getXDGDataHome(), 'forge', 'modules'),
+    runtime: join(getXDGDataHome(), 'forge', 'runtime'),
+  };
+}
+
+// ============================================================================
 // Module Loading
 // ============================================================================
 
 /**
  * Find module path in search order:
  * 1. Project modules: <project>/.forge2/modules/<name>/
- * 2. User modules: ~/.forge2/modules/<name>/
- * 3. System modules: <forge-install>/modules/<name>/
+ * 2. User modules: ~/.local/share/forge/modules/<name>/
+ * 3. System modules: (future)
  */
 export function findModulePath(moduleName: string, projectRoot: string): string | null {
+  const paths = getForgePaths();
   const candidates = [
     join(projectRoot, '.forge2', 'modules', moduleName),
-    join(homedir(), '.forge2', 'modules', moduleName),
-    // TODO: system modules when we have proper install location
+    join(paths.modules, moduleName),
   ];
 
   for (const path of candidates) {

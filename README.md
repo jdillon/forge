@@ -1,107 +1,259 @@
-# Forge - Bash CLI Framework
+# Forge v2 - TypeScript/Bun CLI Framework
 
-A simple, modular framework for building project-specific CLI tools in bash.
+A modern, type-safe framework for building project-specific CLI tools using Bun and TypeScript.
 
 ## Status
 
-🚧 **Work in Progress** - This repository contains the extracted forge framework from existing projects and analysis for a next-generation redesign.
+🚧 **Prototype Phase** - This is the v2 prototype built with Bun/TypeScript to evaluate a modern redesign.
 
-## Contents
+**Branch**: `v2-prototype`
+**Previous version**: See `initial` branch for Bash-based v1 analysis
 
-- `forge` - Main framework script (current implementation)
-- `lib/` - Reusable modules (aws, terraform, keybase)
-- `examples/` - Example configuration files
-- `docs/` - Framework documentation and comparison analysis
-- `tmp/` - Session notes and handoff documents
+## Quick Start
+
+```bash
+# Install Bun (if not already installed)
+curl -fsSL https://bun.sh/install | bash
+
+# Try the example
+cd examples/website
+../../forge2 help
+../../forge2 build
+../../forge2 info
+
+# Works from subdirectories (CWD-aware!)
+cd dist
+../../../forge2 info
+```
+
+## What's Different in v2
+
+### Core Design Changes
+
+- **Language**: Bun/TypeScript instead of Bash
+- **Returns**: Native `return` instead of OUTPUT_PATTERN hack
+- **Type Safety**: Full TypeScript type checking
+- **Commands**: Bun's `$` operator for shell execution
+- **XDG Compliant**: Follows modern directory standards
+
+### Directory Structure (XDG Standard)
+
+```
+~/.local/share/forge/       # Application data
+├── modules/                # Shared modules
+└── runtime/
+    └── bin/bun            # Bundled Bun runtime
+
+~/.local/bin/forge2         # Executable (in PATH)
+
+~/.config/forge/            # User configuration (optional)
+
+~/.cache/forge/             # Cache (safe to delete)
+
+~/.local/state/forge/       # Logs, history
+
+# Project structure (unchanged)
+project/
+├── .forge2/
+│   └── config.ts          # TypeScript config
+└── ...
+```
+
+## Key Features
+
+### ✅ Implemented
+
+- **CWD-aware discovery** - Run from any subdirectory (like git)
+- **TypeScript config** - Type-safe command definitions
+- **Bun's `$` operator** - Clean shell command execution
+- **Module system** - Load shared modules (project > user > system)
+- **State management** - JSON-based project + user state
+- **Command composition** - Commands can call other commands
+- **Argument parsing** - Flag support (--dry-run, --paths, etc.)
+
+### 🚧 Planned
+
+- Module repository and distribution
+- Shell completion (bash, zsh, fish)
+- Help system with usage examples
+- Auto-update mechanism
+- Mock mode for testing
+
+## Example: Website Deployment
+
+See `examples/website/` for a complete working example.
+
+```typescript
+// .forge2/config.ts
+export default {
+  commands: {
+    'sync': {
+      description: 'Sync to S3',
+      execute: async (args) => {
+        const bucket = 'my-bucket';
+        await $`aws s3 sync dist/ s3://${bucket}/ --delete`;
+        console.log('✓ Sync complete');
+      }
+    },
+
+    'publish': {
+      description: 'Full publish workflow',
+      execute: async (args) => {
+        // Compose commands
+        await config.commands.build.execute([]);
+        await config.commands.sync.execute(args);
+        await config.commands.invalidate.execute([]);
+      }
+    }
+  }
+} satisfies ForgeConfig;
+```
+
+## Why Bun/TypeScript?
+
+### Advantages Over Bash
+
+| Feature | Bash | Bun | Winner |
+|---------|------|-----|--------|
+| Command execution | `aws s3 ls` | `await $\`aws s3 ls\`` | Bash (slightly) |
+| Function returns | OUTPUT_PATTERN hack | Native `return` | **Bun** 🏆 |
+| Type safety | None | TypeScript | **Bun** 🏆 |
+| Error handling | Verbose | try/catch | **Bun** 🏆 |
+| JSON/data | jq/sed/awk | Native | **Bun** 🏆 |
+| Startup time | 50ms | 60ms | Bash (negligible) |
+
+See `docs/V2_PROTOTYPE_EVALUATION.md` for detailed analysis.
+
+### The `$` Operator Game-Changer
+
+Bun's `$` template literal makes shell commands almost as easy as Bash:
+
+```typescript
+// Almost identical to Bash!
+await $`aws s3 sync . s3://${bucket}/`;
+
+// Capture output
+const distId = await $`aws cloudfront list-distributions ...`.text();
+
+// Conditional execution
+if (dryRun) {
+  await $`aws s3 sync . s3://${bucket}/ --dryrun`;
+}
+```
 
 ## Documentation
 
-### For Current Implementation
+### Analysis & Design
+- **[Session Summary](docs/SESSION_SUMMARY.md)** - Context reset guide
+- **[v2 Prototype Plan](docs/V2_PROTOTYPE_PLAN.md)** - Design decisions
+- **[v2 Prototype Evaluation](docs/V2_PROTOTYPE_EVALUATION.md)** - Love it or hate it?
+- **[Answers to Questions](docs/ANSWERS_TO_QUESTIONS.md)** - All decisions documented
 
-See the example projects:
-- `/Users/jason/ws/cirqil/admin/` - Admin project with forge
-- `/Users/jason/ws/cirqil/website/cirqil.com/` - Website project with forge
+### Deep Dives
+- **[Output Pattern](docs/OUTPUT_PATTERN.md)** - The Bash stdout/stderr problem
+- **[Language Comparison](docs/LANGUAGE_SYNTAX_COMPARISON.md)** - Bash vs Python vs Bun vs Ruby
+- **[Shell Improvements](docs/SHELL_IMPROVEMENTS_AND_HYBRID.md)** - Bash 5 features & hybrid approach
 
-### For Redesign
+## Installation Strategy
 
-- **[Framework Comparison](docs/FRAMEWORK_COMPARISON.md)** - Detailed analysis of forge vs commando frameworks
-- **[Session Handoff](tmp/SESSION_HANDOFF.md)** - Complete context for next development session
-
-## Goals
-
-Design a next-generation CLI framework that:
-
-1. **Installs once** in system PATH (e.g., `/usr/local/bin/forge`)
-2. **Discovers config** from current working directory
-3. **Shares modules** across projects (no duplication)
-4. **Keeps simplicity** of current forge
-5. **Adds features** from commando (help, discovery)
-6. **Stays in bash** for maximum compatibility
-
-## Current Features
-
-### Forge Framework
-
-- Simple function-based commands
-- Module system via bash sourcing
-- Error trapping with helpful messages
-- Debug logging (`log_debug`)
-- Optional aws-vault integration
-- Environment variable configuration
-
-### Available Modules
-
-- **aws.bash** - AWS CLI wrapper with optional aws-vault
-- **terraform.bash** - Terraform wrapper using aws-vault
-- **keybase.bash** - Keybase integration helpers
-
-## Usage (Current Implementation)
-
-### Project Setup
+### Bun Installation (XDG-Compliant)
 
 ```bash
-# Copy forge to project
-cp forge /path/to/project/
+# Install Bun to XDG location
+export BUN_INSTALL="$HOME/.local/share/forge/runtime"
+curl -fsSL https://bun.sh/install | bash
 
-# Create config directory
-mkdir -p /path/to/project/.forge
+# Symlink to PATH
+ln -s ~/.local/share/forge/runtime/bin/bun ~/.local/bin/bun
 
-# Create config file
-cat > /path/to/project/.forge/config.bash <<EOF
-source "\${forgedir}/aws.bash"
-source "\${forgedir}/terraform.bash"
-EOF
-
-# Create local config (gitignored)
-cat > /path/to/project/.forge/local.bash <<EOF
-aws_vault_profile="my-profile"
-EOF
+# Verify
+bun --version
 ```
 
-### Running Commands
+### Forge Installation (Planned)
 
 ```bash
-cd /path/to/project
-./forge aws sts get-caller-identity
-./forge tf plan
+# Clone to XDG data directory
+git clone https://github.com/jdillon/forge ~/.local/share/forge
+
+# Symlink executable
+ln -s ~/.local/share/forge/bin/forge2 ~/.local/bin/forge2
+
+# Verify
+forge2 --version
 ```
+
+### Version Management
+
+```bash
+# Upgrade Bun
+bun upgrade
+
+# Upgrade to specific version
+curl -fsSL https://bun.sh/install | bash -s "bun-v1.1.34"
+
+# Upgrade forge (planned)
+forge2 update
+```
+
+## Architecture
+
+```
+forge2 (entry point)
+  ↓
+lib/core.ts (framework)
+  ├─ Project discovery (walk up from CWD)
+  ├─ Config loading (.forge2/config.ts)
+  ├─ Module loading (search path)
+  ├─ Command dispatch
+  └─ State management (JSON)
+  ↓
+.forge2/config.ts (project config)
+  ├─ Command definitions
+  ├─ Module imports
+  └─ Configuration
+```
+
+## Comparison to v1 (Bash)
+
+### What's Better
+- ✅ Real function returns (no OUTPUT_PATTERN hack)
+- ✅ Type safety catches errors at dev time
+- ✅ Native async/await for complex workflows
+- ✅ Better data handling (JSON, APIs)
+- ✅ Modern error handling (try/catch)
+- ✅ XDG-compliant paths
+- ✅ npm ecosystem available
+
+### Trade-offs
+- ⚠️ Requires Bun installation (can auto-install)
+- ⚠️ ~3x more boilerplate than Bash
+- ⚠️ TypeScript learning curve
+- ⚠️ 10ms slower startup (60ms vs 50ms - negligible)
 
 ## Next Steps
 
-See [Session Handoff](tmp/SESSION_HANDOFF.md) for detailed next steps and design proposals.
+1. **Get feedback** - Does this feel good? Love it or hate it?
+2. **Add modules** - Create example AWS/Terraform modules
+3. **Polish install** - Auto-install Bun, better bootstrap
+4. **Add completion** - Shell completion support
+5. **Documentation** - User guide, module authoring
 
-### Immediate Priorities
+## Alternative Approaches
 
-1. Implement CWD-aware config discovery
-2. Create shared module repository structure
-3. Add backward compatibility shim
-4. Build proof of concept
+If Bun doesn't feel right, we have documented alternatives:
+
+1. **Pure Bash 5** - Use nameref pattern to solve OUTPUT_PATTERN
+2. **Bash + Bun Hybrid** - Framework in Bash, helpers in Bun
+3. **Pure Bun** - Current prototype (recommended)
+
+See `docs/ANSWERS_TO_QUESTIONS.md` for detailed comparison.
 
 ## References
 
-- **Commando Framework**: `/Users/jason/ws/jdillon/commando-bash/`
-- **Admin Project**: `/Users/jason/ws/cirqil/admin/`
-- **Website Project**: `/Users/jason/ws/cirqil/website/cirqil.com/`
+- **Bun Documentation**: https://bun.sh/docs
+- **XDG Base Directory**: https://specifications.freedesktop.org/basedir-spec/
+- **Original Analysis**: See `initial` branch
 
 ## License
 

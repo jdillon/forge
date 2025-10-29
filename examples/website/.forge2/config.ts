@@ -4,7 +4,7 @@
  * Demonstrates website sync, CloudFront invalidation, and full publish workflow
  */
 
-import type { ForgeConfig } from '../../../lib/core';
+import type { ForgeConfig } from '@forge/core';
 import { $ } from 'bun';
 
 // Configuration
