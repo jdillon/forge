@@ -237,14 +237,16 @@ export class Forge {
   private context: ForgeContext;
   private config: ForgeConfig | null = null;
   public state: StateManager;
+  public globalOptions: Record<string, any>;
 
-  constructor(projectRoot: string) {
+  constructor(projectRoot: string, globalOptions: Record<string, any> = {}) {
     this.context = {
       projectRoot,
       forgeDir: join(projectRoot, '.forge2'),
       cwd: process.cwd(),
     };
     this.state = new StateManager(projectRoot);
+    this.globalOptions = globalOptions;
   }
 
   async loadConfig(): Promise<void> {

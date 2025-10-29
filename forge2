@@ -3,47 +3,68 @@
 /**
  * Forge v2 - Pure Bun/TypeScript Implementation
  *
- * Entry point for forge2 command
+ * Entry point for forge2 command with Commander.js
  */
 
+import { Command } from 'commander';
+import chalk from 'chalk';
+import updateNotifier from 'update-notifier';
 import { Forge, discoverProject, getProjectRoot } from './lib/core';
+import pkg from './package.json' assert { type: 'json' };
 
-async function main() {
-  // Check for --root flag or FORGE_PROJECT env var
-  let projectRoot = getProjectRoot();
+// Check for updates (once per day)
+updateNotifier({
+  pkg,
+  updateCheckInterval: 1000 * 60 * 60 * 24
+}).notify();
 
-  // Check for --root flag in args
-  const rootFlagIdx = process.argv.indexOf('--root');
-  if (rootFlagIdx !== -1 && process.argv[rootFlagIdx + 1]) {
-    projectRoot = process.argv[rootFlagIdx + 1];
-    // Remove --root and its value from args
-    process.argv.splice(rootFlagIdx, 2);
+const program = new Command();
+
+program
+  .name('forge2')
+  .description('Modern CLI framework for deployments')
+  .version(pkg.version)
+  .option('-r, --root <path>', 'Project root directory')
+  .option('-v, --verbose', 'Verbose output')
+  .hook('preAction', async (thisCommand) => {
+    // This runs before every command
+    const options = thisCommand.opts();
+
+    // Store global options for access by commands
+    program.globalOptions = options;
+  });
+
+// Handle unknown commands by delegating to project config
+program.action(async (options, command) => {
+  // Get command name from remaining args
+  const args = command.args;
+  if (args.length === 0) {
+    command.help();
+    return;
   }
 
-  // Otherwise discover by walking up from CWD
+  const commandName = args[0];
+  const commandArgs = args.slice(1);
+
+  // Find project root
+  let projectRoot = options.root || getProjectRoot();
+
   if (!projectRoot) {
     projectRoot = await discoverProject();
   }
 
-  // No project found
   if (!projectRoot) {
-    console.error('ERROR: No .forge2/ directory found');
-    console.error('');
+    console.error(chalk.red('✗') + ' ERROR: No .forge2/ directory found\n');
     console.error('Run this command from within a forge project directory,');
-    console.error('or set FORGE_PROJECT environment variable,');
-    console.error('or use --root flag: forge2 --root=/path/to/project');
+    console.error('or set ' + chalk.cyan('FORGE_PROJECT') + ' environment variable,');
+    console.error('or use ' + chalk.cyan('--root') + ' flag: ' + chalk.gray('forge2 --root=/path/to/project'));
     process.exit(1);
   }
 
-  // Extract command and args
-  const [, , commandName, ...commandArgs] = process.argv;
-
   // Create forge instance and run
-  const forge = new Forge(projectRoot);
+  const forge = new Forge(projectRoot, options);
   await forge.run(commandName, commandArgs);
-}
-
-main().catch((err) => {
-  console.error('FATAL ERROR:', err);
-  process.exit(1);
 });
+
+// Parse args
+program.parse();
