@@ -13,7 +13,7 @@ import { $ } from 'bun';
 import chalk from 'chalk';
 import ora from 'ora';
 import { createLogger } from '@forge/logger';
-import type { ForgeCommand } from '@forge/core';
+import type { ForgeCommand, ForgeContext } from '@forge/core';
 
 const log = createLogger('examples');
 
@@ -24,7 +24,7 @@ const log = createLogger('examples');
 
 export const hello = {
   description: 'Simple hello world command',
-  execute: async (options, args) => {
+  execute: async (options, args, context) => {
     const name = args[0] || 'World';
     console.log(chalk.green(`Hello, ${name}!`));
     log.info({ name }, 'Greeted user');
@@ -46,7 +46,7 @@ export const deploy: ForgeCommand = {
 
   },
 
-  execute: async (options, args) => {
+  execute: async (options, args, context) => {
     const environment = args[0];
 
     log.info({ environment, options }, 'Starting deploy');
@@ -74,7 +74,7 @@ export const deploy: ForgeCommand = {
 
 export const status = {
   description: 'Show current status',
-  execute: async () => {
+  execute: async (options, args, context) => {
     console.log(chalk.bold('\n📊 Status:\n'));
     console.log('  ' + chalk.gray('Environment: ') + chalk.cyan('development'));
     console.log('  ' + chalk.gray('Version: ') + chalk.cyan('2.0.0-prototype'));
@@ -89,7 +89,7 @@ export const status = {
 
 export const version = {
   description: 'Show version',
-  execute: async () => console.log('v2.0.0-prototype')
+  execute: async (options, args, context) => console.log('v2.0.0-prototype')
 };
 
 // ============================================================================
@@ -106,7 +106,7 @@ export const logs: ForgeCommand = {
 
   },
 
-  execute: async (options) => {
+  execute: async (options, args, context) => {
     log.debug({ options }, 'Showing logs');
 
     // Example: tail logs
@@ -134,7 +134,7 @@ export const connect: ForgeCommand = {
 
   },
 
-  execute: async (options, args) => {
+  execute: async (options, args, context) => {
     const service = args[0];
 
     // Validation
@@ -167,7 +167,7 @@ export const getConfig: ForgeCommand = {
 
   },
 
-  execute: async (options, args) => {
+  execute: async (options, args, context) => {
     const key = args[0];
 
     const config = {
@@ -204,7 +204,7 @@ export const cleanup: ForgeCommand = {
 
   },
 
-  execute: async (options) => {
+  execute: async (options, args, context) => {
     log.info({ options }, 'Starting cleanup');
 
     // Confirmation (unless --force)
@@ -241,7 +241,7 @@ export const cache = {
 
   },
 
-  execute: async (options, args) => {
+  execute: async (options, args, context) => {
     const action = args[0];
     const restArgs = args.slice(1);
 

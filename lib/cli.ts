@@ -70,7 +70,7 @@ async function run(): Promise<void> {
 
     // Add each command to the group
     for (const [cmdName, forgeCmd] of Object.entries(group.commands)) {
-      const cmd = buildCommanderCommand(cmdName, forgeCmd);
+      const cmd = buildCommanderCommand(cmdName, forgeCmd, groupName, forge);
       cmd.exitOverride();  // Make subcommands throw
       groupCmd.addCommand(cmd);
     }

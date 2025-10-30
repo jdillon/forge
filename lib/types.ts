@@ -1,0 +1,78 @@
+/**
+ * Forge v2 - Types
+ *
+ * Extensible types and interfaces for Forge commands and modules
+ */
+
+import type { Command } from 'commander';
+
+// Forward declarations
+export interface Forge {
+  config: ForgeConfig | null;
+  state: any; // StateManager
+  globalOptions: Record<string, any>;
+}
+
+/**
+ * Context passed to command execute functions
+ * Provides access to forge instance, config, settings, and state
+ */
+export interface ForgeContext {
+  forge: Forge;                      // Main forge instance
+  config: ForgeConfig;               // Merged layered config
+  settings: Record<string, any>;     // Command-specific settings
+  state: any;                        // StateManager instance (avoid circular dep for now)
+  groupName?: string;                // Which group this command is in
+  commandName: string;               // This command's name
+}
+
+/**
+ * Command interface that modules export
+ */
+export interface ForgeCommand {
+  description: string;
+  usage?: string;
+
+  // Optional: Let command customize Commander Command object
+  // Just mutate cmd directly, no need to return
+  defineCommand?: (cmd: Command) => void;
+
+  // Execute with parsed options from Commander
+  // options: parsed flags/options object from Commander
+  // args: positional arguments array (always present, may be empty)
+  // context: forge instance, config, and command-specific settings
+  execute: (options: any, args: string[], context: ForgeContext) => Promise<void>;
+}
+
+/**
+ * Module metadata for customizing group behavior
+ * Export as __module__ from your module
+ */
+export interface ForgeModuleMetadata {
+  group?: string | false;  // Custom group name, or false for top-level
+  description?: string;     // Group description for help
+}
+
+/**
+ * Forge configuration structure (.forge2/config.ts)
+ */
+export interface ForgeConfig {
+  // Module paths to auto-discover commands from
+  modules: string[];
+
+  // Optional default command when none specified
+  defaultCommand?: string;
+
+  // Command-specific settings (layered config)
+  // Example: { 'basic.greet': { defaultName: 'World' } }
+  settings?: Record<string, Record<string, any>>;
+}
+
+/**
+ * Project context information
+ */
+export interface ForgeProjectContext {
+  projectRoot: string;
+  forgeDir: string;
+  cwd: string;
+}

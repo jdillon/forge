@@ -18,6 +18,13 @@ export default {
   // Optional: default command when none specified
   // defaultCommand: 'help',
 
+  // Command-specific settings (layered with user/local configs)
+  settings: {
+    'basic.greet': {
+      defaultName: 'Forge User'
+    }
+  },
+
   // Future: Could also load from npm/git
   // modules: [
   //   './website',

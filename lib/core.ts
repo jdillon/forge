@@ -8,41 +8,24 @@ import { join, dirname } from 'path';
 import { existsSync } from 'fs';
 import { homedir } from 'os';
 import { Command } from 'commander';
+import { StateManager } from './state';
+import type {
+  ForgeCommand,
+  ForgeConfig,
+  ForgeModuleMetadata,
+  ForgeProjectContext,
+  ForgeContext
+} from './types';
 
-// ============================================================================
-// Types
-// ============================================================================
-
-export interface ForgeCommand {
-  description: string;
-  usage?: string;
-
-  // Optional: Let command customize Commander Command object
-  // Just mutate cmd directly, no need to return
-  defineCommand?: (cmd: Command) => void;
-
-  // Execute with parsed options from Commander
-  // options: parsed flags/options object
-  // args: positional arguments array (always present, may be empty)
-  execute: (options: any, args: string[]) => Promise<void>;
-}
-
-export interface ForgeConfig {
-  // Module paths to auto-discover commands from
-  modules: string[];
-
-  // Optional default command when none specified
-  defaultCommand?: string;
-
-  // Future: configuration settings
-  // config?: Record<string, any>;
-}
-
-export interface ForgeContext {
-  projectRoot: string;
-  forgeDir: string;
-  cwd: string;
-}
+// Re-export types for convenience
+export type {
+  ForgeCommand,
+  ForgeConfig,
+  ForgeModuleMetadata,
+  ForgeProjectContext,
+  ForgeContext
+} from './types';
+export { StateManager } from './state';
 
 // ============================================================================
 // Project Discovery
@@ -127,14 +110,6 @@ export function getForgePaths() {
 // ============================================================================
 
 /**
- * Module metadata for customizing group behavior
- */
-export interface ForgeModuleMetadata {
-  group?: string | false;  // Custom group name, or false for top-level
-  description?: string;     // Group description for help
-}
-
-/**
  * Check if an object looks like a ForgeCommand (duck typing)
  */
 function isForgeCommand(obj: any): obj is ForgeCommand {
@@ -211,69 +186,6 @@ export async function loadModule(
 }
 
 // ============================================================================
-// State Management
-// ============================================================================
-
-const STATE_FILE = 'state.json';
-const USER_STATE_FILE = 'state.local.json';
-
-/**
- * Simple JSON-based state management
- */
-export class StateManager {
-  private projectRoot: string;
-  private forgeDir: string;
-
-  constructor(projectRoot: string) {
-    this.projectRoot = projectRoot;
-    this.forgeDir = join(projectRoot, '.forge2');
-  }
-
-  private async readJSON(filename: string): Promise<Record<string, any>> {
-    const filepath = join(this.forgeDir, filename);
-    if (!existsSync(filepath)) {
-      return {};
-    }
-    try {
-      const file = Bun.file(filepath);
-      return await file.json();
-    } catch (err) {
-      console.error(`WARNING: Failed to read ${filename}:`, err);
-      return {};
-    }
-  }
-
-  private async writeJSON(filename: string, data: Record<string, any>): Promise<void> {
-    const filepath = join(this.forgeDir, filename);
-    await Bun.write(filepath, JSON.stringify(data, null, 2));
-  }
-
-  // Project state (git-tracked)
-  async getProject(key: string): Promise<any> {
-    const state = await this.readJSON(STATE_FILE);
-    return state[key];
-  }
-
-  async setProject(key: string, value: any): Promise<void> {
-    const state = await this.readJSON(STATE_FILE);
-    state[key] = value;
-    await this.writeJSON(STATE_FILE, state);
-  }
-
-  // User state (gitignored)
-  async getUser(key: string): Promise<any> {
-    const state = await this.readJSON(USER_STATE_FILE);
-    return state[key];
-  }
-
-  async setUser(key: string, value: any): Promise<void> {
-    const state = await this.readJSON(USER_STATE_FILE);
-    state[key] = value;
-    await this.writeJSON(USER_STATE_FILE, state);
-  }
-}
-
-// ============================================================================
 // Command Execution
 // ============================================================================
 
@@ -281,8 +193,8 @@ export class StateManager {
  * Main forge runner
  */
 export class Forge {
-  private context: ForgeContext;
-  private config: ForgeConfig | null = null;
+  private projectContext: ForgeProjectContext;
+  public config: ForgeConfig | null = null;  // Public so commands can access settings
 
   // Command groups (subcommands)
   public commandGroups: Record<string, {
@@ -294,7 +206,7 @@ export class Forge {
   public globalOptions: Record<string, any>;
 
   constructor(projectRoot: string, globalOptions: Record<string, any> = {}) {
-    this.context = {
+    this.projectContext = {
       projectRoot,
       forgeDir: join(projectRoot, '.forge2'),
       cwd: process.cwd(),
@@ -304,7 +216,7 @@ export class Forge {
   }
 
   async loadConfig(): Promise<void> {
-    const configPath = join(this.context.forgeDir, 'config.ts');
+    const configPath = join(this.projectContext.forgeDir, 'config.ts');
 
     if (!existsSync(configPath)) {
       console.error(`ERROR: No config found at ${configPath}`);
@@ -312,13 +224,16 @@ export class Forge {
     }
 
     try {
-      const module = await import(configPath);
-      this.config = module.default;
+      // Load layered config (user + project + local)
+      const { loadLayeredConfig } = await import('./config-loader');
+      const { config: userConfigDir } = getForgePaths();
+
+      this.config = await loadLayeredConfig(this.projectContext.projectRoot, userConfigDir);
 
       // Auto-discover commands from modules
       if (this.config?.modules) {
         for (const modulePath of this.config.modules) {
-          const { groupName, description, commands } = await loadModule(modulePath, this.context.forgeDir);
+          const { groupName, description, commands } = await loadModule(modulePath, this.projectContext.forgeDir);
 
           if (groupName !== false) {
             // Store commands under group
@@ -405,7 +320,12 @@ export class Forge {
  * Build a Commander Command from a ForgeCommand definition
  * This is the bridge between our simple config and Commander's parsing
  */
-export function buildCommanderCommand(name: string, forgeCmd: ForgeCommand): Command {
+export function buildCommanderCommand(
+  name: string,
+  forgeCmd: ForgeCommand,
+  groupName?: string,
+  forge?: Forge
+): Command {
   // 1. Create Commander Command
   const cmd = new Command(name);
   cmd.description(forgeCmd.description);
@@ -436,8 +356,28 @@ export function buildCommanderCommand(name: string, forgeCmd: ForgeCommand): Com
       ? command.args
       : actionArgs.slice(0, -2) as string[];
 
+    // Build ForgeContext for command
+    const context: ForgeContext = forge
+      ? {
+          forge,
+          config: forge.config!,
+          settings: (groupName && forge.config?.settings)
+            ? (forge.config.settings[`${groupName}.${name}`] || {})
+            : {},
+          state: forge.state,
+          groupName,
+          commandName: name,
+        }
+      : {
+          forge: {} as any, // Fallback if no forge instance
+          config: {} as any,
+          settings: {},
+          state: {} as any,
+          commandName: name,
+        };
+
     try {
-      await forgeCmd.execute(options, positionalArgs);
+      await forgeCmd.execute(options, positionalArgs, context);
     } catch (err) {
       console.error(`ERROR: Command failed: ${name}`);
       console.error(err);

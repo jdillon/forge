@@ -5,6 +5,7 @@ tmp/*.tmp
 # Local development
 local.bash
 *.local.bash
+config.local.ts
 
 # OS files
 .DS_Store

@@ -8,7 +8,7 @@
  */
 
 import { createLogger } from '@forge/logger';
-import type { ForgeCommand, ForgeModuleMetadata } from '@forge/core';
+import type { ForgeCommand, ForgeModuleMetadata, ForgeContext } from '@forge/core';
 
 const log = createLogger('simple');
 
@@ -24,7 +24,7 @@ export const __module__: ForgeModuleMetadata = {
 
 export const ping = {
   description: 'Simple ping command',
-  execute: async () => {
+  execute: async (options: any, args: string[], context: ForgeContext) => {
     console.log('pong!');
     log.info('Pinged');
   }
@@ -39,16 +39,19 @@ export const greet: ForgeCommand = {
 
   defineCommand: (cmd) =>
     cmd
-      .argument('<name>', 'Name to greet')
+      .argument('[name]', 'Name to greet (uses config default if not provided)')
       .option('-l, --loud', 'Use uppercase'),
 
-  execute: async (options, args) => {
-    const name = args[0];
+  execute: async (options, args, context) => {
+    // Get name from args or fall back to config default
+    const defaultName = context.settings.defaultName || 'World';
+    const name = args[0] || defaultName;
+
     const greeting = options.loud
       ? `HELLO, ${name.toUpperCase()}!`
       : `Hello, ${name}!`;
 
     console.log(greeting);
-    log.info({ userName: name, loud: options.loud }, 'Greeted user');
+    log.info({ userName: name, loud: options.loud, usedDefault: !args[0] }, 'Greeted user');
   }
 };

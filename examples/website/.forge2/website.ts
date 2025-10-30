@@ -11,7 +11,7 @@ import ora from 'ora';
 import boxen from 'boxen';
 import { Listr } from 'listr2';
 import { createLogger } from '@forge/logger';
-import type { ForgeCommand } from '@forge/core';
+import type { ForgeCommand, ForgeContext } from '@forge/core';
 
 // Configuration
 const CONFIG = {
@@ -37,7 +37,7 @@ export const build: ForgeCommand = {
 
   },
 
-  execute: async (options) => {
+  execute: async (options, args, context) => {
     log.info({ options }, 'Starting build');
 
     const spinner = ora('Building website...').start();
@@ -92,7 +92,7 @@ export const sync: ForgeCommand = {
   },
 
   // Execute with parsed options
-  execute: async (options) => {
+  execute: async (options, args, context) => {
     const { dryRun, bucket, delete: shouldDelete } = options;
 
     log.info({ bucket, dryRun, delete: shouldDelete }, 'Starting sync');
@@ -141,7 +141,7 @@ export const invalidate: ForgeCommand = {
 
   },
 
-  execute: async (options) => {
+  execute: async (options, args, context) => {
     const { paths, distribution } = options;
 
     log.info({ distribution, paths }, 'Starting invalidation');
@@ -188,7 +188,7 @@ export const publish: ForgeCommand = {
 
   },
 
-  execute: async (options) => {
+  execute: async (options, args, context) => {
     log.info({ options }, 'Starting publish');
 
     console.log(chalk.bold('\n🚀 Publishing Website\n'));
