@@ -95,7 +95,7 @@ class PrettyStream extends Writable {
  * In development: Pretty colored output (synchronous)
  * In production: JSON structured logs
  */
-export function createLogger(name?: string) {
+export function createLogger(name?: string): pino.Logger {
   const isDev = process.env.NODE_ENV !== 'production';
   const level = process.env.LOG_LEVEL || (isDev ? 'info' : 'warn');
   const pretty = isDev && process.env.FORGE_PRETTY_LOGS !== '0';

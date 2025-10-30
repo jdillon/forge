@@ -4,14 +4,17 @@
  * Separate file for command implementations (like forge v1 pattern)
  */
 
-import { Command } from 'commander';
-import { $ } from 'bun';
-import chalk from 'chalk';
-import ora from 'ora';
-import boxen from 'boxen';
-import { Listr } from 'listr2';
-import { createLogger } from '@forge/logger';
-import type { ForgeCommand, ForgeContext } from '@forge/core';
+import {
+  $,
+  Command,
+  chalk,
+  ora,
+  boxen,
+  Listr,
+  createLogger,
+  type ForgeCommand,
+  type ForgeContext
+} from '@forge/command';
 
 // Configuration
 const CONFIG = {

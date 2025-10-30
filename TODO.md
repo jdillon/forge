@@ -17,11 +17,16 @@
 
 ## Medium Priority
 
-### Configuration Management
-Research libraries for layered config (defaults → project → user):
-- **cosmiconfig** - Find config in multiple places
-- **conf** - Electron-style config with schema
-- **rc** - Runtime config with cascading
+### ✅ Configuration Management - COMPLETE
+Now using **cosmiconfig** with YAML/JSON/JS support:
+- Layered config: user → project → local (gitignored)
+- Multiple format support (.yml, .json, .js, .forge2rc)
+- Deep merge algorithm for settings
+
+**TODO**: Add optional runtime validation with Zod
+- Validate config structure on load
+- Better error messages for invalid configs
+- Type-safe settings access
 
 ### Module Sharing
 Design how modules are published and consumed:

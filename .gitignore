@@ -6,6 +6,10 @@ tmp/*.tmp
 local.bash
 *.local.bash
 config.local.ts
+config.local.yml
+config.local.yaml
+config.local.json
+config.local.js
 
 # OS files
 .DS_Store

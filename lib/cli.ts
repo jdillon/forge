@@ -8,6 +8,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import updateNotifier from 'update-notifier';
 import { Forge, discoverProject, getProjectRoot, buildCommanderCommand } from './core';
+import { die } from './helpers';
 import pkg from '../package.json' assert { type: 'json' };
 
 export async function main(): Promise<void> {
@@ -20,8 +21,7 @@ export async function main(): Promise<void> {
   try {
     await run();
   } catch (err: any) {
-    console.error(chalk.red('✗ ERROR:'), err.message);
-    process.exit(1);
+    die(err.message);
   }
 }
 
@@ -46,11 +46,12 @@ async function run(): Promise<void> {
   }
 
   if (!projectRoot) {
-    console.error(chalk.red('✗') + ' ERROR: No .forge2/ directory found\n');
-    console.error('Run this command from within a forge project directory,');
-    console.error('or set ' + chalk.cyan('FORGE_PROJECT') + ' environment variable,');
-    console.error('or use ' + chalk.cyan('--root') + ' flag: ' + chalk.gray('forge2 --root=/path/to/project'));
-    process.exit(1);
+    die(
+      'No .forge2/ directory found\n' +
+      'Run this command from within a forge project directory,\n' +
+      'or set FORGE_PROJECT environment variable,\n' +
+      'or use --root flag: forge2 --root=/path/to/project'
+    );
   }
 
   // Load project config and auto-discover commands

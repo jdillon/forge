@@ -9,6 +9,7 @@ import { existsSync } from 'fs';
 import { homedir } from 'os';
 import { Command } from 'commander';
 import { StateManager } from './state';
+import { die } from './helpers';
 import type {
   ForgeCommand,
   ForgeConfig,
@@ -16,16 +17,6 @@ import type {
   ForgeProjectContext,
   ForgeContext
 } from './types';
-
-// Re-export types for convenience
-export type {
-  ForgeCommand,
-  ForgeConfig,
-  ForgeModuleMetadata,
-  ForgeProjectContext,
-  ForgeContext
-} from './types';
-export { StateManager } from './state';
 
 // ============================================================================
 // Project Discovery
@@ -64,8 +55,7 @@ export function getProjectRoot(): string | null {
     if (existsSync(join(envPath, '.forge2'))) {
       return envPath;
     }
-    console.error(`ERROR: FORGE_PROJECT=${envPath} but .forge2/ not found`);
-    process.exit(1);
+    die(`FORGE_PROJECT=${envPath} but .forge2/ not found`);
   }
 
   return null;
@@ -180,8 +170,7 @@ export async function loadModule(
 
     return { groupName, description, commands };
   } catch (err) {
-    console.error(`ERROR: Failed to load module ${modulePath}:`, err);
-    process.exit(1);
+    die(`Failed to load module ${modulePath}: ${err}`);
   }
 }
 
@@ -216,19 +205,17 @@ export class Forge {
   }
 
   async loadConfig(): Promise<void> {
-    const configPath = join(this.projectContext.forgeDir, 'config.ts');
-
-    if (!existsSync(configPath)) {
-      console.error(`ERROR: No config found at ${configPath}`);
-      process.exit(1);
-    }
-
     try {
       // Load layered config (user + project + local)
       const { loadLayeredConfig } = await import('./config-loader');
       const { config: userConfigDir } = getForgePaths();
 
       this.config = await loadLayeredConfig(this.projectContext.projectRoot, userConfigDir);
+
+      // Verify we got a valid config
+      if (!this.config) {
+        die(`No config found in ${this.projectContext.forgeDir}`);
+      }
 
       // Auto-discover commands from modules
       if (this.config?.modules) {
@@ -253,8 +240,7 @@ export class Forge {
         }
       }
     } catch (err) {
-      console.error('ERROR: Failed to load config:', err);
-      process.exit(1);
+      die(`Failed to load config: ${err}`);
     }
   }
 
@@ -277,18 +263,15 @@ export class Forge {
     const command = this.commands[commandName];
 
     if (!command) {
-      console.error(`ERROR: Unknown command: ${commandName}`);
       this.showUsage();
-      process.exit(1);
+      die(`Unknown command: ${commandName}`);
     }
 
     // Execute command
     try {
       await command.execute(args, []);
     } catch (err) {
-      console.error(`ERROR: Command failed: ${commandName}`);
-      console.error(err);
-      process.exit(1);
+      die(`Command failed: ${commandName}\n${err}`);
     }
   }
 
@@ -379,31 +362,9 @@ export function buildCommanderCommand(
     try {
       await forgeCmd.execute(options, positionalArgs, context);
     } catch (err) {
-      console.error(`ERROR: Command failed: ${name}`);
-      console.error(err);
-      process.exit(1);
+      die(`Command failed: ${name}\n${err}`);
     }
   });
 
   return cmd;
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/**
- * Simple confirmation prompt
- */
-export async function confirm(prompt: string = 'Continue?'): Promise<boolean> {
-  const input = await Bun.prompt(`${prompt} [y/N] `);
-  return input?.toLowerCase() === 'y';
-}
-
-/**
- * Die with error message
- */
-export function die(message: string): never {
-  console.error(`ERROR: ${message}`);
-  process.exit(1);
 }

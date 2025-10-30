@@ -31,7 +31,8 @@
     "omelette": "^0.4.17",
     "ora": "^8.0.0",
     "pino": "^8.19.0",
-    "update-notifier": "^7.0.0"
+    "update-notifier": "^7.0.0",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "bun-types": "latest",

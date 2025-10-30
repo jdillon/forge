@@ -8,12 +8,15 @@
  * 4. Minimal one-liner
  */
 
-import { Command } from 'commander';
-import { $ } from 'bun';
-import chalk from 'chalk';
-import ora from 'ora';
-import { createLogger } from '@forge/logger';
-import type { ForgeCommand, ForgeContext } from '@forge/core';
+import {
+  $,
+  Command,
+  chalk,
+  ora,
+  createLogger,
+  type ForgeCommand,
+  type ForgeContext
+} from '@forge/command';
 
 const log = createLogger('examples');
 

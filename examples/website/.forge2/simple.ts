@@ -7,8 +7,7 @@
  * - Module metadata to customize group name
  */
 
-import { createLogger } from '@forge/logger';
-import type { ForgeCommand, ForgeModuleMetadata, ForgeContext } from '@forge/core';
+import { createLogger, type ForgeCommand, type ForgeModuleMetadata, type ForgeContext } from '@forge/command';
 
 const log = createLogger('simple');
 

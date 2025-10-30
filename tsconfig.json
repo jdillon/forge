@@ -10,6 +10,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
+      "@forge/command": ["./lib/command.ts"],
       "@forge/core": ["./lib/core.ts"],
       "@forge/*": ["./lib/*"]
     }
