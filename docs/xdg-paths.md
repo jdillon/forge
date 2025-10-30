@@ -1,25 +1,80 @@
 # XDG Base Directory Compliance
 
-**Date**: 2025-10-29
 **Status**: Implemented in v2 prototype
 
 ---
 
-## Why XDG?
+## What is XDG?
 
-Following the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/) provides:
+The [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/) defines where user-specific files should go on Unix systems. It mirrors the FHS (Filesystem Hierarchy Standard) concepts at the user level.
 
-- ✅ **Cleaner home directory** - No more hidden dotfiles cluttering `~`
+### Core XDG Directories
+
+```bash
+# User configuration files (like /etc for your user)
+~/.config/
+  └── nvim/, git/, forge/
+
+# User data files (application data, plugins, themes)
+~/.local/share/
+  └── applications/, fonts/, forge/
+
+# User executables (should be in $PATH)
+~/.local/bin/
+  └── mise, uv, forge2
+
+# User state data (logs, history, recent files)
+~/.local/state/
+  └── forge/
+
+# User cache (safe to delete anytime)
+~/.cache/
+  └── forge/, uv/
+```
+
+### Environment Variables
+
+```bash
+$XDG_CONFIG_HOME  → defaults to ~/.config
+$XDG_DATA_HOME    → defaults to ~/.local/share
+$XDG_STATE_HOME   → defaults to ~/.local/state
+$XDG_CACHE_HOME   → defaults to ~/.cache
+$XDG_BIN_HOME     → non-standard, but ~/.local/bin is convention
+```
+
+### Legacy vs Modern
+
+**Old way (still common):**
+```
+~/.vimrc
+~/.gitconfig
+~/my-tool/config
+```
+
+**Modern way:**
+```
+~/.config/nvim/init.vim
+~/.config/git/config
+~/.local/share/my-tool/
+```
+
+---
+
+## Why Forge Uses XDG
+
+Following XDG provides several benefits:
+
+- ✅ **Cleaner home directory** - No more hidden dotfiles cluttering `ls -la ~`
 - ✅ **Easier backups** - Just back up `~/.config` and `~/.local/share`
 - ✅ **Clear separation** - Config vs data vs cache vs executables
-- ✅ **Portable** - Can override via environment variables
+- ✅ **Portable** - Can override via environment variables (useful in containers)
 - ✅ **Standard** - Follows convention of modern tools (mise, uv, cargo, etc.)
 
 ---
 
 ## Forge v2 Directory Layout
 
-### Core Directories
+### System-Wide Installation
 
 ```bash
 # Executables (in PATH)
@@ -53,18 +108,18 @@ Following the [XDG Base Directory Specification](https://specifications.freedesk
 └── command-history.json            # Command usage stats
 ```
 
-### Project Directories (Unchanged)
+### Project Directories
 
 ```bash
 project/
 ├── .forge2/                        # Project config (prototype)
-│   ├── config.ts                   # Commands and config
+│   ├── config.yml                  # Module list and settings
+│   ├── website.ts                  # Command implementations
 │   ├── state.json                  # Project state (git-tracked)
-│   ├── state.local.json            # User state (gitignored)
-│   └── modules/                    # Project-specific modules
+│   └── state.local.json            # User state (gitignored)
 └── ...
 
-# In final version, will be .forge/
+# In final version, will be .forge/ instead of .forge2/
 ```
 
 ---
@@ -76,19 +131,19 @@ Forge respects XDG environment variables with standard fallbacks:
 ```bash
 # Override data directory
 export XDG_DATA_HOME="$HOME/my-data"
-# Forge uses: $XDG_DATA_HOME/forge
+# Forge uses: $XDG_DATA_HOME/forge2
 
 # Override config directory
 export XDG_CONFIG_HOME="$HOME/my-config"
-# Forge uses: $XDG_CONFIG_HOME/forge
+# Forge uses: $XDG_CONFIG_HOME/forge2
 
 # Override cache directory
 export XDG_CACHE_HOME="$HOME/my-cache"
-# Forge uses: $XDG_CACHE_HOME/forge
+# Forge uses: $XDG_CACHE_HOME/forge2
 
 # Override state directory
 export XDG_STATE_HOME="$HOME/my-state"
-# Forge uses: $XDG_STATE_HOME/forge
+# Forge uses: $XDG_STATE_HOME/forge2
 ```
 
 **Defaults** (when env vars not set):
@@ -101,9 +156,11 @@ export XDG_STATE_HOME="$HOME/my-state"
 
 ## Implementation
 
-### Core Framework (lib/core.ts)
+### Helper Functions (lib/xdg.ts)
 
 ```typescript
+import { join, homedir } from 'path';
+
 function getXDGDataHome(): string {
   return process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share');
 }
@@ -122,12 +179,12 @@ function getXDGStateHome(): string {
 
 export function getForgePaths() {
   return {
-    data: join(getXDGDataHome(), 'forge'),
-    config: join(getXDGConfigHome(), 'forge'),
-    cache: join(getXDGCacheHome(), 'forge'),
-    state: join(getXDGStateHome(), 'forge'),
-    modules: join(getXDGDataHome(), 'forge', 'modules'),
-    runtime: join(getXDGDataHome(), 'forge', 'runtime'),
+    data: join(getXDGDataHome(), 'forge2'),
+    config: join(getXDGConfigHome(), 'forge2'),
+    cache: join(getXDGCacheHome(), 'forge2'),
+    state: join(getXDGStateHome(), 'forge2'),
+    modules: join(getXDGDataHome(), 'forge2', 'modules'),
+    runtime: join(getXDGDataHome(), 'forge2', 'runtime'),
   };
 }
 ```
@@ -190,40 +247,17 @@ export PATH="$HOME/.local/share/forge2/runtime/bin:$PATH"
 
 ---
 
-## Migration from v1
-
-### Old Paths (v1 - Bash)
-
-```bash
-~/.forge/                           # Would have been used
-project/.forge/                     # Project config
-```
-
-### New Paths (v2 - Bun)
-
-```bash
-~/.local/share/forge2/               # Application data
-~/.local/bin/forge2                 # Executable
-~/.config/forge2/                    # User config (optional)
-project/.forge2/                    # Project config (prototype)
-```
-
-**No migration needed** - v2 uses completely different locations.
-
----
-
 ## Comparison to Other Tools
 
 ### Tools Following XDG
 
-| Tool | Executable | Data | Config |
-|------|-----------|------|--------|
-| **mise** | `~/.local/bin/mise` | `~/.local/share/mise/` | `~/.config/mise/` |
-| **uv** | `~/.local/bin/uv` | `~/.local/share/uv/` | `~/.config/uv/` |
-| **cargo** | `~/.cargo/bin/*` | `~/.cargo/` | `~/.cargo/config.toml` |
-| **forge v2** | `~/.local/bin/forge2` | `~/.local/share/forge2/` | `~/.config/forge2/` |
-
-**Note**: Cargo is partially XDG-compliant (uses `~/.cargo` instead of `~/.local/share/cargo`)
+| Tool | Executable | Data | Config | Notes |
+|------|-----------|------|--------|-------|
+| **mise** | `~/.local/bin/mise` | `~/.local/share/mise/` | `~/.config/mise/` | ✅ Full XDG |
+| **uv** | `~/.local/bin/uv` | `~/.local/share/uv/` | `~/.config/uv/` | ✅ Full XDG |
+| **forge v2** | `~/.local/bin/forge2` | `~/.local/share/forge2/` | `~/.config/forge2/` | ✅ Full XDG |
+| **cargo** | `~/.cargo/bin/*` | `~/.cargo/` | `~/.cargo/config.toml` | ⚠️ Partial (uses ~/.cargo) |
+| **neovim** | `/usr/bin/nvim` | `~/.local/share/nvim/` | `~/.config/nvim/` | ✅ Full XDG |
 
 ### Legacy Tools (Non-XDG)
 
@@ -266,7 +300,7 @@ forge2 update
 # Use different config in container
 docker run -e XDG_CONFIG_HOME=/container-config myimage
 
-# Forge uses: /container-config/forge/
+# Forge uses: /container-config/forge2/
 ```
 
 ### 4. Clear Separation
@@ -280,6 +314,28 @@ cp -r ~/.local/share/forge2/ /backup/data/
 
 # Skip cache and state (not important)
 ```
+
+---
+
+## Migration from v1
+
+### Old Paths (v1 - Bash)
+
+```bash
+~/.forge/                           # Would have been used
+project/.forge/                     # Project config
+```
+
+### New Paths (v2 - Bun)
+
+```bash
+~/.local/share/forge2/              # Application data
+~/.local/bin/forge2                 # Executable
+~/.config/forge2/                   # User config (optional)
+project/.forge2/                    # Project config (prototype)
+```
+
+**No migration needed** - v2 uses completely different locations.
 
 ---
 

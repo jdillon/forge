@@ -1,6 +1,5 @@
 # Temporary files
-tmp/*.log
-tmp/*.tmp
+tmp/*
 
 # Local development
 local.bash

@@ -1,260 +1,270 @@
-# Forge v2 - TypeScript/Bun CLI Framework
+# Forge v2 - Modern CLI Framework
 
-A modern, type-safe framework for building project-specific CLI tools using Bun and TypeScript.
+**Philosophy**: *"It's for me mostly, so I like awesome."*
 
-## Status
+A delightful, type-safe framework for building project-specific deployment tools using Bun and TypeScript.
 
-🚧 **Prototype Phase** - This is the v2 prototype built with Bun/TypeScript to evaluate a modern redesign.
-
-**Branch**: `v2-prototype`
-**Previous version**: See `initial` branch for Bash-based v1 analysis
+---
 
 ## Quick Start
 
 ```bash
-# Install Bun (if not already installed)
-curl -fsSL https://bun.sh/install | bash
-
 # Try the example
 cd examples/website
 ../../forge2 help
 ../../forge2 build
-../../forge2 info
+../../forge2 publish --dry-run
 
-# Works from subdirectories (CWD-aware!)
+# Works from subdirectories!
 cd dist
 ../../../forge2 info
 ```
 
-## What's Different in v2
+---
 
-### Core Design Changes
+## Features
 
-- **Language**: Bun/TypeScript instead of Bash
-- **Returns**: Native `return` instead of OUTPUT_PATTERN hack
-- **Type Safety**: Full TypeScript type checking
-- **Commands**: Bun's `$` operator for shell execution
-- **XDG Compliant**: Follows modern directory standards
+### Core
 
-### Directory Structure (XDG Standard)
+- ✅ **CWD-aware** - Run from any subdirectory (like git)
+- ✅ **Type-safe** - Full TypeScript with minimal boilerplate
+- ✅ **Auto-discovery** - Export a command, it's available
+- ✅ **Module system** - Shared modules across projects
+- ✅ **State management** - Project and user-scoped state
+- ✅ **Beautiful UI** - Colors, spinners, task lists, boxes
+- ✅ **Structured logging** - Pino (JSON + pretty mode)
+- ✅ **XDG compliant** - Modern directory standards
 
-```
-~/.local/share/forge2/       # Application data
-├── modules/                # Shared modules
-└── runtime/
-    └── bin/bun            # Bundled Bun runtime
+### Command Execution
 
-~/.local/bin/forge2         # Executable (in PATH)
-
-~/.config/forge2/            # User configuration (optional)
-
-~/.cache/forge2/             # Cache (safe to delete)
-
-~/.local/state/forge2/       # Logs, history
-
-# Project structure (unchanged)
-project/
-├── .forge2/
-│   └── config.ts          # TypeScript config
-└── ...
-```
-
-## Key Features
-
-### ✅ Implemented
-
-- **CWD-aware discovery** - Run from any subdirectory (like git)
-- **TypeScript config** - Type-safe command definitions
-- **Bun's `$` operator** - Clean shell command execution
-- **Module system** - Load shared modules (project > user > system)
-- **State management** - JSON-based project + user state
-- **Command composition** - Commands can call other commands
-- **Argument parsing** - Flag support (--dry-run, --paths, etc.)
-
-### 🚧 Planned
-
-- Module repository and distribution
-- Shell completion (bash, zsh, fish)
-- Help system with usage examples
-- Auto-update mechanism
-- Mock mode for testing
-
-## Example: Website Deployment
-
-See `examples/website/` for a complete working example.
+Bun's `$` operator makes shell commands almost as easy as Bash:
 
 ```typescript
-// .forge2/config.ts
-export default {
-  commands: {
-    'sync': {
-      description: 'Sync to S3',
-      execute: async (args) => {
-        const bucket = 'my-bucket';
-        await $`aws s3 sync dist/ s3://${bucket}/ --delete`;
-        console.log('✓ Sync complete');
-      }
-    },
-
-    'publish': {
-      description: 'Full publish workflow',
-      execute: async (args) => {
-        // Compose commands
-        await config.commands.build.execute([]);
-        await config.commands.sync.execute(args);
-        await config.commands.invalidate.execute([]);
-      }
-    }
-  }
-} satisfies ForgeConfig;
-```
-
-## Why Bun/TypeScript?
-
-### Advantages Over Bash
-
-| Feature | Bash | Bun | Winner |
-|---------|------|-----|--------|
-| Command execution | `aws s3 ls` | `await $\`aws s3 ls\`` | Bash (slightly) |
-| Function returns | OUTPUT_PATTERN hack | Native `return` | **Bun** 🏆 |
-| Type safety | None | TypeScript | **Bun** 🏆 |
-| Error handling | Verbose | try/catch | **Bun** 🏆 |
-| JSON/data | jq/sed/awk | Native | **Bun** 🏆 |
-| Startup time | 50ms | 60ms | Bash (negligible) |
-
-See `docs/V2_PROTOTYPE_EVALUATION.md` for detailed analysis.
-
-### The `$` Operator Game-Changer
-
-Bun's `$` template literal makes shell commands almost as easy as Bash:
-
-```typescript
-// Almost identical to Bash!
-await $`aws s3 sync . s3://${bucket}/`;
+// Clean and type-safe
+await $`aws s3 sync dist/ s3://${bucket}/`;
 
 // Capture output
-const distId = await $`aws cloudfront list-distributions ...`.text();
+const distId = await $`aws cloudfront list...`.text();
 
-// Conditional execution
+// Conditional
 if (dryRun) {
-  await $`aws s3 sync . s3://${bucket}/ --dryrun`;
+  await $`terraform plan`;
 }
 ```
 
+---
+
+## Example
+
+```typescript
+// .forge2/config.yml
+modules:
+  - ./website
+
+// .forge2/website.ts
+export const publish: ForgeCommand = {
+  description: 'Publish website',
+
+  defineCommand: (cmd) => {
+    cmd.option('--dry-run', 'Preview only');
+  },
+
+  execute: async (options, args, context) => {
+    const tasks = new Listr([
+      { title: 'Building', task: async () => await build() },
+      { title: 'Uploading', task: async () => await upload() },
+      { title: 'Invalidating CDN', task: async () => await invalidate() }
+    ]);
+
+    await tasks.run();
+
+    console.log(boxen(
+      chalk.green('✓ Published!'),
+      { padding: 1, borderColor: 'green' }
+    ));
+  }
+};
+```
+
+**Output:**
+```
+✔ Building
+✔ Uploading
+✔ Invalidating CDN
+
+╭──────────────╮
+│              │
+│ ✓ Published! │
+│              │
+╰──────────────╯
+```
+
+---
+
+## Installation
+
+### Requirements
+
+- Bun >= 1.0.0
+
+### Install Bun
+
+```bash
+curl -fsSL https://bun.sh/install | bash
+```
+
+### Try Forge v2 (Prototype)
+
+```bash
+git clone <repo> forge-v2
+cd forge-v2
+git checkout v2-prototype
+bun install
+cd examples/website
+../../forge2 help
+```
+
+---
+
+## Directory Structure
+
+### System (XDG-Compliant)
+
+```
+~/.local/bin/forge2              # Executable
+~/.local/share/forge2/           # Modules, runtime
+~/.config/forge2/                # User config (optional)
+~/.cache/forge2/                 # Cache (safe to delete)
+~/.local/state/forge2/           # Logs, history
+```
+
+### Project
+
+```
+project/
+├── .forge2/
+│   ├── config.yml              # Module list
+│   ├── website.ts              # Commands
+│   ├── state.json              # Project state (tracked)
+│   └── state.local.json        # User state (gitignored)
+└── ...
+```
+
+---
+
+## Writing Commands
+
+See **[docs/command-patterns.md](docs/command-patterns.md)** for complete guide.
+
+### Simple
+```typescript
+export const version = {
+  description: 'Show version',
+  execute: async () => console.log('v2.0.0')
+};
+```
+
+### With Options
+```typescript
+export const deploy: ForgeCommand = {
+  description: 'Deploy to environment',
+
+  defineCommand: (cmd) => {
+    cmd
+      .argument('<env>', 'Environment')
+      .option('-s, --skip-tests', 'Skip tests');
+  },
+
+  execute: async (options, args) => {
+    const env = args[0];
+    if (!options.skipTests) await runTests();
+    await deploy(env);
+  }
+};
+```
+
+---
+
+## Why TypeScript/Bun?
+
+| Feature | Bash | Bun/TypeScript |
+|---------|------|----------------|
+| Shell commands | ✅ Native | ✅ `$` operator |
+| Function returns | ❌ OUTPUT_PATTERN hack | ✅ Native |
+| Type safety | ❌ | ✅ |
+| Error handling | ⚠️ Verbose | ✅ try/catch |
+| JSON/data | ⚠️ jq/sed/awk | ✅ Native |
+| Startup | ~50ms | ~60ms |
+
+**Winner**: Bun for everything except raw startup time (negligible 10ms difference)
+
+---
+
+## CLI Libraries Used
+
+- **commander** - CLI framework and arg parsing
+- **chalk** - Terminal colors
+- **ora** - Spinners
+- **listr2** - Task lists
+- **boxen** - Boxes
+- **cli-table3** - Tables
+- **pino** - Structured logging
+- **enquirer** - Interactive prompts
+
+See **[docs/libraries/](docs/libraries/)** for individual library docs.
+
+---
+
+## Testing
+
+```bash
+bun test                # Run all tests
+bun test --watch        # Watch mode
+bun run test:junit      # Generate JUnit XML
+bun run typecheck       # Type check
+```
+
+**Status**: 39 tests passing
+
+---
+
 ## Documentation
 
-### Analysis & Design
-- **[Session Summary](docs/archive/session-summary.md)** - Context reset guide
-- **[v2 Prototype Plan](docs/v2-prototype-plan.md)** - Design decisions
-- **[v2 Prototype Evaluation](docs/v2-prototype-evaluation.md)** - Love it or hate it?
-- **[Answers to Questions](docs/answers-to-questions.md)** - All decisions documented
+- **[docs/](docs/)** - All documentation
+- **[docs/command-patterns.md](docs/command-patterns.md)** - How to write commands
+- **[docs/whats-working-now.md](docs/whats-working-now.md)** - Current status
+- **[docs/libraries/](docs/libraries/)** - Library reference
+- **[docs/xdg-paths.md](docs/xdg-paths.md)** - Directory structure
+- **[docs/archive/](docs/archive/)** - Historical design docs
 
-### Deep Dives
-- **[Output Pattern](docs/archive/output-pattern.md)** - The Bash stdout/stderr problem
-- **[Language Comparison](docs/language-syntax-comparison.md)** - Bash vs Python vs Bun vs Ruby
-- **[Shell Improvements](docs/shell-improvements-and-hybrid.md)** - Bash 5 features & hybrid approach
+---
 
-## Installation Strategy
+## Status
 
-### Bun Installation (XDG-Compliant)
+🚧 **Prototype Phase** - v2-prototype branch
 
-```bash
-# Install Bun to XDG location
-export BUN_INSTALL="$HOME/.local/share/forge2/runtime"
-curl -fsSL https://bun.sh/install | bash
+**Implemented**:
+- Core framework with auto-discovery
+- Commander.js integration
+- Beautiful terminal UI
+- State management
+- Module system
+- CWD-aware project discovery
+- Test suite (39 passing)
 
-# Symlink to PATH
-ln -s ~/.local/share/forge2/runtime/bin/bun ~/.local/bin/bun
+**Next**:
+1. Module distribution (`forge2 module add/list/update`)
+2. Shell completion
+3. Real-world testing
 
-# Verify
-bun --version
-```
-
-### Forge Installation (Planned)
-
-```bash
-# Clone to XDG data directory
-git clone https://github.com/jdillon/forge ~/.local/share/forge2
-
-# Symlink executable
-ln -s ~/.local/share/forge2/bin/forge2 ~/.local/bin/forge2
-
-# Verify
-forge2 --version
-```
-
-### Version Management
-
-```bash
-# Upgrade Bun
-bun upgrade
-
-# Upgrade to specific version
-curl -fsSL https://bun.sh/install | bash -s "bun-v1.1.34"
-
-# Upgrade forge (planned)
-forge2 update
-```
-
-## Architecture
-
-```
-forge2 (entry point)
-  ↓
-lib/core.ts (framework)
-  ├─ Project discovery (walk up from CWD)
-  ├─ Config loading (.forge2/config.ts)
-  ├─ Module loading (search path)
-  ├─ Command dispatch
-  └─ State management (JSON)
-  ↓
-.forge2/config.ts (project config)
-  ├─ Command definitions
-  ├─ Module imports
-  └─ Configuration
-```
-
-## Comparison to v1 (Bash)
-
-### What's Better
-- ✅ Real function returns (no OUTPUT_PATTERN hack)
-- ✅ Type safety catches errors at dev time
-- ✅ Native async/await for complex workflows
-- ✅ Better data handling (JSON, APIs)
-- ✅ Modern error handling (try/catch)
-- ✅ XDG-compliant paths
-- ✅ npm ecosystem available
-
-### Trade-offs
-- ⚠️ Requires Bun installation (can auto-install)
-- ⚠️ ~3x more boilerplate than Bash
-- ⚠️ TypeScript learning curve
-- ⚠️ 10ms slower startup (60ms vs 50ms - negligible)
-
-## Next Steps
-
-1. **Get feedback** - Does this feel good? Love it or hate it?
-2. **Add modules** - Create example AWS/Terraform modules
-3. **Polish install** - Auto-install Bun, better bootstrap
-4. **Add completion** - Shell completion support
-5. **Documentation** - User guide, module authoring
-
-## Alternative Approaches
-
-If Bun doesn't feel right, we have documented alternatives:
-
-1. **Pure Bash 5** - Use nameref pattern to solve OUTPUT_PATTERN
-2. **Bash + Bun Hybrid** - Framework in Bash, helpers in Bun
-3. **Pure Bun** - Current prototype (recommended)
-
-See `docs/answers-to-questions.md` for detailed comparison.
-
-## References
-
-- **Bun Documentation**: https://bun.sh/docs
-- **XDG Base Directory**: https://specifications.freedesktop.org/basedir-spec/
-- **Original Analysis**: See `initial` branch
+---
 
 ## License
 
-TBD
+Apache-2.0
+
+---
+
+## Contributing
+
+See **[CLAUDE.md](CLAUDE.md)** for development workflow and conventions.

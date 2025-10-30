@@ -1,189 +1,177 @@
-# Forge Framework Documentation
+# Forge v2 Documentation
 
-This directory contains comprehensive analysis and recommendations for redesigning the forge framework.
+**Philosophy**: *"It's for me mostly, so I like awesome."*
+
+Since we're using Bun anyway, let's make this CLI **absolutely delightful** to use.
+
+---
+
+## Status
+
+**Branch**: `v2-prototype` (TypeScript/Bun implementation)
+**Tests**: 39 pass, 0 skip, 0 fail
+**Decision**: Pure TypeScript/Bun (not Bash, not hybrid)
+
+---
 
 ## Quick Start
 
-**New to this project?** Start here:
+### For Users
 
-1. Read **[recommendations.md](recommendations.md)** - Executive summary and roadmap
-2. Review **[questions-for-jason.md](questions-for-jason.md)** - Key decisions needed
-3. Check **[framework-comparison.md](framework-comparison.md)** - Context from previous session
+Writing commands? Start with:
+- **[command-patterns.md](command-patterns.md)** - How to write commands (examples!)
+- **[whats-working-now.md](whats-working-now.md)** - What's built and working
+- **[libraries/](libraries/)** - CLI library reference (chalk, ora, listr2, etc.)
 
-## Document Guide
+### For Contributors
 
-### Core Analysis
+Understanding the architecture:
+- **[xdg-paths.md](xdg-paths.md)** - Directory structure and XDG compliance
+- **[dependencies.md](dependencies.md)** - Dependency vetting policy
+- **[package-management.md](package-management.md)** - Bun package management
+- **[module-sharing-private.md](module-sharing-private.md)** - Git-based module distribution
 
-| Document | Purpose | Read If... |
-|----------|---------|-----------|
-| **[recommendations.md](recommendations.md)** | Comprehensive recommendations and implementation roadmap | You want the full picture and action plan |
-| **[questions-for-jason.md](questions-for-jason.md)** | Key decisions and design choices | You need to make decisions about the framework |
-| **[framework-comparison.md](framework-comparison.md)** | Detailed comparison of forge vs commando | You want to understand the existing implementations |
+---
 
-### Deep Dives
+## Core Documentation
 
-| Document | Purpose | Read If... |
-|----------|---------|-----------|
-| **[commando-analysis.md](commando-analysis.md)** | Feature-by-feature analysis of commando | You want to understand commando's design in depth |
-| **[forge-analysis.md](forge-analysis.md)** | Feature-by-feature analysis of forge | You want to understand forge's design in depth |
-| **[language-evaluation.md](language-evaluation.md)** | Bash vs Python/Ruby/Go/Node comparison | You're questioning the language choice |
-| **[help-and-completion.md](help-and-completion.md)** | Help systems and shell completion strategies | You're implementing help or completion features |
-| **[archive/naming.md](archive/naming.md)** | Name brainstorming and analysis | You're considering renaming the framework |
+| Document | Purpose |
+|----------|---------|
+| **[command-patterns.md](command-patterns.md)** | Quick reference for writing commands |
+| **[whats-working-now.md](whats-working-now.md)** | Feature showcase and status |
+| **[features/](features/)** | In-depth feature documentation |
+| **[xdg-paths.md](xdg-paths.md)** | XDG directory structure |
+| **[dependencies.md](dependencies.md)** | Security-focused dependency policy |
+| **[package-management.md](package-management.md)** | Bun PM for module distribution |
+| **[module-sharing-private.md](module-sharing-private.md)** | Git-based private modules |
 
-## Key Insights
+---
 
-### From Forge Analysis
-- ✅ **Command auto-discovery** (`command_<name>` pattern) is brilliant
-- ✅ **Configuration as code** (sourcing bash files) is the right approach
-- ✅ **State system** is simple and effective
-- ⚠️ **Location-dependent** (must run from project root)
-- ⚠️ **Module duplication** (copy aws.bash to every project)
-- ❌ **No help system** (can't discover commands)
+## Deep Dives
 
-### From Commando Analysis
-- ✅ **Rich error diagnostics** with stack traces
-- ✅ **Structured help system** for documentation
-- ✅ **Module organization** with explicit dependencies
-- ⚠️ **Too much boilerplate** (registration, help metadata)
-- ⚠️ **Over-engineered** module system (define, load, prepare)
-- ❌ **Still location-dependent** (same problem as forge)
+### Features
+See **[features/](features/)** for feature documentation:
 
-### Language Evaluation
-- ✅ **Bash is right choice** for command execution use case
-- ✅ **Zero dependencies** and instant startup crucial
-- ✅ **User extensibility** (source files) requires shell language
-- ⚠️ **Bash 4+ requirement** acceptable (handle via auto-upgrade)
-- ❌ **Python/Ruby/Go** add overhead without enough benefit
+- [Auto-Discovery](features/auto-discovery.md) - How commands are discovered
+- [Module Metadata](features/module-metadata.md) - Customize with `__module__`
+- [Subcommand Groups](features/subcommand-groups.md) - Group organization
+- [Commander Integration](features/commander-integration.md) - How Commander.js works
 
-### Naming Recommendation
-- ✅ **Keep "forge"** - it's working well
-- ✅ **5 letters acceptable** for the usage frequency
-- ✅ **Strong metaphor** (building/crafting)
-- Alternative: **"kit"** if shorter is critical (3 letters)
+### Libraries
+See **[libraries/](libraries/)** for library reference:
 
-## Recommended Approach
+- [chalk](libraries/chalk.md) - Terminal colors
+- [ora](libraries/ora.md) - Spinners
+- [listr2](libraries/listr2.md) - Task lists
+- [boxen](libraries/boxen.md) - Boxes
+- [commander](libraries/commander.md) - CLI framework
+- [pino](libraries/pino.md) - Structured logging
+- [And more...](libraries/README.md)
 
-### Core Philosophy
-**"Forge with batteries included"** - Maintain simplicity while adding modern conveniences
+---
 
-### Key Improvements
-1. **CWD-aware config discovery** - Run from any project subdirectory
-2. **Shared module repository** - Install once, use everywhere
-3. **Minimal help system** - Auto-discovery + optional metadata
-4. **Shell completion** - Tab-complete commands
-5. **Better errors** - Debug mode for troubleshooting
+## Archive
 
-### What to Keep from Forge
-- ✅ Command naming pattern (`command_<name>`)
-- ✅ Configuration as code (source files)
-- ✅ State system (with better escaping)
-- ✅ Simplicity and directness
-- ✅ Pure bash approach
+Historical planning and analysis documents are in **[archive/](archive/)**.
 
-### What to Avoid from Commando
-- ❌ Explicit command registration
-- ❌ Separate help configuration
-- ❌ Complex module lifecycle
-- ❌ Verbose boilerplate
+These docs led to the decisions that built v2-prototype:
+- Language choice analysis (Bash vs Python vs TypeScript)
+- Framework comparisons (forge v1 vs commando)
+- Design explorations (hybrid approaches, shell improvements)
+- Planning docs (prototypes, evaluations)
 
-## Implementation Phases
+Useful for historical context, but decisions have been made.
 
-### Phase 1: CWD-Aware Core
-- Implement directory tree walking
-- Find `.forge/` from any subdirectory
-- Test with existing projects
-- **Success metric:** Can run from subdirs
+---
 
-### Phase 2: Module System
-- Create shared module repository (`~/.forge/lib/`)
-- Implement `load_module()` with search path
-- Move common modules to shared location
-- **Success metric:** No module duplication
+## Key Decisions Made
 
-### Phase 3: Help System
-- Auto-discover commands via function names
-- Support optional descriptions and help functions
-- Intercept `-h`/`--help` flags
-- **Success metric:** `forge help` works
+✅ **Language**: Pure TypeScript/Bun (not Bash, not hybrid)
+✅ **Runtime**: Bun (>=1.0.0) with `$` operator for shell commands
+✅ **CLI Framework**: Commander.js for parsing
+✅ **Logging**: Pino (structured JSON + pretty mode)
+✅ **UI Libraries**: chalk, ora, listr2, boxen, cli-table3
+✅ **Config**: YAML-based (.forge2/config.yml) with TypeScript modules
+✅ **Structure**: Auto-discovery via module exports + `__module__` metadata
+✅ **Directories**: XDG-compliant (~/.local/share/forge2/, etc.)
+✅ **Module Distribution**: Git URLs via Bun package manager
 
-### Phase 4: Shell Completion
-- Create bash/zsh completion scripts
-- Support command-specific completion
-- Add installation helpers
-- **Success metric:** Tab completion works
+---
 
-### Phase 5: Polish
-- Improve error handling
-- Fix state system escaping
-- Write documentation
-- Add tests
-- **Success metric:** Production ready
+## Philosophy & Principles
 
-## Quick Reference
+### "It's for me mostly, so I like awesome"
 
-### Current Problems
-1. Must run from project root directory
-2. Duplicate modules across projects
-3. No way to discover available commands
-4. No shell completion support
-5. Updating modules is manual and error-prone
+Forge v2 prioritizes delightful UX:
+- Beautiful terminal output (colors, spinners, boxes)
+- Clear, actionable error messages
+- Structured logging for audit trails
+- Modern conventions (XDG paths)
+- Type safety without boilerplate
+- Fast startup (~60ms)
 
-### Solutions
-1. CWD-aware config discovery (walk up tree)
-2. Shared module repository (`~/.forge/lib/`)
-3. Auto-discovery + help system
-4. Completion scripts for bash/zsh
-5. Git-based updates (`cd ~/.forge && git pull`)
+### Design Principles
 
-### Installation Model
-```bash
-# Current (per-project)
-cp forge ~/project/
-cp .forge/aws.bash ~/project/.forge/
-cp .forge/terraform.bash ~/project/.forge/
+1. **Simple commands stay simple** - One-liner commands work with minimal boilerplate
+2. **Powerful when needed** - Full Commander/TypeScript power available
+3. **Auto-discovery** - Export a command, it's available
+4. **Type-safe** - TypeScript catches errors at dev time
+5. **Delightful UX** - Not just functional, but enjoyable to use
 
-# Proposed (global)
-git clone https://github.com/user/forge ~/.forge
-export PATH="$HOME/.forge/bin:$PATH"
-# Modules shared across all projects
+---
+
+## Project Structure
+
 ```
+docs/
+├── README.md                      # This file
+├── command-patterns.md            # User guide: writing commands
+├── whats-working-now.md           # Status and features
+├── xdg-paths.md                   # Directory structure
+├── dependencies.md                # Security policy
+├── output-helpers.md              # Library comparison
+├── package-management.md          # Bun PM
+├── module-sharing-private.md      # Git modules
+├── libraries/                     # Library reference
+│   ├── README.md
+│   ├── chalk.md
+│   ├── ora.md
+│   ├── listr2.md
+│   ├── boxen.md
+│   ├── commander.md
+│   ├── pino.md
+│   └── ...
+└── archive/                       # Historical docs
+    ├── language-evaluation.md
+    ├── recommendations.md
+    ├── questions-for-jason.md
+    └── ...
+```
+
+---
 
 ## Next Steps
 
-1. **Review recommendations** - Read [recommendations.md](recommendations.md)
-2. **Answer questions** - Fill out [questions-for-jason.md](questions-for-jason.md)
-3. **Create prototype** - Implement Phase 1 (CWD-aware core)
-4. **Test with real projects** - Use cirqil/admin and cirqil/website
-5. **Iterate** - Refine based on real usage
+See **[whats-working-now.md](whats-working-now.md)** for current status and roadmap.
 
-## Questions?
+**TODO**:
+1. Module commands (`forge2 module add/list/update`)
+2. Example module repository
+3. Real-world testing on cirqil.com
+4. Shell completion (omelette integration)
+5. Helper utilities (if needed)
 
-See [questions-for-jason.md](questions-for-jason.md) for the comprehensive list of decisions to be made.
+---
 
-Key decisions needed:
-- **Q2:** Backward compatibility strategy
-- **Q3:** Config discovery approach
-- **Q5:** Module repository structure
-- **Q10:** Help system verbosity
-- **Q26:** Timeline and approach (prototype vs full redesign)
+## Contributing
 
-## Contributing to Analysis
+Found an issue or want to improve docs?
 
-If you discover issues or have insights:
+1. Update the relevant documentation file
+2. Keep it concise and practical
+3. Add examples when possible
+4. Follow the existing style
 
-1. Add notes to relevant analysis document
-2. Update [questions-for-jason.md](questions-for-jason.md) with new questions
-3. Update [recommendations.md](recommendations.md) with new insights
+---
 
-## Document Status
-
-- ✅ **commando-analysis.md** - Complete feature analysis
-- ✅ **forge-analysis.md** - Complete feature analysis
-- ✅ **language-evaluation.md** - Complete comparison
-- ✅ **help-and-completion.md** - Complete implementation guide
-- ✅ **archive/naming.md** - Complete naming analysis
-- ✅ **questions-for-jason.md** - Ready for answers
-- ✅ **recommendations.md** - Complete roadmap
-- ✅ **framework-comparison.md** - From previous session
-
-All analysis complete. Ready for decision-making and implementation.
+**Last Updated**: 2025-10-30
