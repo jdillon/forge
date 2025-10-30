@@ -4,7 +4,7 @@ This file provides guidance to Claude Code when working with this repository.
 
 ---
 
-## **⚠️ Working Agreement ⚠️**
+## **🔥 Working Agreement 🚀**
 
 **Copy this section to other projects - these are Jason's preferences.**
 
