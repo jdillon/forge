@@ -4,24 +4,67 @@ This file provides guidance to Claude Code when working with this repository.
 
 ---
 
-## Working with Jason
+## **⚠️ Working Agreement ⚠️**
 
-**Communication Style**:
-- Direct and technical - no excessive praise or superlatives
-- Present trade-offs, not just benefits
-- Jason decides - present options clearly
+**Copy this section to other projects - these are Jason's preferences.**
 
-**Workflow**:
-- **No auto-commit**: STOP after work, show changes, WAIT for "commit" command
-- **Proposals in tmp/**: For significant changes or reorganizations, create a proposal document in `tmp/` (e.g., `tmp/docs-reorganization-proposal.md`). Let Jason review before executing.
-- Use `tmp/` for temp files (project root only, never in subdirs)
-- Follow [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
+### Communication
+- **Direct and technical** - No excessive praise or superlatives
+- **Present trade-offs** - Not just benefits, show costs too
+- **Jason decides** - Present options clearly, let him choose
+- **Call me Jason** - Not "you" or formal
 
-**Why Proposals Work**:
-- Jason can review and adjust before changes are made
-- Clear documentation of what will change and why
-- Easy to discuss trade-offs
-- Can be referenced later to understand decisions
+### Workflow: No Auto-Commit
+- **STOP after work** - Give terse summary of changes
+- **WAIT for "commit"** - Jason will run `git status`/`git diff` if he wants details
+- **Why**: Helps him understand what changed and learn from your work
+
+### Workflow: Proposals in tmp/
+- **For significant changes**: Create proposal doc in `tmp/` (e.g., `tmp/refactor-proposal.md`)
+- **Let Jason review first** - He can adjust before execution
+- **Why it works**:
+  - Clear documentation of what will change and why
+  - Easy to discuss trade-offs
+  - Can be referenced later to understand decisions
+- **When to use**: Reorganizations, refactors, architectural changes, deleting things
+- **Format**: Markdown with problem, solution, trade-offs, questions
+
+### Workflow: Temp Files
+- **Use `tmp/`** - Project root only, never in subdirs
+- **Purpose**: Proposals, analysis, scratch work
+- **Cleanup**: Jason decides when to delete
+
+### Documentation Principles
+**Before writing documentation, always check for duplication - it becomes stale**:
+
+**Ask these questions first**:
+1. Does this duplicate info elsewhere? → Don't write it, reference the other location
+2. Will this need updating when code changes? → Don't write it, reference working examples
+3. Is this better as working code in `examples/`? → Write code, not docs
+4. Does this belong in feature docs or library docs? → Put it there, not here
+
+**What to write**:
+- ✅ HOW it works (concepts, architecture) - stays stable
+- ✅ WHERE to find things (references to examples/) - stays current
+- ✅ WHY decisions were made (in docs/archive/) - stays relevant
+
+**What NOT to write**:
+- ❌ Code examples (copy working examples/ instead - tested code stays current)
+- ❌ Current status (put in README.md at high level only)
+- ❌ What changed (use CHANGELOG.md)
+- ❌ Duplicate feature lists (one place only)
+
+**Single source of truth**:
+- Features list → README.md
+- Working examples → examples/ (tested!)
+- How features work → docs/features/
+- Library APIs → docs/libraries/
+- History → CHANGELOG.md
+
+### Changelog & Versioning
+- Follow [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
+- Follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
+- Update `[Unreleased]` section as you work
 
 ---
 
@@ -106,34 +149,6 @@ export const myCommand: ForgeCommand = {
 - Project: `.forge2/state.json` (gitignored)
 - User: `~/.config/forge2/state.json`
 - API: `context.state.get(key)` / `context.state.set(key, value)`
-
----
-
-## Documentation Principles
-
-**Avoid duplication - it becomes stale**:
-- Each concept documented in ONE place (single source of truth)
-- Don't copy code examples into docs - reference working examples instead
-- Status/roadmap: Keep minimal and high-level in README.md
-- History: Use CHANGELOG.md, not "what changed" docs
-- Feature docs: How it works, not current status
-- Examples: `examples/` are tested and stay current - prefer pointing to them
-
-**Before creating docs, ask**:
-- Does this duplicate info elsewhere?
-- Will this need updating when code changes?
-- Is this better as a working example in `examples/`?
-- Could this go in feature docs or library docs instead?
-
-**Good docs**:
-- Reference implementation, don't duplicate it
-- Stay relevant even as code evolves
-- Clear single purpose
-
-**Bad docs**:
-- Duplicate code examples that drift from implementation
-- Status that needs constant updating
-- Multiple places saying the same thing
 
 ---
 
