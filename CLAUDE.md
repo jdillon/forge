@@ -109,6 +109,34 @@ export const myCommand: ForgeCommand = {
 
 ---
 
+## Documentation Principles
+
+**Avoid duplication - it becomes stale**:
+- Each concept documented in ONE place (single source of truth)
+- Don't copy code examples into docs - reference working examples instead
+- Status/roadmap: Keep minimal and high-level in README.md
+- History: Use CHANGELOG.md, not "what changed" docs
+- Feature docs: How it works, not current status
+- Examples: `examples/` are tested and stay current - prefer pointing to them
+
+**Before creating docs, ask**:
+- Does this duplicate info elsewhere?
+- Will this need updating when code changes?
+- Is this better as a working example in `examples/`?
+- Could this go in feature docs or library docs instead?
+
+**Good docs**:
+- Reference implementation, don't duplicate it
+- Stay relevant even as code evolves
+- Clear single purpose
+
+**Bad docs**:
+- Duplicate code examples that drift from implementation
+- Status that needs constant updating
+- Multiple places saying the same thing
+
+---
+
 ## When You Need Details
 
 - **Architecture deep dive**: See `lib/core.ts` source code
