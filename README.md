@@ -144,15 +144,15 @@ if (dryRun) {
 ## Documentation
 
 ### Analysis & Design
-- **[Session Summary](docs/SESSION_SUMMARY.md)** - Context reset guide
-- **[v2 Prototype Plan](docs/V2_PROTOTYPE_PLAN.md)** - Design decisions
-- **[v2 Prototype Evaluation](docs/V2_PROTOTYPE_EVALUATION.md)** - Love it or hate it?
-- **[Answers to Questions](docs/ANSWERS_TO_QUESTIONS.md)** - All decisions documented
+- **[Session Summary](docs/archive/session-summary.md)** - Context reset guide
+- **[v2 Prototype Plan](docs/v2-prototype-plan.md)** - Design decisions
+- **[v2 Prototype Evaluation](docs/v2-prototype-evaluation.md)** - Love it or hate it?
+- **[Answers to Questions](docs/answers-to-questions.md)** - All decisions documented
 
 ### Deep Dives
-- **[Output Pattern](docs/OUTPUT_PATTERN.md)** - The Bash stdout/stderr problem
-- **[Language Comparison](docs/LANGUAGE_SYNTAX_COMPARISON.md)** - Bash vs Python vs Bun vs Ruby
-- **[Shell Improvements](docs/SHELL_IMPROVEMENTS_AND_HYBRID.md)** - Bash 5 features & hybrid approach
+- **[Output Pattern](docs/archive/output-pattern.md)** - The Bash stdout/stderr problem
+- **[Language Comparison](docs/language-syntax-comparison.md)** - Bash vs Python vs Bun vs Ruby
+- **[Shell Improvements](docs/shell-improvements-and-hybrid.md)** - Bash 5 features & hybrid approach
 
 ## Installation Strategy
 
@@ -247,7 +247,7 @@ If Bun doesn't feel right, we have documented alternatives:
 2. **Bash + Bun Hybrid** - Framework in Bash, helpers in Bun
 3. **Pure Bun** - Current prototype (recommended)
 
-See `docs/ANSWERS_TO_QUESTIONS.md` for detailed comparison.
+See `docs/answers-to-questions.md` for detailed comparison.
 
 ## References
 

@@ -179,30 +179,30 @@ project/forge/
 ### Must Read (In Order)
 
 1. **`SESSION_HANDOFF.md`** - Previous session context, initial analysis
-2. **`ANSWERS_TO_QUESTIONS.md`** - Comprehensive answers to all your questions today
-3. **`LANGUAGE_SYNTAX_COMPARISON.md`** - Side-by-side comparison of Bash/Python/Bun/Ruby with real examples
-4. **`DESIGN_PLAN_BASED_ON_ANSWERS.md`** - Implementation plan based on your preferences
+2. **`answers-to-questions.md`** - Comprehensive answers to all your questions today
+3. **`language-syntax-comparison.md`** - Side-by-side comparison of Bash/Python/Bun/Ruby with real examples
+4. **`design-plan-based-on-answers.md`** - Implementation plan based on your preferences
 
 ### Important Deep Dives
 
-5. **`OUTPUT_PATTERN.md`** - The stdout/stderr problem explained
-6. **`REPLY_VS_NAMEREF_EXPLAINED.md`** - How Zsh/Bash 5 solve OUTPUT_PATTERN
-7. **`SHELL_IMPROVEMENTS_AND_HYBRID.md`** - Bash 5 features, helper library concept, hybrid architecture
-8. **`RETHINKING_LANGUAGE_CHOICE.md`** - Why OUTPUT_PATTERN changes the recommendation
+5. **`archive/output-pattern.md`** - The stdout/stderr problem explained
+6. **`archive/reply-vs-nameref-explained.md`** - How Zsh/Bash 5 solve OUTPUT_PATTERN
+7. **`shell-improvements-and-hybrid.md`** - Bash 5 features, helper library concept, hybrid architecture
+8. **`rethinking-language-choice.md`** - Why OUTPUT_PATTERN changes the recommendation
 
 ### Background Context
 
-9. **`COMMANDO_ANALYSIS.md`** - Feature-by-feature analysis of commando
-10. **`FORGE_ANALYSIS.md`** - Feature-by-feature analysis of forge
-11. **`LANGUAGE_EVALUATION.md`** - Original language comparison (pre-Bun discovery)
-12. **`FRAMEWORK_COMPARISON.md`** - From previous session handoff
+9. **`commando-analysis.md`** - Feature-by-feature analysis of commando
+10. **`forge-analysis.md`** - Feature-by-feature analysis of forge
+11. **`language-evaluation.md`** - Original language comparison (pre-Bun discovery)
+12. **`framework-comparison.md`** - From previous session handoff
 
 ### Supporting Docs
 
-13. **`HELP_AND_COMPLETION.md`** - Help system and completion strategies
-14. **`NAMING.md`** - Naming brainstorm (conclusion: keep "forge")
-15. **`RECOMMENDATIONS.md`** - Original comprehensive recommendations
-16. **`QUESTIONS_FOR_JASON.md`** - All questions with your answers (prefixed with ">")
+13. **`help-and-completion.md`** - Help system and completion strategies
+14. **`archive/naming.md`** - Naming brainstorm (conclusion: keep "forge")
+15. **`recommendations.md`** - Original comprehensive recommendations
+16. **`questions-for-jason.md`** - All questions with your answers (prefixed with ">")
 
 ---
 

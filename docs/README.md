@@ -6,9 +6,9 @@ This directory contains comprehensive analysis and recommendations for redesigni
 
 **New to this project?** Start here:
 
-1. Read **[RECOMMENDATIONS.md](RECOMMENDATIONS.md)** - Executive summary and roadmap
-2. Review **[QUESTIONS_FOR_JASON.md](QUESTIONS_FOR_JASON.md)** - Key decisions needed
-3. Check **[FRAMEWORK_COMPARISON.md](FRAMEWORK_COMPARISON.md)** - Context from previous session
+1. Read **[recommendations.md](recommendations.md)** - Executive summary and roadmap
+2. Review **[questions-for-jason.md](questions-for-jason.md)** - Key decisions needed
+3. Check **[framework-comparison.md](framework-comparison.md)** - Context from previous session
 
 ## Document Guide
 
@@ -16,19 +16,19 @@ This directory contains comprehensive analysis and recommendations for redesigni
 
 | Document | Purpose | Read If... |
 |----------|---------|-----------|
-| **[RECOMMENDATIONS.md](RECOMMENDATIONS.md)** | Comprehensive recommendations and implementation roadmap | You want the full picture and action plan |
-| **[QUESTIONS_FOR_JASON.md](QUESTIONS_FOR_JASON.md)** | Key decisions and design choices | You need to make decisions about the framework |
-| **[FRAMEWORK_COMPARISON.md](FRAMEWORK_COMPARISON.md)** | Detailed comparison of forge vs commando | You want to understand the existing implementations |
+| **[recommendations.md](recommendations.md)** | Comprehensive recommendations and implementation roadmap | You want the full picture and action plan |
+| **[questions-for-jason.md](questions-for-jason.md)** | Key decisions and design choices | You need to make decisions about the framework |
+| **[framework-comparison.md](framework-comparison.md)** | Detailed comparison of forge vs commando | You want to understand the existing implementations |
 
 ### Deep Dives
 
 | Document | Purpose | Read If... |
 |----------|---------|-----------|
-| **[COMMANDO_ANALYSIS.md](COMMANDO_ANALYSIS.md)** | Feature-by-feature analysis of commando | You want to understand commando's design in depth |
-| **[FORGE_ANALYSIS.md](FORGE_ANALYSIS.md)** | Feature-by-feature analysis of forge | You want to understand forge's design in depth |
-| **[LANGUAGE_EVALUATION.md](LANGUAGE_EVALUATION.md)** | Bash vs Python/Ruby/Go/Node comparison | You're questioning the language choice |
-| **[HELP_AND_COMPLETION.md](HELP_AND_COMPLETION.md)** | Help systems and shell completion strategies | You're implementing help or completion features |
-| **[NAMING.md](NAMING.md)** | Name brainstorming and analysis | You're considering renaming the framework |
+| **[commando-analysis.md](commando-analysis.md)** | Feature-by-feature analysis of commando | You want to understand commando's design in depth |
+| **[forge-analysis.md](forge-analysis.md)** | Feature-by-feature analysis of forge | You want to understand forge's design in depth |
+| **[language-evaluation.md](language-evaluation.md)** | Bash vs Python/Ruby/Go/Node comparison | You're questioning the language choice |
+| **[help-and-completion.md](help-and-completion.md)** | Help systems and shell completion strategies | You're implementing help or completion features |
+| **[archive/naming.md](archive/naming.md)** | Name brainstorming and analysis | You're considering renaming the framework |
 
 ## Key Insights
 
@@ -150,15 +150,15 @@ export PATH="$HOME/.forge/bin:$PATH"
 
 ## Next Steps
 
-1. **Review recommendations** - Read [RECOMMENDATIONS.md](RECOMMENDATIONS.md)
-2. **Answer questions** - Fill out [QUESTIONS_FOR_JASON.md](QUESTIONS_FOR_JASON.md)
+1. **Review recommendations** - Read [recommendations.md](recommendations.md)
+2. **Answer questions** - Fill out [questions-for-jason.md](questions-for-jason.md)
 3. **Create prototype** - Implement Phase 1 (CWD-aware core)
 4. **Test with real projects** - Use cirqil/admin and cirqil/website
 5. **Iterate** - Refine based on real usage
 
 ## Questions?
 
-See [QUESTIONS_FOR_JASON.md](QUESTIONS_FOR_JASON.md) for the comprehensive list of decisions to be made.
+See [questions-for-jason.md](questions-for-jason.md) for the comprehensive list of decisions to be made.
 
 Key decisions needed:
 - **Q2:** Backward compatibility strategy
@@ -172,18 +172,18 @@ Key decisions needed:
 If you discover issues or have insights:
 
 1. Add notes to relevant analysis document
-2. Update [QUESTIONS_FOR_JASON.md](QUESTIONS_FOR_JASON.md) with new questions
-3. Update [RECOMMENDATIONS.md](RECOMMENDATIONS.md) with new insights
+2. Update [questions-for-jason.md](questions-for-jason.md) with new questions
+3. Update [recommendations.md](recommendations.md) with new insights
 
 ## Document Status
 
-- ✅ **COMMANDO_ANALYSIS.md** - Complete feature analysis
-- ✅ **FORGE_ANALYSIS.md** - Complete feature analysis
-- ✅ **LANGUAGE_EVALUATION.md** - Complete comparison
-- ✅ **HELP_AND_COMPLETION.md** - Complete implementation guide
-- ✅ **NAMING.md** - Complete naming analysis
-- ✅ **QUESTIONS_FOR_JASON.md** - Ready for answers
-- ✅ **RECOMMENDATIONS.md** - Complete roadmap
-- ✅ **FRAMEWORK_COMPARISON.md** - From previous session
+- ✅ **commando-analysis.md** - Complete feature analysis
+- ✅ **forge-analysis.md** - Complete feature analysis
+- ✅ **language-evaluation.md** - Complete comparison
+- ✅ **help-and-completion.md** - Complete implementation guide
+- ✅ **archive/naming.md** - Complete naming analysis
+- ✅ **questions-for-jason.md** - Ready for answers
+- ✅ **recommendations.md** - Complete roadmap
+- ✅ **framework-comparison.md** - From previous session
 
 All analysis complete. Ready for decision-making and implementation.

@@ -8,7 +8,7 @@
 
 ## The Core Problem
 
-The OUTPUT_PATTERN.md document exposes a **fundamental architectural compromise** forced by Bash:
+The archive/output-pattern.md document exposes a **fundamental architectural compromise** forced by Bash:
 
 ```bash
 # What we WANT to write (but can't in Bash):

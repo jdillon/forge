@@ -85,7 +85,7 @@ echo "Got: $dist_id"
 
 ---
 
-## Q3: Why wasn't Bun in LANGUAGE_EVALUATION.md?
+## Q3: Why wasn't Bun in language-evaluation.md?
 
 ### Because I didn't know about Bun's `$` operator yet!
 
