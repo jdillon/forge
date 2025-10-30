@@ -29,17 +29,15 @@ const log = createLogger('website');
 
 export const build: ForgeCommand = {
   description: 'Build website',
-  usage: 'build [options]',
 
-  execute: async (args) => {
-    const cmd = new Command();
+  defineCommand: (cmd) => {
     cmd
       .option('-c, --clean', 'Clean build directory first')
-      .option('--no-optimize', 'Skip optimization')
-      .parse(['node', 'forge2', ...args], { from: 'user' });
+      .option('--no-optimize', 'Skip optimization');
 
-    const options = cmd.opts();
+  },
 
+  execute: async (options) => {
     log.info({ options }, 'Starting build');
 
     const spinner = ora('Building website...').start();
@@ -83,17 +81,18 @@ export const build: ForgeCommand = {
 
 export const sync: ForgeCommand = {
   description: 'Sync website to S3',
-  usage: 'sync [options]',
 
-  execute: async (args) => {
-    const cmd = new Command();
+  // Define Commander options
+  defineCommand: (cmd) => {
     cmd
       .option('-d, --dry-run', 'Preview changes without uploading')
       .option('-b, --bucket <name>', 'S3 bucket name', CONFIG.s3Bucket)
-      .option('--no-delete', 'Do not delete removed files')
-      .parse(['node', 'forge2', ...args], { from: 'user' });
+      .option('--no-delete', 'Do not delete removed files');
 
-    const options = cmd.opts();
+  },
+
+  // Execute with parsed options
+  execute: async (options) => {
     const { dryRun, bucket, delete: shouldDelete } = options;
 
     log.info({ bucket, dryRun, delete: shouldDelete }, 'Starting sync');
@@ -134,16 +133,15 @@ export const sync: ForgeCommand = {
 
 export const invalidate: ForgeCommand = {
   description: 'Invalidate CloudFront cache',
-  usage: 'invalidate [options]',
 
-  execute: async (args) => {
-    const cmd = new Command();
+  defineCommand: (cmd) => {
     cmd
       .option('-p, --paths <paths>', 'Paths to invalidate', '/*')
-      .option('-d, --distribution <id>', 'Distribution ID', CONFIG.cloudfrontDistId)
-      .parse(['node', 'forge2', ...args], { from: 'user' });
+      .option('-d, --distribution <id>', 'Distribution ID', CONFIG.cloudfrontDistId);
 
-    const options = cmd.opts();
+  },
+
+  execute: async (options) => {
     const { paths, distribution } = options;
 
     log.info({ distribution, paths }, 'Starting invalidation');
@@ -181,18 +179,16 @@ export const invalidate: ForgeCommand = {
 
 export const publish: ForgeCommand = {
   description: 'Full publish (build + sync + invalidate)',
-  usage: 'publish [options]',
 
-  execute: async (args) => {
-    const cmd = new Command();
+  defineCommand: (cmd) => {
     cmd
       .option('-d, --dry-run', 'Preview without making changes')
       .option('-s, --skip-build', 'Skip build step')
-      .option('-b, --bucket <name>', 'S3 bucket', CONFIG.s3Bucket)
-      .parse(['node', 'forge2', ...args], { from: 'user' });
+      .option('-b, --bucket <name>', 'S3 bucket', CONFIG.s3Bucket);
 
-    const options = cmd.opts();
+  },
 
+  execute: async (options) => {
     log.info({ options }, 'Starting publish');
 
     console.log(chalk.bold('\n🚀 Publishing Website\n'));

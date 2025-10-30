@@ -7,6 +7,7 @@
 import { join, dirname } from 'path';
 import { existsSync } from 'fs';
 import { homedir } from 'os';
+import { Command } from 'commander';
 
 // ============================================================================
 // Types
@@ -15,7 +16,15 @@ import { homedir } from 'os';
 export interface ForgeCommand {
   description: string;
   usage?: string;
-  execute: (args: string[]) => Promise<void>;
+
+  // Optional: Let command customize Commander Command object
+  // Just mutate cmd directly, no need to return
+  defineCommand?: (cmd: Command) => void;
+
+  // Execute with parsed options from Commander
+  // options: parsed flags/options object
+  // args: positional arguments array (always present, may be empty)
+  execute: (options: any, args: string[]) => Promise<void>;
 }
 
 export interface ForgeConfig {
@@ -329,6 +338,48 @@ export class Forge {
   getContext(): ForgeContext {
     return this.context;
   }
+}
+
+// ============================================================================
+// Commander Integration
+// ============================================================================
+
+/**
+ * Build a Commander Command from a ForgeCommand definition
+ * This is the bridge between our simple config and Commander's parsing
+ */
+export function buildCommanderCommand(name: string, forgeCmd: ForgeCommand): Command {
+  // 1. Create Commander Command
+  const cmd = new Command(name);
+  cmd.description(forgeCmd.description);
+
+  if (forgeCmd.usage) {
+    cmd.usage(forgeCmd.usage);
+  }
+
+  // 2. Let command customize Commander Command (if defined)
+  if (forgeCmd.defineCommand) {
+    forgeCmd.defineCommand(cmd);
+  }
+
+  // 3. Install action handler that calls our execute function
+  cmd.action(async (...actionArgs) => {
+    // Commander passes: (arg1, arg2, ..., options, command)
+    // Last arg is Command object, second-to-last is options object
+    const command = actionArgs[actionArgs.length - 1] as Command;
+    const options = actionArgs[actionArgs.length - 2];
+    const positionalArgs = actionArgs.slice(0, -2) as string[];
+
+    try {
+      await forgeCmd.execute(options, positionalArgs);
+    } catch (err) {
+      console.error(`ERROR: Command failed: ${name}`);
+      console.error(err);
+      process.exit(1);
+    }
+  });
+
+  return cmd;
 }
 
 // ============================================================================

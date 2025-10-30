@@ -19,11 +19,12 @@ const log = createLogger('examples');
 
 // ============================================================================
 // Style 1: Simple inline object (like forge v1)
+// No options - just uses positional args
 // ============================================================================
 
 export const hello = {
   description: 'Simple hello world command',
-  execute: async (args) => {
+  execute: async (options, args) => {
     const name = args[0] || 'World';
     console.log(chalk.green(`Hello, ${name}!`));
     log.info({ name }, 'Greeted user');
@@ -31,23 +32,22 @@ export const hello = {
 };
 
 // ============================================================================
-// Style 2: Typed ForgeCommand export (recommended for complex commands)
+// Style 2: Typed ForgeCommand with options and arguments
 // ============================================================================
 
 export const deploy: ForgeCommand = {
   description: 'Deploy to environment',
-  usage: 'deploy <environment> [options]',
 
-  execute: async (args) => {
-    const cmd = new Command();
+  defineCommand: (cmd) => {
     cmd
       .argument('<environment>', 'Environment to deploy to')
       .option('-s, --skip-tests', 'Skip running tests')
-      .option('-f, --force', 'Force deploy even if checks fail')
-      .parse(['node', 'forge2', ...args], { from: 'user' });
+      .option('-f, --force', 'Force deploy even if checks fail');
 
-    const environment = cmd.args[0];
-    const options = cmd.opts();
+  },
+
+  execute: async (options, args) => {
+    const environment = args[0];
 
     log.info({ environment, options }, 'Starting deploy');
 
@@ -98,17 +98,15 @@ export const version = {
 
 export const logs: ForgeCommand = {
   description: 'Show recent logs',
-  usage: 'logs [options]',
 
-  execute: async (args) => {
-    const cmd = new Command();
+  defineCommand: (cmd) => {
     cmd
       .option('-n, --lines <number>', 'Number of lines to show', '20')
-      .option('-f, --follow', 'Follow log output')
-      .parse(['node', 'forge2', ...args], { from: 'user' });
+      .option('-f, --follow', 'Follow log output');
 
-    const options = cmd.opts();
+  },
 
+  execute: async (options) => {
     log.debug({ options }, 'Showing logs');
 
     // Example: tail logs
@@ -130,19 +128,16 @@ export const logs: ForgeCommand = {
 
 export const connect: ForgeCommand = {
   description: 'Connect to a service',
-  usage: 'connect <service> [options]',
 
-  execute: async (args) => {
+  defineCommand: (cmd) => {
+    cmd.argument('<service>', 'Service to connect to (db, redis, api)');
+
+  },
+
+  execute: async (options, args) => {
     const service = args[0];
 
     // Validation
-    if (!service) {
-      console.error(chalk.red('✗ Error: Service name required'));
-      console.log(chalk.gray('Usage: forge2 connect <service>'));
-      console.log(chalk.gray('Available services: db, redis, api'));
-      process.exit(1);
-    }
-
     const validServices = ['db', 'redis', 'api'];
     if (!validServices.includes(service)) {
       console.error(chalk.red(`✗ Error: Unknown service: ${service}`));
@@ -166,9 +161,13 @@ export const connect: ForgeCommand = {
 
 export const getConfig: ForgeCommand = {
   description: 'Get configuration value',
-  usage: 'get-config <key>',
 
-  execute: async (args) => {
+  defineCommand: (cmd) => {
+    cmd.argument('<key>', 'Configuration key to retrieve');
+
+  },
+
+  execute: async (options, args) => {
     const key = args[0];
 
     const config = {
@@ -197,17 +196,15 @@ export const getConfig: ForgeCommand = {
 
 export const cleanup: ForgeCommand = {
   description: 'Clean up old files',
-  usage: 'cleanup [options]',
 
-  execute: async (args) => {
-    const cmd = new Command();
+  defineCommand: (cmd) => {
     cmd
       .option('-f, --force', 'Skip confirmation')
-      .option('-d, --days <number>', 'Files older than N days', '30')
-      .parse(['node', 'forge2', ...args], { from: 'user' });
+      .option('-d, --days <number>', 'Files older than N days', '30');
 
-    const options = cmd.opts();
+  },
 
+  execute: async (options) => {
     log.info({ options }, 'Starting cleanup');
 
     // Confirmation (unless --force)
@@ -238,9 +235,13 @@ export const cleanup: ForgeCommand = {
 
 export const cache = {
   description: 'Cache operations',
-  usage: 'cache <action> [options]',
 
-  execute: async (args) => {
+  defineCommand: (cmd) => {
+    cmd.argument('<action>', 'Action to perform (clear, show, set, get)');
+
+  },
+
+  execute: async (options, args) => {
     const action = args[0];
     const restArgs = args.slice(1);
 
