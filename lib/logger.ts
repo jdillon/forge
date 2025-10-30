@@ -97,7 +97,8 @@ class PrettyStream extends Writable {
  */
 export function createLogger(name?: string): pino.Logger {
   const isDev = process.env.NODE_ENV !== 'production';
-  const level = process.env.LOG_LEVEL || (isDev ? 'info' : 'warn');
+  // Priority: FORGE_LOG_LEVEL (set by CLI) > LOG_LEVEL > defaults
+  const level = process.env.FORGE_LOG_LEVEL || process.env.LOG_LEVEL || (isDev ? 'info' : 'warn');
   const pretty = isDev && process.env.FORGE_PRETTY_LOGS !== '0';
 
   const logger = pino(
@@ -148,6 +149,19 @@ export async function shutdownLoggers(): Promise<void> {
     Promise.all(promises),
     new Promise(resolve => setTimeout(resolve, 50))
   ]);
+}
+
+/**
+ * Set log level for all existing loggers
+ * Called when CLI flags like --verbose or --log-level are parsed
+ */
+export function setGlobalLogLevel(level: string): void {
+  process.env.FORGE_LOG_LEVEL = level;
+
+  // Update all existing logger instances
+  for (const logger of loggers) {
+    logger.level = level;
+  }
 }
 
 /**

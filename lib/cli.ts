@@ -9,6 +9,7 @@ import chalk from 'chalk';
 import updateNotifier from 'update-notifier';
 import { Forge, discoverProject, getProjectRoot, buildCommanderCommand } from './core';
 import { die, exit } from './helpers';
+import { setGlobalLogLevel } from './logger';
 import pkg from '../package.json' assert { type: 'json' };
 
 export async function main(): Promise<void> {
@@ -26,7 +27,6 @@ export async function main(): Promise<void> {
 }
 
 async function run(): Promise<void> {
-
   const program = new Command();
 
   program
@@ -34,11 +34,38 @@ async function run(): Promise<void> {
     .description('Modern CLI framework for deployments')
     .version(pkg.version)
     .option('-r, --root <path>', 'Project root directory')
-    .option('-v, --verbose', 'Verbose output')
-    .exitOverride();  // Override exit to cleanup first
+    .option('-d, --debug', 'Debug output (sets log level to debug)')
+    .option('-q, --quiet', 'Quiet mode (sets log level to warn)')
+    .option('-s, --silent', 'Silent mode (disables all logging)')
+    .option('--log-level <level>', 'Set log level: silent, trace, debug, info, warn, error, fatal')
+    .allowUnknownOption(true)  // Allow subcommand names to pass through
+    .exitOverride();
+
+  // Parse parent-level options early (before loading modules)
+  // This is necessary because modules create loggers at import time
+  // We use parseOptions() which parses options but doesn't execute commands
+  const { operands, unknown } = program.parseOptions(process.argv.slice(2));
+  const earlyOpts = program.opts();
+
+  // Determine log level from parsed options
+  let logLevel: string | undefined;
+  if (earlyOpts.silent) {
+    logLevel = 'silent';
+  } else if (earlyOpts.quiet) {
+    logLevel = 'warn';
+  } else if (earlyOpts.debug) {
+    logLevel = 'debug';
+  } else if (earlyOpts.logLevel) {
+    logLevel = earlyOpts.logLevel;
+  }
+
+  // Set log level before loading modules
+  if (logLevel) {
+    setGlobalLogLevel(logLevel);
+  }
 
   // Find project root
-  const globalOpts = program.opts();
+  const globalOpts = earlyOpts;
   let projectRoot = globalOpts.root || getProjectRoot();
 
   if (!projectRoot) {
@@ -62,7 +89,7 @@ async function run(): Promise<void> {
   for (const [groupName, group] of Object.entries(forge.commandGroups)) {
     // Create group subcommand
     const groupCmd = new Command(groupName);
-    groupCmd.exitOverride();  // Inherit exitOverride
+    groupCmd.copyInheritedSettings(program);  // Copy inherited settings from parent
 
     // Set description if provided
     if (group.description) {
@@ -72,7 +99,7 @@ async function run(): Promise<void> {
     // Add each command to the group
     for (const [cmdName, forgeCmd] of Object.entries(group.commands)) {
       const cmd = buildCommanderCommand(cmdName, forgeCmd, groupName, forge);
-      cmd.exitOverride();  // Make subcommands throw
+      cmd.copyInheritedSettings(groupCmd);  // Copy from group command
       groupCmd.addCommand(cmd);
     }
 

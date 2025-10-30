@@ -46,6 +46,8 @@ export const greet: ForgeCommand = {
     const defaultName = context.settings.defaultName || 'World';
     const name = args[0] || defaultName;
 
+    log.debug({ defaultName, providedName: args[0] }, 'Processing greet command');
+
     const greeting = options.loud
       ? `HELLO, ${name.toUpperCase()}!`
       : `Hello, ${name}!`;
