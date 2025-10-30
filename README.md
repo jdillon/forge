@@ -232,10 +232,10 @@ bun run typecheck       # Type check
 
 - **[docs/](docs/)** - All documentation
 - **[docs/command-patterns.md](docs/command-patterns.md)** - How to write commands
-- **[docs/whats-working-now.md](docs/whats-working-now.md)** - Current status
+- **[docs/features/](docs/features/)** - Feature documentation
 - **[docs/libraries/](docs/libraries/)** - Library reference
-- **[docs/xdg-paths.md](docs/xdg-paths.md)** - Directory structure
-- **[docs/archive/](docs/archive/)** - Historical design docs
+- **[docs/reference/](docs/reference/)** - System reference (XDG, dependencies, etc.)
+- **[examples/website/](examples/website/)** - Working example (tested!)
 
 ---
 

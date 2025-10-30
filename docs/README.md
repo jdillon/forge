@@ -20,7 +20,7 @@ Since we're using Bun anyway, let's make this CLI **absolutely delightful** to u
 
 Writing commands? Start with:
 - **[command-patterns.md](command-patterns.md)** - How to write commands (examples!)
-- **[whats-working-now.md](whats-working-now.md)** - What's built and working
+- **[../examples/website/](../examples/website/)** - Working example project (tested!)
 - **[libraries/](libraries/)** - CLI library reference (chalk, ora, listr2, etc.)
 
 ### For Contributors
@@ -38,7 +38,6 @@ Understanding the architecture:
 | Document | Purpose |
 |----------|---------|
 | **[command-patterns.md](command-patterns.md)** | Quick reference for writing commands |
-| **[whats-working-now.md](whats-working-now.md)** | Feature showcase and current status |
 
 ### Directories
 | Directory | Purpose |
@@ -55,7 +54,8 @@ Understanding the architecture:
 ## What's Where
 
 ### Need to write commands?
-→ [command-patterns.md](command-patterns.md)
+→ [command-patterns.md](command-patterns.md) - Quick patterns
+→ [../examples/website/](../examples/website/) - Working example (tested!)
 
 ### Want to understand a feature?
 → [features/](features/) directory
@@ -65,6 +65,12 @@ Understanding the architecture:
 
 ### Need reference material?
 → [reference/](reference/) directory
+
+### Current status and what's next?
+→ [../README.md](../README.md) - Top-level README
+
+### What changed?
+→ [../CHANGELOG.md](../CHANGELOG.md) - Version history
 
 ### Curious about future plans?
 → [planning/](planning/) directory
