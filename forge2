@@ -57,6 +57,11 @@ async function setupCommands() {
     // Create group subcommand
     const groupCmd = new Command(groupName);
 
+    // Set description if provided
+    if (group.description) {
+      groupCmd.description(group.description);
+    }
+
     // Add each command to the group
     for (const [cmdName, forgeCmd] of Object.entries(group.commands)) {
       const cmd = buildCommanderCommand(cmdName, forgeCmd);

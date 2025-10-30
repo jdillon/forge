@@ -12,6 +12,7 @@ export default {
   modules: [
     './website',   // Named exports: build, sync, invalidate, publish, info
     './examples',  // Default export: hello, deploy, status, version, etc.
+    './simple',    // Uses __module__ to rename group to "basic"
   ],
 
   // Optional: default command when none specified

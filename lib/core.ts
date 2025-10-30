@@ -127,6 +127,14 @@ export function getForgePaths() {
 // ============================================================================
 
 /**
+ * Module metadata for customizing group behavior
+ */
+export interface ForgeModuleMetadata {
+  group?: string | false;  // Custom group name, or false for top-level
+  description?: string;     // Group description for help
+}
+
+/**
  * Check if an object looks like a ForgeCommand (duck typing)
  */
 function isForgeCommand(obj: any): obj is ForgeCommand {
@@ -149,14 +157,15 @@ function deriveGroupName(modulePath: string): string {
 
 /**
  * Auto-discover ForgeCommands from a module's exports
- * Returns: { groupName, commands }
+ * Returns: { groupName, description, commands }
  */
 export async function loadModule(
   modulePath: string,
   forgeDir: string
-): Promise<{ groupName: string; commands: Record<string, ForgeCommand> }> {
+): Promise<{ groupName: string | false; description?: string; commands: Record<string, ForgeCommand> }> {
   const commands: Record<string, ForgeCommand> = {};
-  const groupName = deriveGroupName(modulePath);
+  let groupName: string | false = deriveGroupName(modulePath);
+  let description: string | undefined;
 
   // Resolve module path (relative to .forge2/)
   const fullPath = modulePath.startsWith('.')
@@ -165,6 +174,15 @@ export async function loadModule(
 
   try {
     const module = await import(fullPath);
+
+    // Check for __module__ metadata export
+    if (module.__module__) {
+      const metadata = module.__module__ as ForgeModuleMetadata;
+      if (metadata.group !== undefined) {
+        groupName = metadata.group;
+      }
+      description = metadata.description;
+    }
 
     // First: Check default export (could be object of commands)
     if (module.default && typeof module.default === 'object') {
@@ -177,7 +195,7 @@ export async function loadModule(
 
     // Second: Check all named exports
     for (const [name, value] of Object.entries(module)) {
-      if (name === 'default') continue;  // Already handled
+      if (name === 'default' || name === '__module__') continue;  // Skip metadata
 
       if (isForgeCommand(value)) {
         // Named export becomes command name
@@ -185,7 +203,7 @@ export async function loadModule(
       }
     }
 
-    return { groupName, commands };
+    return { groupName, description, commands };
   } catch (err) {
     console.error(`ERROR: Failed to load module ${modulePath}:`, err);
     process.exit(1);
@@ -268,6 +286,7 @@ export class Forge {
 
   // Command groups (subcommands)
   public commandGroups: Record<string, {
+    description?: string;
     commands: Record<string, ForgeCommand>;
   }> = {};
 
@@ -299,15 +318,23 @@ export class Forge {
       // Auto-discover commands from modules
       if (this.config?.modules) {
         for (const modulePath of this.config.modules) {
-          const { groupName, commands } = await loadModule(modulePath, this.context.forgeDir);
+          const { groupName, description, commands } = await loadModule(modulePath, this.context.forgeDir);
 
-          // Store commands under group
-          if (!this.commandGroups[groupName]) {
-            this.commandGroups[groupName] = { commands: {} };
+          if (groupName !== false) {
+            // Store commands under group
+            if (!this.commandGroups[groupName]) {
+              this.commandGroups[groupName] = { commands: {} };
+            }
+
+            // Set description if provided
+            if (description) {
+              this.commandGroups[groupName].description = description;
+            }
+
+            // Merge discovered commands (last wins)
+            Object.assign(this.commandGroups[groupName].commands, commands);
           }
-
-          // Merge discovered commands (last wins)
-          Object.assign(this.commandGroups[groupName].commands, commands);
+          // else: groupName === false means top-level, skip for now
         }
       }
     } catch (err) {
