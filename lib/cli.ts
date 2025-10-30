@@ -7,10 +7,59 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import updateNotifier from 'update-notifier';
-import { Forge, discoverProject, getProjectRoot, buildCommanderCommand } from './core';
+import { join, dirname } from 'path';
+import { existsSync } from 'fs';
+import { Forge } from './core';
 import { die, exit } from './helpers';
-import { configureLogger, setGlobalLogLevel } from './logger';
+import { configureLogger } from './logger';
 import pkg from '../package.json' assert { type: 'json' };
+
+// ============================================================================
+// Project Discovery (CLI Bootstrapping)
+// ============================================================================
+
+/**
+ * Walk up directory tree to find .forge2/ directory
+ * Similar to how git finds .git/
+ */
+async function discoverProject(startDir?: string): Promise<string | null> {
+  let dir = startDir || process.cwd();
+
+  // Walk up to root
+  while (dir !== '/' && dir !== '.') {
+    const forgeDir = join(dir, '.forge2');
+
+    if (existsSync(forgeDir)) {
+      return dir;
+    }
+
+    const parent = dirname(dir);
+    if (parent === dir) break; // Reached root
+    dir = parent;
+  }
+
+  return null;
+}
+
+/**
+ * Check for FORGE_PROJECT env var override
+ */
+function getProjectRoot(): string | null {
+  // Env var override
+  if (process.env.FORGE_PROJECT) {
+    const envPath = process.env.FORGE_PROJECT;
+    if (existsSync(join(envPath, '.forge2'))) {
+      return envPath;
+    }
+    die(`FORGE_PROJECT=${envPath} but .forge2/ not found`);
+  }
+
+  return null;
+}
+
+// ============================================================================
+// Main Entry Point
+// ============================================================================
 
 export async function main(): Promise<void> {
   // Check for updates (once per day)
@@ -86,30 +135,9 @@ async function run(): Promise<void> {
     );
   }
 
-  // Load project config and auto-discover commands
+  // Create Forge instance and let it register commands with Commander
   const forge = new Forge(projectRoot, globalOpts);
-  await forge.loadConfig();
-
-  // Register command groups as subcommands
-  for (const [groupName, group] of Object.entries(forge.commandGroups)) {
-    // Create group subcommand
-    const groupCmd = new Command(groupName);
-    groupCmd.copyInheritedSettings(program);  // Copy inherited settings from parent
-
-    // Set description if provided
-    if (group.description) {
-      groupCmd.description(group.description);
-    }
-
-    // Add each command to the group
-    for (const [cmdName, forgeCmd] of Object.entries(group.commands)) {
-      const cmd = buildCommanderCommand(cmdName, forgeCmd, groupName, forge);
-      cmd.copyInheritedSettings(groupCmd);  // Copy from group command
-      groupCmd.addCommand(cmd);
-    }
-
-    program.addCommand(groupCmd);
-  }
+  await forge.registerCommands(program);
 
   // Parse args - will throw on errors
   try {

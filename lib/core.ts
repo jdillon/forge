@@ -19,49 +19,6 @@ import type {
 } from './types';
 
 // ============================================================================
-// Project Discovery
-// ============================================================================
-
-/**
- * Walk up directory tree to find .forge2/ directory
- * Similar to how git finds .git/
- */
-export async function discoverProject(startDir?: string): Promise<string | null> {
-  let dir = startDir || process.cwd();
-
-  // Walk up to root
-  while (dir !== '/' && dir !== '.') {
-    const forgeDir = join(dir, '.forge2');
-
-    if (existsSync(forgeDir)) {
-      return dir;
-    }
-
-    const parent = dirname(dir);
-    if (parent === dir) break; // Reached root
-    dir = parent;
-  }
-
-  return null;
-}
-
-/**
- * Check for FORGE_PROJECT env var override
- */
-export function getProjectRoot(): string | null {
-  // Env var override
-  if (process.env.FORGE_PROJECT) {
-    const envPath = process.env.FORGE_PROJECT;
-    if (existsSync(join(envPath, '.forge2'))) {
-      return envPath;
-    }
-    die(`FORGE_PROJECT=${envPath} but .forge2/ not found`);
-  }
-
-  return null;
-}
-
-// ============================================================================
 // Module Loading & Command Discovery
 // ============================================================================
 
@@ -259,78 +216,98 @@ export class Forge {
   getContext(): ForgeContext {
     return this.context;
   }
-}
 
-// ============================================================================
-// Commander Integration
-// ============================================================================
-
-/**
- * Build a Commander Command from a ForgeCommand definition
- * This is the bridge between our simple config and Commander's parsing
- */
-export function buildCommanderCommand(
-  name: string,
-  forgeCmd: ForgeCommand,
-  groupName?: string,
-  forge?: Forge
-): Command {
-  // 1. Create Commander Command
-  const cmd = new Command(name);
-  cmd.description(forgeCmd.description);
-
-  if (forgeCmd.usage) {
-    cmd.usage(forgeCmd.usage);
-  }
-
-  // 2. Let command customize Commander Command (if defined)
-  if (forgeCmd.defineCommand) {
-    forgeCmd.defineCommand(cmd);
-  } else {
-    // If no defineCommand, allow unknown arguments/options
-    cmd.allowUnknownOption(true);
-    cmd.allowExcessArguments(true);
-  }
-
-  // 3. Install action handler that calls our execute function
-  cmd.action(async (...actionArgs) => {
-    // Commander passes: (arg1, arg2, ..., options, command)
-    // Last arg is Command object
-    const command = actionArgs[actionArgs.length - 1] as Command;
-    const options = actionArgs[actionArgs.length - 2];
-
-    // Get positional args from command.args (for commands without defineCommand)
-    // or from the action args (for commands with defineCommand)
-    const positionalArgs = command.args.length > 0
-      ? command.args
-      : actionArgs.slice(0, -2) as string[];
-
-    // Build ForgeContext for command
-    const context: ForgeContext = forge
-      ? {
-          forge,
-          config: forge.config!,
-          settings: (groupName && forge.config?.settings)
-            ? (forge.config.settings[`${groupName}.${name}`] || {})
-            : {},
-          state: forge.state,
-          groupName,
-          commandName: name,
-        }
-      : {
-          forge: {} as any, // Fallback if no forge instance
-          config: {} as any,
-          settings: {},
-          state: {} as any,
-          commandName: name,
-        };
-
-    try {
-      await forgeCmd.execute(options, positionalArgs, context);
-    } catch (err) {
-      die(`Command failed: ${name}\n${err}`);
+  /**
+   * Register all discovered commands with Commander program
+   * This is the bridge between Forge and Commander
+   */
+  async registerCommands(program: Command): Promise<void> {
+    // Ensure config is loaded
+    if (!this.config) {
+      await this.loadConfig();
     }
-  });
 
-  return cmd;
+    // Register command groups as subcommands
+    for (const [groupName, group] of Object.entries(this.commandGroups)) {
+      // Create group subcommand
+      const groupCmd = new Command(groupName);
+      groupCmd.copyInheritedSettings(program);  // Copy inherited settings from parent
+
+      // Set description if provided
+      if (group.description) {
+        groupCmd.description(group.description);
+      }
+
+      // Add each command to the group
+      for (const [cmdName, forgeCmd] of Object.entries(group.commands)) {
+        const cmd = this.buildCommanderCommand(cmdName, forgeCmd, groupName);
+        cmd.copyInheritedSettings(groupCmd);  // Copy from group command
+        groupCmd.addCommand(cmd);
+      }
+
+      program.addCommand(groupCmd);
+    }
+  }
+
+  /**
+   * Build a Commander Command from a ForgeCommand definition
+   * Internal method - bridges Forge commands to Commander
+   */
+  private buildCommanderCommand(
+    name: string,
+    forgeCmd: ForgeCommand,
+    groupName?: string
+  ): Command {
+    // 1. Create Commander Command
+    const cmd = new Command(name);
+    cmd.description(forgeCmd.description);
+
+    if (forgeCmd.usage) {
+      cmd.usage(forgeCmd.usage);
+    }
+
+    // 2. Let command customize Commander Command (if defined)
+    if (forgeCmd.defineCommand) {
+      forgeCmd.defineCommand(cmd);
+    } else {
+      // If no defineCommand, allow unknown arguments/options
+      cmd.allowUnknownOption(true);
+      cmd.allowExcessArguments(true);
+    }
+
+    // 3. Install action handler that calls our execute function
+    cmd.action(async (...actionArgs) => {
+      // Commander passes: (arg1, arg2, ..., options, command)
+      // Last arg is Command object
+      const command = actionArgs[actionArgs.length - 1] as Command;
+      const options = actionArgs[actionArgs.length - 2];
+
+      // Get positional args from command.args (for commands without defineCommand)
+      // or from the action args (for commands with defineCommand)
+      const positionalArgs = command.args.length > 0
+        ? command.args
+        : actionArgs.slice(0, -2) as string[];
+
+      // Build ForgeContext for command
+      const context: ForgeContext = {
+        forge: this,
+        config: this.config!,
+        settings: (groupName && this.config?.settings)
+          ? (this.config.settings[`${groupName}.${name}`] || {})
+          : {},
+        state: this.state,
+        groupName,
+        commandName: name,
+      };
+
+      try {
+        await forgeCmd.execute(options, positionalArgs, context);
+      } catch (err) {
+        die(`Command failed: ${name}\n${err}`);
+      }
+    });
+
+    return cmd;
+  }
 }
+
