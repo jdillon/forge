@@ -6,10 +6,10 @@
 
 import { join, dirname } from 'path';
 import { existsSync } from 'fs';
-import { homedir } from 'os';
 import { Command } from 'commander';
 import { StateManager } from './state';
 import { die, exit } from './helpers';
+import { getForgePaths } from './xdg';
 import type {
   ForgeCommand,
   ForgeConfig,
@@ -59,40 +59,6 @@ export function getProjectRoot(): string | null {
   }
 
   return null;
-}
-
-// ============================================================================
-// XDG Base Directory Paths
-// ============================================================================
-
-function getXDGDataHome(): string {
-  return process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share');
-}
-
-function getXDGConfigHome(): string {
-  return process.env.XDG_CONFIG_HOME || join(homedir(), '.config');
-}
-
-function getXDGCacheHome(): string {
-  return process.env.XDG_CACHE_HOME || join(homedir(), '.cache');
-}
-
-function getXDGStateHome(): string {
-  return process.env.XDG_STATE_HOME || join(homedir(), '.local', 'state');
-}
-
-/**
- * Get forge2 installation paths (XDG-compliant)
- */
-export function getForgePaths() {
-  return {
-    data: join(getXDGDataHome(), 'forge2'),
-    config: join(getXDGConfigHome(), 'forge2'),
-    cache: join(getXDGCacheHome(), 'forge2'),
-    state: join(getXDGStateHome(), 'forge2'),
-    modules: join(getXDGDataHome(), 'forge2', 'modules'),
-    runtime: join(getXDGDataHome(), 'forge2', 'runtime'),
-  };
 }
 
 // ============================================================================

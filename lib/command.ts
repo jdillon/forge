@@ -29,7 +29,7 @@ export type {
 
 export { createLogger } from './logger';
 export { confirm, die, exit } from './helpers';
-export { getForgePaths } from './core';
+export { getForgePaths } from './xdg';
 
 // ============================================================================
 // Bun utilities
