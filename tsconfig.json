@@ -16,7 +16,7 @@
   },
   "include": [
     "lib/**/*",
-    "forge2",
+    "bin/**/*",
     "examples/**/*"
   ]
 }

@@ -2,44 +2,16 @@
 
 ## High Priority
 
-### Fix Pretty Logging
+### ✅ Fix Pretty Logging - COMPLETE
 **Problem:** Disabled pino-pretty because worker threads delay exit by ~1 second
 
-**Options to investigate:**
-1. **pino/file** - Write to stdout synchronously without workers
-   ```typescript
-   import pino from 'pino';
-   const logger = pino(pino.destination({ sync: true }));
-   ```
+**Solution:** Custom synchronous PrettyStream that formats logs with chalk
+- No worker threads - formats JSON directly in main thread
+- Fast exit: ~0.08s (vs ~1.1s with pino-pretty)
+- Colorized output: time, level, logger name, message, extras
+- Can disable with `FORGE_PRETTY_LOGS=0` env var
 
-2. **Custom formatter** - Use Pino's formatters without transport
-   ```typescript
-   const logger = pino({
-     formatters: {
-       level: (label) => ({ level: label }),
-       log: (object) => object
-     },
-     // Custom sync prettifier
-   });
-   ```
-
-3. **Alternative pretty printers:**
-   - `pino-colada` - Simpler, might not use workers
-   - `pino-tiny` - Minimal pretty printer
-   - Custom chalk-based formatter
-
-4. **Proper worker cleanup:**
-   - Research pino-pretty worker API
-   - Implement graceful shutdown hooks
-   - Use `process.on('beforeExit')` or similar
-
-5. **Conditional pretty:**
-   - Only enable for long-running commands
-   - Disable for quick commands (--help, errors)
-   - ENV var to toggle: `FORGE_PRETTY_LOGS=1`
-
-**Current workaround:** JSON logs (fast exit)
-**Desired:** Colored pretty logs with fast exit (<0.1s)
+**Note:** Avoid using `name` field in log data - it conflicts with Pino's internal logger name field. Use descriptive field names like `userName`, `fileName`, etc.
 
 ---
 

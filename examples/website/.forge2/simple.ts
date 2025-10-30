@@ -49,6 +49,6 @@ export const greet: ForgeCommand = {
       : `Hello, ${name}!`;
 
     console.log(greeting);
-    log.info({ name, loud: options.loud }, 'Greeted user');
+    log.info({ userName: name, loud: options.loud }, 'Greeted user');
   }
 };

@@ -4,7 +4,7 @@
   "description": "Modern CLI framework for deployments - TypeScript/Bun implementation",
   "type": "module",
   "bin": {
-    "forge2": "./forge2"
+    "forge2": "./bin/forge2"
   },
   "scripts": {
     "test": "bun test",

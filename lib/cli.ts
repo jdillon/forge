@@ -1,38 +1,42 @@
-#!/usr/bin/env bun
-
 /**
- * Forge v2 - Pure Bun/TypeScript Implementation
+ * Forge v2 - CLI Implementation
  *
- * Entry point for forge2 command with Commander.js
+ * Main CLI setup and command registration
  */
 
 import { Command } from 'commander';
 import chalk from 'chalk';
 import updateNotifier from 'update-notifier';
-import { Forge, discoverProject, getProjectRoot, buildCommanderCommand } from './lib/core';
-import pkg from './package.json' assert { type: 'json' };
+import { Forge, discoverProject, getProjectRoot, buildCommanderCommand } from './core';
+import pkg from '../package.json' assert { type: 'json' };
 
-// Check for updates (once per day)
-updateNotifier({
-  pkg,
-  updateCheckInterval: 1000 * 60 * 60 * 24
-}).notify();
+export async function main(): Promise<void> {
+  // Check for updates (once per day)
+  updateNotifier({
+    pkg,
+    updateCheckInterval: 1000 * 60 * 60 * 24
+  }).notify();
 
-const program = new Command();
+  try {
+    await run();
+  } catch (err: any) {
+    console.error(chalk.red('✗ ERROR:'), err.message);
+    process.exit(1);
+  }
+}
 
-program
-  .name('forge2')
-  .description('Modern CLI framework for deployments')
-  .version(pkg.version)
-  .option('-r, --root <path>', 'Project root directory')
-  .option('-v, --verbose', 'Verbose output')
-  .exitOverride();  // Override exit to cleanup first
+async function run(): Promise<void> {
 
-// ============================================================================
-// Dynamic Command Registration
-// ============================================================================
+  const program = new Command();
 
-async function setupCommands() {
+  program
+    .name('forge2')
+    .description('Modern CLI framework for deployments')
+    .version(pkg.version)
+    .option('-r, --root <path>', 'Project root directory')
+    .option('-v, --verbose', 'Verbose output')
+    .exitOverride();  // Override exit to cleanup first
+
   // Find project root
   const globalOpts = program.opts();
   let projectRoot = globalOpts.root || getProjectRoot();
@@ -85,9 +89,3 @@ async function setupCommands() {
     throw err;  // Re-throw non-Commander errors
   }
 }
-
-// Run setup
-setupCommands().catch(err => {
-  console.error(chalk.red('✗ ERROR:'), err.message);
-  process.exit(1);
-});
