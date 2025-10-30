@@ -23,10 +23,18 @@ export function exit(code: number = 0): never {
 }
 
 /**
+ * Print error message without exiting
+ * For non-fatal errors that must always show (not affected by --silent)
+ */
+export function error(message: string): void {
+  console.error(chalk.red(`ERROR: ${message}`));
+}
+
+/**
  * Die with error message and exit(1)
- * Uses lowercase "error:" to match Commander.js style
+ * Fatal errors that must always show (not affected by --silent)
  */
 export function die(message: string): never {
-  console.error(chalk.red(`error: ${message}`));
+  error(message);
   exit(1);
 }

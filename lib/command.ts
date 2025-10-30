@@ -28,7 +28,7 @@ export type {
 // ============================================================================
 
 export { createLogger } from './logger';
-export { confirm, die, exit } from './helpers';
+export { confirm, die, exit, error } from './helpers';
 export { getForgePaths } from './xdg';
 
 // ============================================================================

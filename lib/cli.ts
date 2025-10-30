@@ -107,7 +107,7 @@ async function run(): Promise<void> {
   // Invalid options start with - or --
   const invalidOptions = unknown.filter(arg => arg.startsWith('-'));
   if (invalidOptions.length > 0) {
-    console.error(chalk.red(`error: unknown option '${invalidOptions[0]}'`));
+    console.error(chalk.red(`ERROR: unknown option '${invalidOptions[0]}'`));
     console.error(); // blank line
     program.outputHelp();
     exit(1);
