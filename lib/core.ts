@@ -4,12 +4,13 @@
  * Pure Bun/TypeScript implementation
  */
 
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { existsSync } from 'fs';
 import { Command } from 'commander';
 import { StateManager } from './state';
 import { die, exit } from './helpers';
 import { getForgePaths } from './xdg';
+import { getLoggerConfig } from './logger';
 import type {
   ForgeCommand,
   ForgeConfig,
@@ -55,9 +56,11 @@ export async function loadModule(
   let groupName: string | false = deriveGroupName(modulePath);
   let description: string | undefined;
 
-  // Resolve module path (relative to .forge2/)
+  // Resolve module path to absolute path for import()
+  // If relative (starts with .), resolve relative to .forge2/
+  // Otherwise, treat as absolute or node_modules path
   const fullPath = modulePath.startsWith('.')
-    ? join(forgeDir, modulePath)
+    ? resolve(forgeDir, modulePath)
     : modulePath;
 
   try {
@@ -117,17 +120,23 @@ export class Forge {
   public state: StateManager;
   public globalOptions: Record<string, any>;
 
-  constructor(projectRoot: string, globalOptions: Record<string, any> = {}) {
+  constructor(projectRoot: string | null, globalOptions: Record<string, any> = {}) {
     this.projectContext = {
-      projectRoot,
-      forgeDir: join(projectRoot, '.forge2'),
+      projectRoot: projectRoot || '',
+      forgeDir: projectRoot ? join(projectRoot, '.forge2') : '',
       cwd: process.cwd(),
     };
-    this.state = new StateManager(projectRoot);
+    this.state = projectRoot ? new StateManager(projectRoot) : null as any;
     this.globalOptions = globalOptions;
   }
 
   async loadConfig(): Promise<void> {
+    // Skip loading config if no project root (for --help/--version)
+    if (!this.projectContext.projectRoot) {
+      this.config = null;
+      return;
+    }
+
     try {
       // Load layered config (user + project + local)
       const { loadLayeredConfig } = await import('./config-loader');
@@ -289,6 +298,7 @@ export class Forge {
         : actionArgs.slice(0, -2) as string[];
 
       // Build ForgeContext for command
+      const loggerConfig = getLoggerConfig();
       const context: ForgeContext = {
         forge: this,
         config: this.config!,
@@ -298,6 +308,9 @@ export class Forge {
         state: this.state,
         groupName,
         commandName: name,
+        logLevel: loggerConfig.level,
+        logFormat: loggerConfig.format,
+        color: loggerConfig.color,
       };
 
       try {

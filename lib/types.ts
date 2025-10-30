@@ -24,6 +24,9 @@ export interface ForgeContext {
   state: any;                        // StateManager instance (avoid circular dep for now)
   groupName?: string;                // Which group this command is in
   commandName: string;               // This command's name
+  logLevel: string;                  // Current log level (info, debug, etc.)
+  logFormat: 'json' | 'pretty';      // Log format (pretty = human-readable)
+  color: boolean;                    // Whether color output is enabled
 }
 
 /**

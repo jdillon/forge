@@ -11,12 +11,14 @@ import { Writable } from 'stream';
 // Logger configuration state
 interface LoggerConfig {
   level: string;
-  format: 'plain' | 'json' | 'color';
+  format: 'json' | 'pretty';
+  color: boolean;
 }
 
 const config: LoggerConfig = {
   level: 'info',
-  format: 'color',
+  format: 'pretty',
+  color: true,
 };
 
 // Registry of all logger instances (for future cleanup if needed)
@@ -109,13 +111,24 @@ class PrettyStream extends Writable {
 /**
  * Configure logger settings (called by CLI framework)
  */
-export function configureLogger(options: { level?: string; format?: 'plain' | 'json' | 'color' }): void {
+export function configureLogger(options: { level?: string; format?: 'json' | 'pretty'; color?: boolean }): void {
   if (options.level) {
     config.level = options.level;
   }
   if (options.format) {
     config.format = options.format;
   }
+  // Color setting is independent of format
+  if (options.color !== undefined) {
+    config.color = options.color;
+  }
+}
+
+/**
+ * Get current logger configuration
+ */
+export function getLoggerConfig(): Readonly<LoggerConfig> {
+  return config;
 }
 
 /**
@@ -125,10 +138,9 @@ export function configureLogger(options: { level?: string; format?: 'plain' | 'j
 export function createLogger(name?: string): pino.Logger {
   // Determine output stream based on format
   let stream: Writable | undefined;
-  if (config.format === 'color') {
-    stream = new PrettyStream(true);
-  } else if (config.format === 'plain') {
-    stream = new PrettyStream(false);
+  if (config.format === 'pretty') {
+    // Pretty format - human-readable with optional colors
+    stream = new PrettyStream(config.color);
   }
   // else json: use default (stdout as JSON)
 
