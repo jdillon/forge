@@ -9,7 +9,7 @@ import { existsSync } from 'fs';
 import { homedir } from 'os';
 import { Command } from 'commander';
 import { StateManager } from './state';
-import { die } from './helpers';
+import { die, exit } from './helpers';
 import type {
   ForgeCommand,
   ForgeConfig,
@@ -255,7 +255,7 @@ export class Forge {
         commandName = this.config!.defaultCommand;
       } else {
         this.showUsage();
-        process.exit(0);
+        exit(0);
       }
     }
 

@@ -8,7 +8,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import updateNotifier from 'update-notifier';
 import { Forge, discoverProject, getProjectRoot, buildCommanderCommand } from './core';
-import { die } from './helpers';
+import { die, exit } from './helpers';
 import pkg from '../package.json' assert { type: 'json' };
 
 export async function main(): Promise<void> {
@@ -85,7 +85,7 @@ async function run(): Promise<void> {
   } catch (err: any) {
     // Commander error - exit immediately
     if (err.code) {
-      process.exit(err.exitCode || 1);
+      exit(err.exitCode || 1);
     }
     throw err;  // Re-throw non-Commander errors
   }

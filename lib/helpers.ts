@@ -13,9 +13,17 @@ export async function confirm(prompt: string = 'Continue?'): Promise<boolean> {
 }
 
 /**
- * Die with error message
+ * Exit process with code
+ * Centralized exit point for better testability
+ */
+export function exit(code: number = 0): never {
+  process.exit(code);
+}
+
+/**
+ * Die with error message and exit(1)
  */
 export function die(message: string): never {
   console.error(`ERROR: ${message}`);
-  process.exit(1);
+  exit(1);
 }

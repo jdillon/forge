@@ -14,6 +14,7 @@ import {
   chalk,
   ora,
   createLogger,
+  exit,
   type ForgeCommand,
   type ForgeContext
 } from '@forge/command';
@@ -145,7 +146,7 @@ export const connect: ForgeCommand = {
     if (!validServices.includes(service)) {
       console.error(chalk.red(`✗ Error: Unknown service: ${service}`));
       console.log(chalk.gray(`Available: ${validServices.join(', ')}`));
-      process.exit(1);
+      exit(1);
     }
 
     log.info({ service }, 'Connecting to service');
@@ -188,7 +189,7 @@ export const getConfig: ForgeCommand = {
     } else {
       console.error(chalk.red(`Config key not found: ${key}`));
       log.warn({ key }, 'Config key not found');
-      process.exit(1);
+      exit(1);
     }
   }
 };
@@ -270,7 +271,7 @@ export const cache = {
         const value = restArgs[1];
         if (!key || !value) {
           console.error(chalk.red('Usage: forge2 cache set <key> <value>'));
-          process.exit(1);
+          exit(1);
         }
         console.log(chalk.green(`Set ${key} = ${value}`));
         log.info({ key, value }, 'Cache set');
@@ -281,7 +282,7 @@ export const cache = {
         const key = restArgs[0];
         if (!key) {
           console.error(chalk.red('Usage: forge2 cache get <key>'));
-          process.exit(1);
+          exit(1);
         }
         console.log('value-for-' + key);
         break;
@@ -290,7 +291,7 @@ export const cache = {
       default:
         console.error(chalk.red(`Unknown action: ${action}`));
         console.log(chalk.gray('Available: clear, show, set, get'));
-        process.exit(1);
+        exit(1);
     }
   }
 };
