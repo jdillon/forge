@@ -26,61 +26,51 @@ Writing commands? Start with:
 ### For Contributors
 
 Understanding the architecture:
-- **[xdg-paths.md](xdg-paths.md)** - Directory structure and XDG compliance
-- **[dependencies.md](dependencies.md)** - Dependency vetting policy
-- **[package-management.md](package-management.md)** - Bun package management
-- **[module-sharing-private.md](module-sharing-private.md)** - Git-based module distribution
+- **[features/](features/)** - In-depth feature documentation
+- **[reference/](reference/)** - System reference (XDG, dependencies, package management)
+- **[planning/](planning/)** - Future features not yet implemented
 
 ---
 
-## Core Documentation
+## Documentation Structure
 
+### Top Level (Most Used)
 | Document | Purpose |
 |----------|---------|
 | **[command-patterns.md](command-patterns.md)** | Quick reference for writing commands |
-| **[whats-working-now.md](whats-working-now.md)** | Feature showcase and status |
-| **[features/](features/)** | In-depth feature documentation |
-| **[xdg-paths.md](xdg-paths.md)** | XDG directory structure |
-| **[dependencies.md](dependencies.md)** | Security-focused dependency policy |
-| **[package-management.md](package-management.md)** | Bun PM for module distribution |
-| **[module-sharing-private.md](module-sharing-private.md)** | Git-based private modules |
+| **[whats-working-now.md](whats-working-now.md)** | Feature showcase and current status |
+
+### Directories
+| Directory | Purpose |
+|----------|---------|
+| **[features/](features/)** | In-depth feature documentation (auto-discovery, module metadata, etc.) |
+| **[libraries/](libraries/)** | CLI library reference (chalk, ora, listr2, boxen, etc.) |
+| **[reference/](reference/)** | System reference (XDG paths, dependencies, package management) |
+| **[planning/](planning/)** | Future features not yet implemented |
+| **[archive/](archive/)** | Historical docs (language comparisons, design decisions) |
+
 
 ---
 
-## Deep Dives
+## What's Where
 
-### Features
-See **[features/](features/)** for feature documentation:
+### Need to write commands?
+→ [command-patterns.md](command-patterns.md)
 
-- [Auto-Discovery](features/auto-discovery.md) - How commands are discovered
-- [Module Metadata](features/module-metadata.md) - Customize with `__module__`
-- [Subcommand Groups](features/subcommand-groups.md) - Group organization
-- [Commander Integration](features/commander-integration.md) - How Commander.js works
+### Want to understand a feature?
+→ [features/](features/) directory
 
-### Libraries
-See **[libraries/](libraries/)** for library reference:
+### Looking up a library API?
+→ [libraries/](libraries/) directory
 
-- [chalk](libraries/chalk.md) - Terminal colors
-- [ora](libraries/ora.md) - Spinners
-- [listr2](libraries/listr2.md) - Task lists
-- [boxen](libraries/boxen.md) - Boxes
-- [commander](libraries/commander.md) - CLI framework
-- [pino](libraries/pino.md) - Structured logging
-- [And more...](libraries/README.md)
+### Need reference material?
+→ [reference/](reference/) directory
 
----
+### Curious about future plans?
+→ [planning/](planning/) directory
 
-## Archive
-
-Historical planning and analysis documents are in **[archive/](archive/)**.
-
-These docs led to the decisions that built v2-prototype:
-- Language choice analysis (Bash vs Python vs TypeScript)
-- Framework comparisons (forge v1 vs commando)
-- Design explorations (hybrid approaches, shell improvements)
-- Planning docs (prototypes, evaluations)
-
-Useful for historical context, but decisions have been made.
+### Understanding past decisions?
+→ [archive/](archive/) directory
 
 ---
 
