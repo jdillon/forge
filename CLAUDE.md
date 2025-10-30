@@ -13,8 +13,15 @@ This file provides guidance to Claude Code when working with this repository.
 
 **Workflow**:
 - **No auto-commit**: STOP after work, show changes, WAIT for "commit" command
+- **Proposals in tmp/**: For significant changes or reorganizations, create a proposal document in `tmp/` (e.g., `tmp/docs-reorganization-proposal.md`). Let Jason review before executing.
 - Use `tmp/` for temp files (project root only, never in subdirs)
 - Follow [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
+
+**Why Proposals Work**:
+- Jason can review and adjust before changes are made
+- Clear documentation of what will change and why
+- Easy to discuss trade-offs
+- Can be referenced later to understand decisions
 
 ---
 
