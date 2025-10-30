@@ -7,14 +7,14 @@ import { spawnSync } from 'bun';
 
 describe('CLI --log-format Validation', () => {
   const cliPath = './bin/forge2';
-  const projectRoot = `${process.cwd()}/examples/website`;
+  const projectRoot = `${process.cwd()}/tests/fixtures/test-project`;
 
   test('should accept "json" format', () => {
     const result = spawnSync([
       cliPath,
       '--root', projectRoot,
       '--log-format', 'json',
-      'basic', 'greet'
+      'test', 'greet'
     ], {
       env: { ...process.env },
     });
@@ -31,7 +31,7 @@ describe('CLI --log-format Validation', () => {
       cliPath,
       '--root', projectRoot,
       '--log-format', 'pretty',
-      'basic', 'greet'
+      'test', 'greet'
     ], {
       env: { ...process.env },
     });
@@ -45,7 +45,7 @@ describe('CLI --log-format Validation', () => {
       cliPath,
       '--root', projectRoot,
       '--log-format', 'plain',
-      'basic', 'greet'
+      'test', 'greet'
     ], {
       env: { ...process.env },
     });
@@ -62,7 +62,7 @@ describe('CLI --log-format Validation', () => {
       cliPath,
       '--root', projectRoot,
       '--log-format', 'xyz',
-      'basic', 'greet'
+      'test', 'greet'
     ], {
       env: { ...process.env },
     });
@@ -79,7 +79,7 @@ describe('CLI --log-format Validation', () => {
       cliPath,
       '--root', projectRoot,
       '--log-format', '123',
-      'basic', 'greet'
+      'test', 'greet'
     ], {
       env: { ...process.env },
     });
@@ -95,7 +95,7 @@ describe('CLI --log-format Validation', () => {
       cliPath,
       '--root', projectRoot,
       '--log-format', 'invalid',
-      'basic', 'greet'
+      'test', 'greet'
     ], {
       env: { ...process.env },
     });
@@ -110,7 +110,7 @@ describe('CLI --log-format Validation', () => {
     const result = spawnSync([
       cliPath,
       '--root', projectRoot,
-      'basic', 'greet'
+      'test', 'greet'
     ], {
       env: { ...process.env },
     });

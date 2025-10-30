@@ -7,7 +7,7 @@ import { spawnSync } from 'bun';
 
 describe('CLI Color Detection', () => {
   const cliPath = './bin/forge2';
-  const projectRoot = `${process.cwd()}/examples/website`;
+  const projectRoot = `${process.cwd()}/tests/fixtures/test-project`;
 
   test('should use colors by default', () => {
     const result = spawnSync([cliPath, '--root', projectRoot, '--help'], {

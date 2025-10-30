@@ -1,0 +1,12 @@
+# Forge v2 Configuration - Basic Example
+#
+# Demonstrates minimal Forge v2 module setup with simple commands.
+
+# Modules to load - commands auto-discovered from exports
+modules:
+  - ./simple    # Uses __module__ to rename group to "basic"
+
+# Command-specific settings
+settings:
+  basic.greet:
+    defaultName: Forge User

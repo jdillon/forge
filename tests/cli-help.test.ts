@@ -7,7 +7,7 @@ import { spawnSync } from 'bun';
 
 describe('CLI Help Output', () => {
   const cliPath = './bin/forge2';
-  const projectRoot = `${process.cwd()}/examples/website`;
+  const projectRoot = `${process.cwd()}/tests/fixtures/test-project`;
 
   test('should display help with --help', () => {
     const result = spawnSync([cliPath, '--root', projectRoot, '--help'], {
@@ -85,8 +85,7 @@ describe('CLI Help Output', () => {
     });
 
     const output = result.stdout.toString();  // Help goes to stdout
-    expect(output).toContain('basic');
-    expect(output).toContain('website');
+    expect(output).toContain('test');
   });
 
   test('should sort options alphabetically', () => {

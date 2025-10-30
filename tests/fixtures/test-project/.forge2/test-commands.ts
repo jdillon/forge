@@ -3,6 +3,9 @@
  */
 
 import type { ForgeCommand } from '../../../../lib/types';
+import { createLogger } from '../../../../lib/logger';
+
+const log = createLogger('test');
 
 // Command to output context fields as JSON
 export const context: ForgeCommand = {
@@ -31,6 +34,26 @@ export const echo: ForgeCommand = {
   description: 'Echo arguments back',
   async execute(options, args, context) {
     console.log(args.join(' '));
+  }
+};
+
+// Command with options for testing option parsing
+export const greet: ForgeCommand = {
+  description: 'Greet someone',
+
+  defineCommand: (cmd) =>
+    cmd
+      .argument('[name]', 'Name to greet')
+      .option('-l, --loud', 'Use uppercase'),
+
+  async execute(options, args, context) {
+    const name = args[0] || 'World';
+    const greeting = options.loud
+      ? `HELLO, ${name.toUpperCase()}!`
+      : `Hello, ${name}!`;
+
+    console.log(greeting);
+    log.info({ name, loud: options.loud }, 'Greeted user');
   }
 };
 
