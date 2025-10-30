@@ -89,13 +89,29 @@ async function run(): Promise<void> {
     .option('--log-level <level>', 'Set log level: silent, trace, debug, info, warn, error, fatal')
     .option('--log-format <format>', 'Set log format: color (default), plain, json')
     .allowUnknownOption(true)  // Allow subcommand names to pass through
-    .exitOverride();
+    .exitOverride()
+    .configureOutput({
+      // Fancy error output with colors
+      writeErr: (str) => process.stderr.write(chalk.red(str)),
+      outputError: (str, write) => write(chalk.red(str)),
+    });
 
   // Parse parent-level options early (before loading modules)
   // This is necessary because modules create loggers at import time
   // We use parseOptions() which parses options but doesn't execute commands
   const { operands, unknown } = program.parseOptions(process.argv.slice(2));
   const earlyOpts = program.opts();
+
+  // Check for unknown options before subcommand names
+  // unknown array contains unparsed args that could be subcommands or invalid options
+  // Invalid options start with - or --
+  const invalidOptions = unknown.filter(arg => arg.startsWith('-'));
+  if (invalidOptions.length > 0) {
+    console.error(chalk.red(`error: unknown option '${invalidOptions[0]}'`));
+    console.error(); // blank line
+    program.outputHelp();
+    exit(1);
+  }
 
   // Determine log level from parsed options
   let logLevel: string | undefined;

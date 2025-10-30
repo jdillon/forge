@@ -4,6 +4,8 @@
  * Utility functions for use in commands
  */
 
+import chalk from 'chalk';
+
 /**
  * Simple confirmation prompt
  */
@@ -22,8 +24,9 @@ export function exit(code: number = 0): never {
 
 /**
  * Die with error message and exit(1)
+ * Uses lowercase "error:" to match Commander.js style
  */
 export function die(message: string): never {
-  console.error(`ERROR: ${message}`);
+  console.error(chalk.red(`error: ${message}`));
   exit(1);
 }
