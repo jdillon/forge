@@ -26,6 +26,7 @@ program
   .version(pkg.version)
   .option('-r, --root <path>', 'Project root directory')
   .option('-v, --verbose', 'Verbose output');
+  // Don't use exitOverride - let Commander exit naturally
 
 // ============================================================================
 // Dynamic Command Registration
@@ -71,7 +72,7 @@ async function setupCommands() {
     program.addCommand(groupCmd);
   }
 
-  // Parse args
+  // Parse args - Commander will call process.exit on errors
   program.parse();
 }
 

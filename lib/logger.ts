@@ -16,18 +16,20 @@ export function createLogger(name?: string) {
   const isDev = process.env.NODE_ENV !== 'production';
   const level = process.env.LOG_LEVEL || (isDev ? 'info' : 'warn');
 
+  // Disable pino-pretty for now - it creates worker threads that delay process exit
+  // TODO: Re-enable with proper cleanup or use sync pretty printer
   return pino({
     name: name || 'forge2',
     level,
-    transport: isDev ? {
-      target: 'pino-pretty',
-      options: {
-        colorize: true,
-        translateTime: 'HH:MM:ss',
-        ignore: 'pid,hostname,name',
-        singleLine: true
-      }
-    } : undefined
+    // transport: isDev ? {
+    //   target: 'pino-pretty',
+    //   options: {
+    //     colorize: true,
+    //     translateTime: 'HH:MM:ss',
+    //     ignore: 'pid,hostname,name',
+    //     singleLine: true
+    //   }
+    // } : undefined
   });
 }
 
