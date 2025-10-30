@@ -8,14 +8,29 @@ import pino from 'pino';
 import chalk from 'chalk';
 import { Writable } from 'stream';
 
+// Logger configuration state
+interface LoggerConfig {
+  level: string;
+  format: 'plain' | 'json' | 'color';
+}
+
+const config: LoggerConfig = {
+  level: 'info',
+  format: 'color',
+};
+
 // Registry of all logger instances (for future cleanup if needed)
 const loggers: pino.Logger[] = [];
 
 /**
  * Custom pretty stream (synchronous, no worker threads)
- * Formats JSON log lines with colors
+ * Formats JSON log lines with optional colors
  */
 class PrettyStream extends Writable {
+  constructor(private useColors: boolean = true) {
+    super();
+  }
+
   _write(chunk: any, encoding: string, callback: () => void) {
     const line = chunk.toString().trim();
     if (!line) {
@@ -30,40 +45,42 @@ class PrettyStream extends Writable {
       const name = obj.name;
       const msg = obj.msg;
 
-      // Level colors and labels
+      // Level labels
       let levelLabel = '';
-      let levelColor = chalk.gray;
+      if (level >= 60) levelLabel = 'FATAL';
+      else if (level >= 50) levelLabel = 'ERROR';
+      else if (level >= 40) levelLabel = 'WARN';
+      else if (level >= 30) levelLabel = 'INFO';
+      else if (level >= 20) levelLabel = 'DEBUG';
+      else levelLabel = 'TRACE';
 
-      if (level >= 60) {      // fatal
-        levelLabel = 'FATAL';
-        levelColor = chalk.bgRed.white;
-      } else if (level >= 50) { // error
-        levelLabel = 'ERROR';
-        levelColor = chalk.red;
-      } else if (level >= 40) { // warn
-        levelLabel = 'WARN';
-        levelColor = chalk.yellow;
-      } else if (level >= 30) { // info
-        levelLabel = 'INFO';
-        levelColor = chalk.blue;
-      } else if (level >= 20) { // debug
-        levelLabel = 'DEBUG';
-        levelColor = chalk.gray;
-      } else {                  // trace
-        levelLabel = 'TRACE';
-        levelColor = chalk.gray;
-      }
+      // Build output line with optional colors
+      const c = this.useColors ? chalk : {
+        gray: (s: string) => s,
+        red: (s: string) => s,
+        yellow: (s: string) => s,
+        blue: (s: string) => s,
+        cyan: (s: string) => s,
+        white: (s: string) => s,
+        bgRed: { white: (s: string) => s }
+      };
 
-      // Build output line
+      const levelColor = this.useColors ? (
+        level >= 60 ? chalk.bgRed.white :
+        level >= 50 ? chalk.red :
+        level >= 40 ? chalk.yellow :
+        level >= 30 ? chalk.blue :
+        chalk.gray
+      ) : (s: string) => s;
+
       const parts = [
-        chalk.gray(time),
+        c.gray(time),
         levelColor(levelLabel.padEnd(5)),
-        name ? chalk.cyan(`[${name}]`) : '',
+        name ? c.cyan(`[${name}]`) : '',
         msg || ''
       ].filter(Boolean);
 
       // Add extra fields (excluding internal pino fields)
-      // Note: 'name' could be both logger name and log data - we already used it above
       const internalFields = ['time', 'level', 'msg', 'pid', 'hostname'];
       const extras = Object.keys(obj)
         .filter(key => {
@@ -72,11 +89,11 @@ class PrettyStream extends Writable {
           if (key === 'name' && obj.name === name) return false;
           return true;
         })
-        .map(key => `${chalk.gray(key)}=${chalk.white(JSON.stringify(obj[key]))}`)
+        .map(key => `${c.gray(key)}=${c.white(JSON.stringify(obj[key]))}`)
         .join(' ');
 
       if (extras) {
-        parts.push(chalk.gray(extras));
+        parts.push(extras);
       }
 
       process.stdout.write(parts.join(' ') + '\n');
@@ -90,23 +107,37 @@ class PrettyStream extends Writable {
 }
 
 /**
+ * Configure logger settings (called by CLI framework)
+ */
+export function configureLogger(options: { level?: string; format?: 'plain' | 'json' | 'color' }): void {
+  if (options.level) {
+    config.level = options.level;
+  }
+  if (options.format) {
+    config.format = options.format;
+  }
+}
+
+/**
  * Create a logger instance
- *
- * In development: Pretty colored output (synchronous)
- * In production: JSON structured logs
+ * Simple factory that uses current configuration
  */
 export function createLogger(name?: string): pino.Logger {
-  const isDev = process.env.NODE_ENV !== 'production';
-  // Priority: FORGE_LOG_LEVEL (set by CLI) > LOG_LEVEL > defaults
-  const level = process.env.FORGE_LOG_LEVEL || process.env.LOG_LEVEL || (isDev ? 'info' : 'warn');
-  const pretty = isDev && process.env.FORGE_PRETTY_LOGS !== '0';
+  // Determine output stream based on format
+  let stream: Writable | undefined;
+  if (config.format === 'color') {
+    stream = new PrettyStream(true);
+  } else if (config.format === 'plain') {
+    stream = new PrettyStream(false);
+  }
+  // else json: use default (stdout as JSON)
 
   const logger = pino(
     {
       name: name || 'forge2',
-      level,
+      level: config.level,
     },
-    pretty ? new PrettyStream() : undefined
+    stream
   );
 
   // Register for cleanup
@@ -153,10 +184,10 @@ export async function shutdownLoggers(): Promise<void> {
 
 /**
  * Set log level for all existing loggers
- * Called when CLI flags like --verbose or --log-level are parsed
+ * Called when CLI flags like --debug or --log-level are parsed
  */
 export function setGlobalLogLevel(level: string): void {
-  process.env.FORGE_LOG_LEVEL = level;
+  config.level = level;
 
   // Update all existing logger instances
   for (const logger of loggers) {

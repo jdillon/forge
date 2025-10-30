@@ -9,7 +9,7 @@ import chalk from 'chalk';
 import updateNotifier from 'update-notifier';
 import { Forge, discoverProject, getProjectRoot, buildCommanderCommand } from './core';
 import { die, exit } from './helpers';
-import { setGlobalLogLevel } from './logger';
+import { configureLogger, setGlobalLogLevel } from './logger';
 import pkg from '../package.json' assert { type: 'json' };
 
 export async function main(): Promise<void> {
@@ -38,6 +38,7 @@ async function run(): Promise<void> {
     .option('-q, --quiet', 'Quiet mode (sets log level to warn)')
     .option('-s, --silent', 'Silent mode (disables all logging)')
     .option('--log-level <level>', 'Set log level: silent, trace, debug, info, warn, error, fatal')
+    .option('--log-format <format>', 'Set log format: color (default), plain, json')
     .allowUnknownOption(true)  // Allow subcommand names to pass through
     .exitOverride();
 
@@ -59,10 +60,14 @@ async function run(): Promise<void> {
     logLevel = earlyOpts.logLevel;
   }
 
-  // Set log level before loading modules
-  if (logLevel) {
-    setGlobalLogLevel(logLevel);
-  }
+  // Determine log format
+  const logFormat = earlyOpts.logFormat as 'plain' | 'json' | 'color' | undefined;
+
+  // Configure logger before loading modules (modules create loggers at import time)
+  configureLogger({
+    level: logLevel,
+    format: logFormat,
+  });
 
   // Find project root
   const globalOpts = earlyOpts;
