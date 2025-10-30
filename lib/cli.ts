@@ -182,10 +182,14 @@ async function run(): Promise<void> {
   });
 
   // Check if user is asking for help or version - these should work without a project
-  const isHelpOrVersion = operands.length === 0 ||
-                          operands.includes('help') ||
+  // Only skip project check if explicitly requesting help (not just when no operands provided)
+  const isHelpOrVersion = operands.includes('help') ||
                           operands.includes('--help') ||
-                          operands.includes('-h');
+                          operands.includes('-h') ||
+                          process.argv.includes('--help') ||
+                          process.argv.includes('-h') ||
+                          process.argv.includes('--version') ||
+                          process.argv.includes('-V');
 
   // Find project root (only required if not asking for help/version)
   const globalOpts = earlyOpts;

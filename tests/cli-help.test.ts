@@ -73,9 +73,10 @@ describe('CLI Help Output', () => {
     });
 
     expect(result.exitCode).toBe(1);
-    const output = result.stdout.toString();
-    expect(output).toContain('ERROR: unknown option');
-    expect(output).toContain('Usage: forge2');
+    const stderr = result.stderr.toString();
+    const stdout = result.stdout.toString();
+    expect(stderr).toContain('ERROR: unknown option');
+    expect(stdout).toContain('Usage: forge2');
   });
 
   test('should list commands in help output', () => {

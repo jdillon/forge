@@ -8,16 +8,14 @@ import { spawnSync } from 'bun';
 describe('CLI Validation (No Project Required)', () => {
   const cliPath = './bin/forge2';
 
-  test.skip('should show version with --version', () => {
-    // Skipped: exitOverride causes version to exit with code 1
+  test('should show version with --version', () => {
     const result = spawnSync([cliPath, '--version']);
     expect(result.exitCode).toBe(0);
     const output = result.stdout.toString();
     expect(output).toMatch(/\d+\.\d+\.\d+/); // version pattern
   });
 
-  test.skip('should show version with -V', () => {
-    // Skipped: exitOverride causes version to exit with code 1
+  test('should show version with -V', () => {
     const result = spawnSync([cliPath, '-V']);
     expect(result.exitCode).toBe(0);
     const output = result.stdout.toString();

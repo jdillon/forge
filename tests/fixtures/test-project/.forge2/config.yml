@@ -1,0 +1,9 @@
+# Test Project Configuration
+# Minimal config for testing Forge framework
+
+modules:
+  - ./test-commands
+
+settings:
+  test.context:
+    testSetting: test-value

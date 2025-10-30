@@ -8,6 +8,7 @@
   },
   "scripts": {
     "test": "bun test",
+    "test:junit": "mkdir -p test-results && bun test --reporter=junit --reporter-outfile=test-results/junit.xml",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [

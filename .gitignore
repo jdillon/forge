@@ -24,6 +24,7 @@ config.local.js
 
 # Testing
 test-output/
+test-results/
 sandbox/
 test-home/Library/Caches/
 test-home/.local/bin/

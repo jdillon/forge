@@ -61,23 +61,88 @@ All actual CLI functionality works correctly - these are just test assertions th
 
 ## Writing New Tests
 
-Use Bun's built-in test API:
+### Using Bun Test API
 
 ```typescript
-import { describe, test, expect } from 'bun:test';
+import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
 
 describe('My Feature', () => {
+  beforeAll(() => {
+    // Setup before all tests in this describe block
+  });
+
+  afterAll(() => {
+    // Cleanup after all tests
+  });
+
   test('should do something', () => {
     expect(true).toBe(true);
+  });
+
+  test.skip('work in progress', () => {
+    // Skipped test
   });
 });
 ```
 
-For CLI tests, use `spawnSync` to test the binary:
+### CLI Testing with Debug Output
 
 ```typescript
 import { spawnSync } from 'bun';
 
-const result = spawnSync(['./bin/forge2', '--help']);
-expect(result.exitCode).toBe(0);
+test('should show help', () => {
+  const result = spawnSync(['./bin/forge2', '--help']);
+
+  // Debug output (visible on failure)
+  console.log('Exit code:', result.exitCode);
+  console.log('Stdout:', result.stdout.toString());
+  console.log('Stderr:', result.stderr.toString());
+
+  expect(result.exitCode).toBe(0);
+  expect(result.stdout.toString()).toContain('Usage');
+});
 ```
+
+### Using Test Fixtures
+
+Always use `tests/fixtures/` for test data, never modify `examples/`:
+
+```typescript
+import { join } from 'path';
+
+const fixtureRoot = join(process.cwd(), 'tests/fixtures/test-project');
+
+const result = spawnSync(['./bin/forge2', '--root', fixtureRoot, 'test', 'context']);
+```
+
+## Running Tests
+
+```bash
+# Run all tests
+bun test
+
+# Run specific file
+bun test tests/logger.test.ts
+
+# Run tests matching pattern
+bun test -t "logger"
+
+# Stop on first failure (great for debugging)
+bun test --bail
+
+# Show only failures
+bun test --only-failures
+
+# Watch mode
+bun test --watch
+
+# Generate coverage
+bun test --coverage
+```
+
+## Debugging Failing Tests
+
+1. **Add console.log** - Bun shows output inline with tests
+2. **Use --bail** - Stop on first failure: `bun test --bail`
+3. **Run single test** - `bun test tests/specific.test.ts`
+4. **Check exit codes** - Log result.exitCode, stdout, stderr
