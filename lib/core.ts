@@ -28,13 +28,14 @@ export interface ForgeCommand {
 }
 
 export interface ForgeConfig {
-  modules?: string[];
-  commands: Record<string, ForgeCommand>;
+  // Module paths to auto-discover commands from
+  modules: string[];
+
+  // Optional default command when none specified
   defaultCommand?: string;
-  state?: {
-    project?: Record<string, any>;
-    user?: Record<string, any>;
-  };
+
+  // Future: configuration settings
+  // config?: Record<string, any>;
 }
 
 export interface ForgeContext {
@@ -122,52 +123,61 @@ export function getForgePaths() {
 }
 
 // ============================================================================
-// Module Loading
+// Module Loading & Command Discovery
 // ============================================================================
 
 /**
- * Find module path in search order:
- * 1. Project modules: <project>/.forge2/modules/<name>/
- * 2. User modules: ~/.local/share/forge2/modules/<name>/
- * 3. System modules: (future)
+ * Check if an object looks like a ForgeCommand (duck typing)
  */
-export function findModulePath(moduleName: string, projectRoot: string): string | null {
-  const paths = getForgePaths();
-  const candidates = [
-    join(projectRoot, '.forge2', 'modules', moduleName),
-    join(paths.modules, moduleName),
-  ];
-
-  for (const path of candidates) {
-    if (existsSync(join(path, 'module.ts'))) {
-      return path;
-    }
-  }
-
-  return null;
+function isForgeCommand(obj: any): obj is ForgeCommand {
+  return obj
+    && typeof obj === 'object'
+    && typeof obj.description === 'string'
+    && typeof obj.execute === 'function';
 }
 
 /**
- * Load a module and merge its commands
+ * Auto-discover ForgeCommands from a module's exports
+ * Supports:
+ * - Named exports: export const build = { ... }
+ * - Default export: export default { build: {...}, sync: {...} }
  */
 export async function loadModule(
-  moduleName: string,
-  projectRoot: string
+  modulePath: string,
+  forgeDir: string
 ): Promise<Record<string, ForgeCommand>> {
-  const modulePath = findModulePath(moduleName, projectRoot);
+  const commands: Record<string, ForgeCommand> = {};
 
-  if (!modulePath) {
-    console.error(`ERROR: Module not found: ${moduleName}`);
-    process.exit(1);
-  }
-
-  const moduleFile = join(modulePath, 'module.ts');
+  // Resolve module path (relative to .forge2/)
+  const fullPath = modulePath.startsWith('.')
+    ? join(forgeDir, modulePath)
+    : modulePath;
 
   try {
-    const module = await import(moduleFile);
-    return module.default || module;
+    const module = await import(fullPath);
+
+    // First: Check default export (could be object of commands)
+    if (module.default && typeof module.default === 'object') {
+      for (const [name, value] of Object.entries(module.default)) {
+        if (isForgeCommand(value)) {
+          commands[name] = value as ForgeCommand;
+        }
+      }
+    }
+
+    // Second: Check all named exports
+    for (const [name, value] of Object.entries(module)) {
+      if (name === 'default') continue;  // Already handled
+
+      if (isForgeCommand(value)) {
+        // Named export becomes command name
+        commands[name] = value as ForgeCommand;
+      }
+    }
+
+    return commands;
   } catch (err) {
-    console.error(`ERROR: Failed to load module ${moduleName}:`, err);
+    console.error(`ERROR: Failed to load module ${modulePath}:`, err);
     process.exit(1);
   }
 }
@@ -245,6 +255,7 @@ export class StateManager {
 export class Forge {
   private context: ForgeContext;
   private config: ForgeConfig | null = null;
+  public commands: Record<string, ForgeCommand> = {};
   public state: StateManager;
   public globalOptions: Record<string, any>;
 
@@ -270,14 +281,13 @@ export class Forge {
       const module = await import(configPath);
       this.config = module.default;
 
-      // Load additional modules if specified
+      // Auto-discover commands from modules
       if (this.config?.modules) {
-        for (const moduleName of this.config.modules) {
-          const moduleCommands = await loadModule(moduleName, this.context.projectRoot);
-          this.config.commands = {
-            ...this.config.commands,
-            ...moduleCommands,
-          };
+        for (const modulePath of this.config.modules) {
+          const moduleCommands = await loadModule(modulePath, this.context.forgeDir);
+
+          // Merge discovered commands (last wins)
+          Object.assign(this.commands, moduleCommands);
         }
       }
     } catch (err) {
@@ -302,7 +312,7 @@ export class Forge {
     }
 
     // Find command
-    const command = this.config!.commands[commandName];
+    const command = this.commands[commandName];
 
     if (!command) {
       console.error(`ERROR: Unknown command: ${commandName}`);
@@ -312,7 +322,7 @@ export class Forge {
 
     // Execute command
     try {
-      await command.execute(args);
+      await command.execute(args, []);
     } catch (err) {
       console.error(`ERROR: Command failed: ${commandName}`);
       console.error(err);
@@ -324,9 +334,9 @@ export class Forge {
     console.log(`usage: forge2 <command> [options]\n`);
     console.log('Available commands:\n');
 
-    if (!this.config) return;
+    const commands = Object.entries(this.commands);
+    if (commands.length === 0) return;
 
-    const commands = Object.entries(this.config.commands);
     const maxLen = Math.max(...commands.map(([name]) => name.length));
 
     for (const [name, cmd] of commands) {

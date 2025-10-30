@@ -48,12 +48,12 @@ async function setupCommands() {
     process.exit(1);
   }
 
-  // Load project config
+  // Load project config and auto-discover commands
   const forge = new Forge(projectRoot, globalOpts);
   await forge.loadConfig();
 
-  // Register each command with Commander
-  for (const [name, forgeCmd] of Object.entries(forge.config.commands)) {
+  // Register each discovered command with Commander
+  for (const [name, forgeCmd] of Object.entries(forge.commands)) {
     const cmd = buildCommanderCommand(name, forgeCmd);
     program.addCommand(cmd);
   }
