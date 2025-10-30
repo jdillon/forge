@@ -10,7 +10,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 import boxen from 'boxen';
 import { Listr } from 'listr2';
-import { createLogger } from '../../../lib/logger';
+import { createLogger } from '@forge/logger';
 import type { ForgeCommand } from '@forge/core';
 
 // Configuration

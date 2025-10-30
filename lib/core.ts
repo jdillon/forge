@@ -137,16 +137,26 @@ function isForgeCommand(obj: any): obj is ForgeCommand {
 }
 
 /**
+ * Derive group name from module path
+ * './website' → 'website'
+ * './website.ts' → 'website'
+ * '@forge/aws' → 'aws'
+ */
+function deriveGroupName(modulePath: string): string {
+  const basename = modulePath.split('/').pop() || '';
+  return basename.replace(/\.(ts|js|mjs)$/, '');
+}
+
+/**
  * Auto-discover ForgeCommands from a module's exports
- * Supports:
- * - Named exports: export const build = { ... }
- * - Default export: export default { build: {...}, sync: {...} }
+ * Returns: { groupName, commands }
  */
 export async function loadModule(
   modulePath: string,
   forgeDir: string
-): Promise<Record<string, ForgeCommand>> {
+): Promise<{ groupName: string; commands: Record<string, ForgeCommand> }> {
   const commands: Record<string, ForgeCommand> = {};
+  const groupName = deriveGroupName(modulePath);
 
   // Resolve module path (relative to .forge2/)
   const fullPath = modulePath.startsWith('.')
@@ -175,7 +185,7 @@ export async function loadModule(
       }
     }
 
-    return commands;
+    return { groupName, commands };
   } catch (err) {
     console.error(`ERROR: Failed to load module ${modulePath}:`, err);
     process.exit(1);
@@ -255,7 +265,12 @@ export class StateManager {
 export class Forge {
   private context: ForgeContext;
   private config: ForgeConfig | null = null;
-  public commands: Record<string, ForgeCommand> = {};
+
+  // Command groups (subcommands)
+  public commandGroups: Record<string, {
+    commands: Record<string, ForgeCommand>;
+  }> = {};
+
   public state: StateManager;
   public globalOptions: Record<string, any>;
 
@@ -284,10 +299,15 @@ export class Forge {
       // Auto-discover commands from modules
       if (this.config?.modules) {
         for (const modulePath of this.config.modules) {
-          const moduleCommands = await loadModule(modulePath, this.context.forgeDir);
+          const { groupName, commands } = await loadModule(modulePath, this.context.forgeDir);
+
+          // Store commands under group
+          if (!this.commandGroups[groupName]) {
+            this.commandGroups[groupName] = { commands: {} };
+          }
 
           // Merge discovered commands (last wins)
-          Object.assign(this.commands, moduleCommands);
+          Object.assign(this.commandGroups[groupName].commands, commands);
         }
       }
     } catch (err) {
@@ -370,15 +390,24 @@ export function buildCommanderCommand(name: string, forgeCmd: ForgeCommand): Com
   // 2. Let command customize Commander Command (if defined)
   if (forgeCmd.defineCommand) {
     forgeCmd.defineCommand(cmd);
+  } else {
+    // If no defineCommand, allow unknown arguments/options
+    cmd.allowUnknownOption(true);
+    cmd.allowExcessArguments(true);
   }
 
   // 3. Install action handler that calls our execute function
   cmd.action(async (...actionArgs) => {
     // Commander passes: (arg1, arg2, ..., options, command)
-    // Last arg is Command object, second-to-last is options object
+    // Last arg is Command object
     const command = actionArgs[actionArgs.length - 1] as Command;
     const options = actionArgs[actionArgs.length - 2];
-    const positionalArgs = actionArgs.slice(0, -2) as string[];
+
+    // Get positional args from command.args (for commands without defineCommand)
+    // or from the action args (for commands with defineCommand)
+    const positionalArgs = command.args.length > 0
+      ? command.args
+      : actionArgs.slice(0, -2) as string[];
 
     try {
       await forgeCmd.execute(options, positionalArgs);

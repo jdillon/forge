@@ -12,7 +12,7 @@ import { Command } from 'commander';
 import { $ } from 'bun';
 import chalk from 'chalk';
 import ora from 'ora';
-import { createLogger } from '../../../lib/logger';
+import { createLogger } from '@forge/logger';
 import type { ForgeCommand } from '@forge/core';
 
 const log = createLogger('examples');

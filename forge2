@@ -52,10 +52,18 @@ async function setupCommands() {
   const forge = new Forge(projectRoot, globalOpts);
   await forge.loadConfig();
 
-  // Register each discovered command with Commander
-  for (const [name, forgeCmd] of Object.entries(forge.commands)) {
-    const cmd = buildCommanderCommand(name, forgeCmd);
-    program.addCommand(cmd);
+  // Register command groups as subcommands
+  for (const [groupName, group] of Object.entries(forge.commandGroups)) {
+    // Create group subcommand
+    const groupCmd = new Command(groupName);
+
+    // Add each command to the group
+    for (const [cmdName, forgeCmd] of Object.entries(group.commands)) {
+      const cmd = buildCommanderCommand(cmdName, forgeCmd);
+      groupCmd.addCommand(cmd);
+    }
+
+    program.addCommand(groupCmd);
   }
 
   // Parse args
