@@ -13,7 +13,7 @@ We use GitHub Issues and Projects to organize complex, multi-phase work into a c
 **Hierarchy:**
 ```
 Epic (Parent Issue)
-└─ Phase Issues (Stories)
+└─ Story Issues (Major work phases)
    └─ Task Issues (Individual work items)
 ```
 
@@ -79,7 +79,7 @@ See [Project Board]([link])
 
 ---
 
-### Level 2: Phase Issues (Stories)
+### Level 2: Story Issues (Work Phases)
 
 **Purpose**: Track a complete phase of work with clear goals and tasks
 
