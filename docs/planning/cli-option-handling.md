@@ -2,6 +2,16 @@
 
 This document specifies how Forge v2 CLI option and argument parsing should work.
 
+## Specification vs Implementation
+
+**This specification defines the canonical behavior** - the "way" Forge v2 CLI should work. The implementation uses Commander.js, which may be slightly more permissive in certain areas for better UX. This is acceptable as long as:
+
+1. The implementation doesn't require custom argv parsing hacks
+2. The implementation doesn't violate other parts of this spec
+3. The additional permissiveness improves user experience
+
+**Example:** The spec canonically shows top-level options before subcommands (`example --debug greet`), but Commander naturally allows them after subcommands as well (`example greet --debug`). This is acceptable because it makes the CLI more flexible without requiring custom parsing logic.
+
 ## Goals
 
 - Validate this specification works with Commander.js
@@ -45,17 +55,23 @@ Options:
 
 ### Top-Level Options
 
-**Top-level options can appear before or after the subcommand name.**
+**Canonical form: Top-level options appear before the subcommand name.**
 
-Top-level options (e.g., `--debug`, `--log-level`) are global and work anywhere in the command line.
+The specification canonically shows top-level options before subcommands for clarity and consistency.
 
-Valid:
+Canonical:
 ```bash
 example --debug greet
-example greet --debug               # Same as above
 example --debug --log-level info greet Alice
-example greet Alice --debug         # Also valid
 ```
+
+**Implementation note:** Commander.js naturally makes top-level options global, so they also work after subcommands:
+```bash
+example greet --debug               # Also works (global option)
+example greet Alice --debug         # Also works (global option)
+```
+
+This additional flexibility is acceptable and improves UX without requiring custom parsing.
 
 Invalid:
 ```bash
@@ -114,6 +130,23 @@ Show main program help when:
 example --help               # Explicit help request
 example --help greet         # --help before subcommand = main help
 example                      # No subcommand provided (exit code 1)
+```
+
+### No Subcommand Provided
+
+When no subcommand is provided, the program should:
+1. Display an error message: `ERROR: subcommand required`
+2. Display a blank line
+3. Display the full command-line help (usage, options, commands)
+4. Exit with code 1 (user input error)
+
+Example:
+```bash
+$ example
+ERROR: subcommand required
+
+Usage: example [options] [command]
+...
 ```
 
 ### Subcommand Help
