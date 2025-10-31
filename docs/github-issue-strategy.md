@@ -4,6 +4,23 @@
 
 **For**: Multi-phase projects (like Module System implementation)
 
+**Status**: Living document - update as strategies evolve
+
+---
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Design Decisions & Rationale](#design-decisions--rationale)
+3. [Issue Hierarchy](#issue-hierarchy)
+4. [Labels](#labels)
+5. [GitHub Project Board](#github-project-board)
+6. [Integration with Documentation](#integration-with-documentation)
+7. [Creating Issues](#creating-issues)
+8. [Benefits](#benefits)
+9. [Examples](#examples)
+10. [Appendices](#appendices)
+
 ---
 
 ## Overview
@@ -33,6 +50,142 @@ Epic (tracks the plan)
 - **Project Board**: Kanban view (Backlog → Planned → In Progress → Blocked → Done)
 - **Roadmap View**: Timeline visualization of phases
 - **Table View**: Spreadsheet-like view for bulk updates
+
+---
+
+## Design Decisions & Rationale
+
+### Terminology Choices
+
+**Why "Plan" not "Epic" for documents?**
+- **Plan** = The design document laying out the work
+- **Epic** = The GitHub issue tracking implementation of that plan
+- Keeps clear separation between design artifacts and tracking artifacts
+- Avoids confusion: "Read the epic" vs "Read the plan"
+
+**Why "Phase" not "Milestone" or "Sprint"?**
+- **Phase** = Natural stage in a larger plan (Phase 1, Phase 2, etc.)
+- **Milestone** = GitHub's built-in feature (reserved for release tracking)
+- **Sprint** = Time-boxed iteration (we're not doing strict Scrum)
+- Phases can be of varying size/duration based on work complexity
+
+**Why separate "Phase" from "Story"?**
+- **Phase** = Organizational concept (groups related work)
+- **Story** = Work granularity (major work item)
+- Phase issues are *typed* as Stories (they're major work items)
+- But phases can also contain multiple Stories/Tasks if needed
+- This flexibility allows both simple and complex phases
+
+**Why "Story" and "Task" (Agile terms)?**
+- **Industry standard**: Widely recognized in software development
+- **Clear distinction**: Story = days of work, Task = hours of work
+- **Familiar hierarchy**: Epic → Story → Task is standard Agile
+- **Flexible**: Can create Story issues within phases or just use Tasks
+
+### Label Strategy
+
+**Why `phase-N` labels instead of project fields?**
+- **Labels are portable**: Work across repositories, show in issue lists
+- **Labels are filterable**: Easy to find all phase-1 work
+- **Fields are for categorization**: Type, Priority, Effort, etc.
+- **Labels are for grouping**: Which phase does this belong to?
+
+**Why both labels AND custom fields?**
+- **Labels**: Fast filtering, visible in lists, portable
+- **Custom Fields**: Rich data (single-select with colors), better visualization
+- **Complementary**: Use both for maximum flexibility
+
+### Custom Field Choices
+
+**Type field: Epic, Story, Task**
+- **Epic**: Entire plan tracking (usually just one per plan)
+- **Story**: Major work (days), can be a phase or work within a phase
+- **Task**: Small work (hours), atomic units of work
+- **Why these three?**: Standard Agile granularity, clear size distinction
+- **Color coding**: Purple (Epic), Blue (Story), Orange (Task) - visual hierarchy
+
+**Phase field: Phase 1, Phase 2, etc.**
+- **Redundant with labels?**: Yes, intentionally
+- **Why both?**: Fields show on cards, labels filter better
+- **Use case**: Quick visual "which phase?" on board cards
+
+**Priority field: High, Medium, Low**
+- **Simple**: Only three levels avoids over-thinking
+- **Clear**: High = critical path, Medium = important, Low = nice-to-have
+- **When to use**: Not every issue needs priority; use sparingly
+
+**Effort field: Number**
+- **Story points**: 1, 2, 3, 5, 8, 13 (Fibonacci-ish)
+- **Or hours**: Actual time estimates
+- **Optional**: Don't estimate everything, only when useful
+- **Use case**: Capacity planning, tracking velocity
+
+### Parent/Child Relationships
+
+**Why use GitHub's native task lists?**
+- **Automatic parent tracking**: Sub-issues field populates automatically
+- **Progress tracking**: Epic shows "3/5 completed"
+- **Simple syntax**: Just `- [ ] #10` in epic description
+- **Visual**: Shows parent/child in issue sidebar
+
+**Why also show Parent Issue field on board?**
+- **Visual hierarchy**: Can see which epic each issue belongs to
+- **Filtering**: Can filter by parent to see all work for an epic
+- **Context**: Provides context without opening the issue
+
+### Board Configuration Choices
+
+**Status columns: No Status, Todo, In Progress, Blocked, Done**
+- **No Status**: Backlog, ideas, not yet planned
+- **Todo**: Planned, ready to start, dependencies met
+- **In Progress**: Currently being worked on (limit WIP!)
+- **Blocked**: Can't proceed, waiting on something
+- **Done**: Completed and verified
+- **Why these?**: Clear workflow, matches real work states
+
+**Fields visible on cards: Title, Assignees, Status, Type, Parent issue**
+- **Title**: Obviously required
+- **Assignees**: Who's working on it?
+- **Status**: Already shown by column, but useful
+- **Type**: Epic/Story/Task distinction at a glance
+- **Parent issue**: Context - which epic does this belong to?
+- **Why not more?**: Cards get cluttered, keep it minimal
+
+### Integration Philosophy
+
+**Why both WIP docs AND GitHub issues?**
+- **WIP docs**: Implementation details, decisions, gotchas, code snippets
+- **GitHub issues**: Tracking, status, discussion, collaboration
+- **Different audiences**: Docs = future you, Issues = team/stakeholders
+- **Different lifespans**: Docs = archived when done, Issues = permanent
+- **Complementary**: Reference each other, serve different needs
+
+**Sync strategy:**
+- **Create together**: WIP doc + phase issue at same time
+- **Update separately**: WIP = frequently, Issues = milestones
+- **Link bidirectionally**: Issue links to WIP doc, WIP doc mentions issue
+- **Archive together**: When phase complete, both get archived
+
+### Why This Complexity?
+
+**Isn't this over-engineered for solo work?**
+- **Future collaboration**: Scales when others join
+- **Context switching**: Easy to resume after days/weeks away
+- **Memory aid**: You will forget, issues remember
+- **Portfolio**: Demonstrates systematic approach
+- **Learning**: Practice for larger team projects
+
+**When to use simplified version:**
+- **Quick experiments**: Skip all this, just hack
+- **Single-task work**: One issue, done
+- **Well-known territory**: You've done it before
+- **Time pressure**: Ship first, organize later
+
+**When to use full version:**
+- **Multi-phase projects**: Like module system (5 phases)
+- **Uncertain territory**: Research + implementation
+- **Long-running**: Spans weeks/months
+- **High stakes**: Can't afford to lose track
 
 ---
 
