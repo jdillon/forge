@@ -270,6 +270,22 @@ async function run(): Promise<void> {
     if (err.code === 'commander.unknownOption') {
       showError(err.message);
     }
+    if (err.code === 'commander.excessArguments') {
+      // Unknown command - extract from program.args (which has unparsed args)
+      // program.args still contains the excess arguments that caused the error
+      const excessArgs = program.args || [];
+      // Find first arg that doesn't start with '-' and isn't a known option value
+      const unknownCmd = excessArgs.find(arg =>
+        !arg.startsWith('-') &&
+        arg !== process.argv[0] &&
+        arg !== process.argv[1]
+      );
+      if (unknownCmd) {
+        showError(`unknown command '${unknownCmd}'`);
+      } else {
+        showError('unknown command. Run \'forge2 --help\' to see available commands');
+      }
+    }
 
     // Other Commander errors - rethrow
     throw err;
