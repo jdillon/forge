@@ -31,7 +31,7 @@ This file provides guidance to Claude Code when working with this repository.
 - **Format**: Markdown with problem, solution, trade-offs, questions
 
 ### Workflow: Temp Files
-- **Use `tmp/`** - Project root only, never in subdirs
+- **Use project `tmp/`** - Project root only, never in subdirs
 - **Purpose**: Proposals, analysis, scratch work
 - **Cleanup**: Jason decides when to delete
 
