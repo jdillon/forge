@@ -45,19 +45,21 @@ Options:
 
 ### Top-Level Options
 
-**Top-level options MUST appear before the subcommand name.**
+**Top-level options can appear before or after the subcommand name.**
 
-The first non-option argument determines the boundary between main program options and subcommand arguments.
+Top-level options (e.g., `--debug`, `--log-level`) are global and work anywhere in the command line.
 
 Valid:
 ```bash
 example --debug greet
+example greet --debug               # Same as above
 example --debug --log-level info greet Alice
+example greet Alice --debug         # Also valid
 ```
 
 Invalid:
 ```bash
-example greet --debug        # --debug unknown to greet subcommand
+example --foo greet                 # --foo is not a valid top-level option
 ```
 
 ### Subcommand Options

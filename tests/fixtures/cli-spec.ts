@@ -108,6 +108,14 @@ function buildRealCLI(config: BootstrapConfig): Command {
   // NO .allowExcessArguments() - let Commander validate naturally
   program.exitOverride(); // Don't exit, throw instead
 
+  // Action for main program - fires ONLY when no subcommand is provided
+  program.action(() => {
+    console.error(`ERROR: subcommand required`);
+    console.error();  // Blank line
+    program.outputHelp();
+    process.exit(1);  // Exit with error code (user didn't provide command)
+  });
+
   // ========================================
   // Subcommand: greet
   // ========================================
@@ -202,13 +210,6 @@ async function main() {
       }
       if (err.code === 'commander.unknownOption') {
         showError(err.message);
-      }
-
-      // Commander shows help when no command provided, then throws
-      // Check if this is the "no command" case
-      if (err.message && err.message.includes('outputHelp')) {
-        // Help was already shown, exit with error code (user didn't provide command)
-        process.exit(1);
       }
 
       // Other Commander errors - rethrow

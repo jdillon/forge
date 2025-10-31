@@ -72,8 +72,10 @@ describe('CLI Specification Compliance', () => {
     test('should exit 1 when no subcommand provided', () => {
       const result = spawnSync([CLI_PATH]);
       expect(result.exitCode).toBe(1);
-      // Should show help (but exit 1 because user didn't provide command)
-      expect(result.stdout.toString()).toContain('Usage: example');
+      const stderr = result.stderr.toString();
+      const stdout = result.stdout.toString();
+      expect(stderr).toContain('ERROR: subcommand required');
+      expect(stdout).toContain('Usage: example');
     });
 
     test('should exit 1 for invalid top-level option', () => {
@@ -131,12 +133,12 @@ describe('CLI Specification Compliance', () => {
       expect(output).toContain('logLevel: "trace"');
     });
 
-    test('should reject top-level option after subcommand', () => {
+    test('should accept top-level option after subcommand (global options)', () => {
       const result = spawnSync([CLI_PATH, 'greet', '--debug']);
-      expect(result.exitCode).toBe(1);
-      const stderr = result.stderr.toString();
-      expect(stderr).toContain('ERROR: unknown option');
-      expect(stderr).toContain('--debug');
+      expect(result.exitCode).toBe(0);
+      const output = result.stdout.toString();
+      expect(output).toContain('[DEBUG]');
+      expect(output).toContain('Hello, World!');
     });
   });
 
@@ -202,12 +204,14 @@ describe('CLI Specification Compliance', () => {
       expect(output).toContain('Use uppercase');
     });
 
-    test('no subcommand should show help with exit code 1', () => {
+    test('no subcommand should show error and help with exit code 1', () => {
       const result = spawnSync([CLI_PATH]);
       expect(result.exitCode).toBe(1);
-      const output = result.stdout.toString();
-      expect(output).toContain('Usage: example');
-      expect(output).toContain('Commands:');
+      const stderr = result.stderr.toString();
+      const stdout = result.stdout.toString();
+      expect(stderr).toContain('ERROR: subcommand required');
+      expect(stdout).toContain('Usage: example');
+      expect(stdout).toContain('Commands:');
     });
   });
 
