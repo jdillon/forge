@@ -53,8 +53,8 @@ describe('CLI --log-format Validation', () => {
     // Should fail
     expect(result.exitCode).toBe(1);
     const stderr = result.stderr.toString();
-    expect(stderr).toContain('ERROR: invalid --log-format value');
-    expect(stderr).toContain('Valid values: json, pretty');
+    expect(stderr).toContain('invalid');
+    expect(stderr).toContain('Allowed choices');
   });
 
   test('should reject invalid format "xyz"', () => {
@@ -70,8 +70,8 @@ describe('CLI --log-format Validation', () => {
     // Should fail
     expect(result.exitCode).toBe(1);
     const stderr = result.stderr.toString();
-    expect(stderr).toContain('ERROR: invalid --log-format value');
-    expect(stderr).toContain('Valid values: json, pretty');
+    expect(stderr).toContain('invalid');
+    expect(stderr).toContain('Allowed choices');
   });
 
   test('should reject numeric format "123"', () => {
@@ -87,7 +87,7 @@ describe('CLI --log-format Validation', () => {
     // Should fail
     expect(result.exitCode).toBe(1);
     const stderr = result.stderr.toString();
-    expect(stderr).toContain('ERROR: invalid --log-format value');
+    expect(stderr).toContain('invalid');
   });
 
   test('should show valid formats in error message', () => {

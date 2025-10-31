@@ -26,23 +26,23 @@ describe('CLI Validation (No Project Required)', () => {
     const result = spawnSync([cliPath, '--log-format=plain']);
     expect(result.exitCode).toBe(1);
     const stderr = result.stderr.toString();
-    expect(stderr).toContain('ERROR: invalid --log-format value');
-    expect(stderr).toContain('Valid values: json, pretty');
+    expect(stderr).toContain('invalid');
+    expect(stderr).toContain('Allowed choices');
   });
 
   test('should reject invalid format "xyz"', () => {
     const result = spawnSync([cliPath, '--log-format=xyz']);
     expect(result.exitCode).toBe(1);
     const stderr = result.stderr.toString();
-    expect(stderr).toContain('ERROR: invalid --log-format value');
-    expect(stderr).toContain('Valid values: json, pretty');
+    expect(stderr).toContain('invalid');
+    expect(stderr).toContain('Allowed choices');
   });
 
   test('should reject numeric format "123"', () => {
     const result = spawnSync([cliPath, '--log-format=123']);
     expect(result.exitCode).toBe(1);
     const stderr = result.stderr.toString();
-    expect(stderr).toContain('ERROR: invalid --log-format value');
+    expect(stderr).toContain('invalid');
   });
 
   test('should show valid formats in error message', () => {

@@ -92,8 +92,14 @@ async function run(): Promise<void> {
     .option('-d, --debug', 'Debug output (sets log level to debug)')
     .option('-q, --quiet', 'Quiet mode (sets log level to warn)')
     .option('-s, --silent', 'Silent mode (disables all logging)')
-    .option('--log-level <level>', 'Set log level: silent, trace, debug, info, warn, error, fatal')
-    .option('--log-format <format>', 'Set log format: pretty, json (default: pretty)')
+    .addOption(
+      program.createOption('--log-level <level>', 'Set log level')
+        .choices(['silent', 'trace', 'debug', 'info', 'warn', 'error', 'fatal'])
+    )
+    .addOption(
+      program.createOption('--log-format <format>', 'Set log format (default: pretty)')
+        .choices(['json', 'pretty'])
+    )
     .option('--no-color', 'Disable colored output (respects NO_COLOR env var)')
     .allowUnknownOption(true)  // Allow subcommand names to pass through
     .exitOverride();
@@ -132,10 +138,13 @@ async function run(): Promise<void> {
 
   program.configureHelp(helpConfig);
 
-  // Check for unknown options before subcommand names
-  // unknown array contains unparsed args that could be subcommands or invalid options
-  // Invalid options start with - or --, but exclude help/version (handled by Commander)
-  const invalidOptions = unknown.filter(arg =>
+  // Check for unknown options BEFORE the first subcommand name
+  // Options that appear after a subcommand belong to that subcommand, not to forge2
+  // Only reject options that appear before any subcommand name
+  const firstSubcommandIndex = operands.findIndex(arg => !arg.startsWith('-'));
+  const optionsBeforeSubcommand = unknown.slice(0, firstSubcommandIndex >= 0 ? firstSubcommandIndex : unknown.length);
+
+  const invalidOptions = optionsBeforeSubcommand.filter(arg =>
     arg.startsWith('-') &&
     arg !== '-h' &&
     arg !== '--help' &&
@@ -144,16 +153,6 @@ async function run(): Promise<void> {
   );
   if (invalidOptions.length > 0) {
     console.error(chalk.red(`ERROR: unknown option '${invalidOptions[0]}'`));
-    console.error(); // blank line
-    program.outputHelp();
-    exit(1);
-  }
-
-  // Validate log format if provided
-  const validFormats = ['json', 'pretty'];
-  if (earlyOpts.logFormat && !validFormats.includes(earlyOpts.logFormat)) {
-    console.error(chalk.red(`ERROR: invalid --log-format value '${earlyOpts.logFormat}'`));
-    console.error(`Valid values: ${validFormats.join(', ')}`);
     console.error(); // blank line
     program.outputHelp();
     exit(1);
