@@ -451,6 +451,253 @@ See [Project Board]([link])
 
 ---
 
+## Recommended Project Views
+
+GitHub Projects v2 supports multiple views of the same data. Set up these views for different workflows:
+
+### View 1: Issues Table
+
+**Purpose**: Detailed view of all work items with full metadata
+
+**Layout**: Table
+
+**Columns to show**:
+- Title
+- Assignees
+- Status
+- Type
+- Phase
+- Priority
+- Effort
+- Parent issue
+- Labels
+- Milestone
+
+**Filters**: None (show everything by default)
+
+**Sort by**: Manual (allows drag-and-drop prioritization)
+
+**Use cases**:
+- Bulk editing issues
+- Seeing all metadata at once
+- Sprint planning
+- Effort estimation
+- Filtering by multiple criteria
+
+---
+
+### View 2: Roadmap
+
+**Purpose**: Timeline visualization of phases and major milestones
+
+**Layout**: Roadmap
+
+**Group by**: Phase or Milestone
+
+**Date field**: Start date / Target date (if you add these fields)
+
+**Filters**: Type = Epic or Story (hide small tasks)
+
+**Use cases**:
+- High-level planning
+- Communicating timelines to stakeholders
+- Identifying dependencies
+- Seeing the big picture
+
+**Note**: Roadmap view requires date fields. Add "Start date" and "Target date" custom fields if using this view.
+
+---
+
+### View 3: Work Board (Kanban)
+
+**Purpose**: Daily work tracking for Stories and Tasks
+
+**Layout**: Board
+
+**Column by**: Status
+
+**Columns**: No Status → Todo → In Progress → Blocked → Done
+
+**Fields visible on cards**:
+- Title
+- Assignees
+- Type
+- Parent issue
+
+**Filters**: `type:Story OR type:Task` (exclude Epics)
+
+**WIP limit**: Consider limiting "In Progress" to 1-2 items
+
+**Use cases**:
+- Daily standup
+- Seeing what's actively being worked on
+- Moving work through the workflow
+- Identifying blockers quickly
+
+**Why exclude Epics?**
+- Epics don't move through workflow states
+- They track overall progress, not day-to-day work
+- Keeps the board focused on actionable items
+- Reduces visual clutter
+
+---
+
+### View 4: Epic Board (Optional)
+
+**Purpose**: High-level portfolio view of all Epics
+
+**Layout**: Board
+
+**Column by**: Status
+
+**Columns**: Backlog → Planned → In Progress → Done
+
+**Fields visible on cards**:
+- Title
+- Assignees
+- Sub-issues progress
+- Milestone
+
+**Filters**: `type:Epic` (only show Epics)
+
+**Use cases**:
+- Portfolio management
+- Seeing all major initiatives at once
+- Tracking Epic progress
+- Strategic planning sessions
+- Stakeholder updates
+
+**Why separate Epic Board?**
+- Different cadence: Epics move slower than Stories/Tasks
+- Different audience: Managers/stakeholders vs. implementers
+- Different granularity: Strategic vs. tactical
+- Prevents Epic cards from cluttering the Work Board
+
+**When to use**:
+- ✅ Managing 5+ Epics simultaneously
+- ✅ Multiple teams working on different Epics
+- ✅ Need to report status to stakeholders
+- ✅ Long-running project (6+ months)
+
+**When to skip**:
+- ❌ Only 1-2 Epics total
+- ❌ Solo developer
+- ❌ Short project (< 1 month)
+- ❌ Work Board + Table view is sufficient
+
+---
+
+### View Naming Convention
+
+Recommended names:
+- **Issues** (Table view)
+- **Roadmap** (Roadmap view)
+- **Work** or **Kanban** (Work Board)
+- **Epics** (Epic Board, if used)
+
+**Why clear names?**
+- "View 1", "View 2" are meaningless
+- Clear purpose at a glance
+- Easy to navigate for new team members
+- Matches common vocabulary
+
+---
+
+## Setup Automation with AI Assistants
+
+### Recommended: Use AI Assistance for Setup
+
+Setting up GitHub Projects with the correct views, fields, and configurations is tedious and error-prone when done manually. **Strongly recommend using an AI assistant** to automate this.
+
+### Using Claude Code with BrowserMCP
+
+**What it can do:**
+- Create custom fields (Type, Phase, Priority, Effort)
+- Set field values and colors
+- Create labels (phase-1, epic, type:impl, etc.)
+- Create issues with proper hierarchy (Epic → Phase → Story → Task)
+- Configure project views (Table, Roadmap, Board)
+- Set up filters and field visibility on cards
+- Link parent/child relationships
+
+**How to use:**
+
+1. **Install BrowserMCP** (or similar browser automation tool for Claude)
+   - Allows Claude to interact with GitHub's web UI
+   - Necessary for view configuration (not available via API)
+
+2. **Provide this document** to Claude:
+   ```
+   "Set up a GitHub Project following docs/github-issue-strategy.md"
+   ```
+
+3. **Claude will**:
+   - Create labels via `gh` CLI
+   - Create custom fields via GraphQL API
+   - Create issues via `gh issue create`
+   - Use BrowserMCP to configure views (filters, columns, etc.)
+   - Set field values and colors via UI (not available in API)
+
+4. **You verify**:
+   - Check project board looks correct
+   - Verify issue hierarchy
+   - Test filters work as expected
+
+**Benefits:**
+- ✅ **Consistent**: Same setup every time
+- ✅ **Fast**: Minutes instead of hours
+- ✅ **Documented**: All decisions captured in this doc
+- ✅ **Reproducible**: Easy to set up new projects
+- ✅ **Less error-prone**: AI follows instructions exactly
+
+**Limitations:**
+- ⚠️ Some GitHub features only available via web UI (views, colors)
+- ⚠️ Requires browser automation tool (BrowserMCP, Playwright, etc.)
+- ⚠️ May need manual verification/tweaking
+
+### Alternative: Manual Setup
+
+If you can't use AI assistance, follow the manual steps in the sections below.
+
+**Time estimate**: 30-60 minutes for full setup
+
+**Checklist**:
+- [ ] Create project
+- [ ] Create custom fields (Type, Phase, Priority, Effort)
+- [ ] Create labels (epic, phase-1 through phase-5, type labels)
+- [ ] Set field colors (Purple/Blue/Orange for Type)
+- [ ] Create Epic issue
+- [ ] Create Phase issues
+- [ ] Link Phase issues to Epic (task list)
+- [ ] Set Type field values on all issues
+- [ ] Create views (Issues, Roadmap, Work, Epics)
+- [ ] Configure filters and visible fields per view
+- [ ] Test everything works
+
+### Alternative: Scripted Setup via gh CLI
+
+**What's possible via CLI/API:**
+- ✅ Create project: `gh project create`
+- ✅ Create labels: `gh label create`
+- ✅ Create custom fields: `gh project field-create`
+- ✅ Create issues: `gh issue create`
+- ✅ Add issues to project: `gh project item-add`
+- ✅ Set field values: `gh project item-edit`
+
+**What requires web UI or BrowserMCP:**
+- ❌ Configure view layouts (Table, Board, Roadmap)
+- ❌ Set field colors (single-select options)
+- ❌ Configure field visibility on cards
+- ❌ Set up filters on views
+- ❌ Reorder fields/columns
+
+**Hybrid approach:**
+1. Use `gh` CLI for labels, fields, issues
+2. Use web UI or BrowserMCP for views and colors
+3. Document your CLI commands for reproducibility
+
+---
+
 ## GitHub Project Board
 
 ### Setup
