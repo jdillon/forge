@@ -15,6 +15,7 @@ This file provides guidance to Claude Code when working with this repository.
 - **Call me Jason** - Not "you" or formal
 
 ### Workflow: No Auto-Commit
+- **NEVER NEVER NEVER EVER run git commit without explicit "commit" command.**
 - **STOP after work** - Give terse summary of changes
 - **WAIT for "commit"** - Jason will run `git status`/`git diff` if he wants details
 - **Why**: Helps him understand what changed and learn from your work
