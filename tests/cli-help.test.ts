@@ -67,7 +67,7 @@ describe('CLI Help Output', () => {
     expect(output).toMatch(/\d+\.\d+\.\d+/);
   });
 
-  test('should show help for unknown options', () => {
+  test('should show terse error for unknown options', () => {
     const result = spawnSync([cliPath, '--root', projectRoot, '--invalid-option'], {
       env: { ...process.env },
     });
@@ -76,7 +76,9 @@ describe('CLI Help Output', () => {
     const stderr = result.stderr.toString();
     const stdout = result.stdout.toString();
     expect(stderr).toContain('ERROR: unknown option');
-    expect(stdout).toContain('Usage: forge2');
+    expect(stderr).toContain("Try 'forge2 --help' for more information");
+    // Spec says: terse error only, no help dump
+    expect(stdout).toBe('');
   });
 
   test('should list commands in help output', () => {
