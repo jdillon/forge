@@ -10,12 +10,24 @@
 
 We use GitHub Issues and Projects to organize complex, multi-phase work into a clear hierarchy with visual tracking.
 
-**Hierarchy:**
+**Structure:**
+- **Plan** = Design document (e.g., `docs/planning/[spec].md`)
+- **Epic** = GitHub issue tracking the plan's implementation
+- **Phase** = Major stage in the plan (Phase 1, Phase 2, etc.)
+- **Phase Issue** = GitHub issue tracking one phase
+- **Story** = Major work item (may span multiple days)
+- **Task** = Small work item (typically < 1 day)
+
+**Issue Hierarchy:**
 ```
-Epic (Parent Issue)
-└─ Story Issues (Major work phases)
-   └─ Task Issues (Individual work items)
+Epic (tracks the plan)
+└─ Phase Issues (tracks each phase)
+   ├─ Story Issues (major work items)
+   │  └─ Task Issues (small work items)
+   └─ Task Issues (standalone small items)
 ```
+
+**Type Field Values:** Epic, Story, Task (categorizes work granularity)
 
 **Visualization:**
 - **Project Board**: Kanban view (Backlog → Planned → In Progress → Blocked → Done)
@@ -79,9 +91,11 @@ See [Project Board]([link])
 
 ---
 
-### Level 2: Story Issues (Work Phases)
+### Level 2: Phase Issues
 
-**Purpose**: Track a complete phase of work with clear goals and tasks
+**Purpose**: Track a complete phase of the plan with clear goals and deliverables
+
+**Type**: Typically "Story" (major work item), but could contain multiple Stories/Tasks
 
 **Example**: "Phase 1: Basic Installation & Local Modules"
 
@@ -148,9 +162,61 @@ See [Project Board]([link])
 
 ---
 
-### Level 3: Task Issues (Individual Work Items)
+### Level 3: Story Issues (Optional)
+
+**Purpose**: Track major work items within a phase that need breakdown
+
+**Type**: "Story"
+
+**When to create story issues:**
+- ✅ Work item is significant (multiple days)
+- ✅ Work can be broken down into multiple tasks
+- ✅ Work needs discussion or collaboration
+- ✅ Work has dependencies or blockers
+
+**When NOT to create story issues:**
+- ❌ Phase is simple enough to track directly
+- ❌ Work is a single cohesive task
+- ❌ Creating unnecessary overhead
+
+**Template:**
+```markdown
+# [Story Name]
+
+**Phase**: #XX (Phase N: [name])
+**Epic**: #XX ([epic name])
+**Type**: Story
+
+## Description
+
+[What needs to be accomplished]
+
+## Goals
+
+- [Goal 1]
+- [Goal 2]
+
+## Tasks
+
+- [ ] #XX [Task 1]
+- [ ] #XX [Task 2]
+- [ ] [Simple inline task]
+
+## Acceptance Criteria
+
+- [ ] [Criterion 1]
+- [ ] [Criterion 2]
+```
+
+**Labels**: `phase-N`, `type:impl`
+
+---
+
+### Level 4: Task Issues (Individual Work Items)
 
 **Purpose**: Track specific, focused work items that need detail or discussion
+
+**Type**: "Task"
 
 **When to create task issues:**
 - ✅ Task is complex enough to need discussion
