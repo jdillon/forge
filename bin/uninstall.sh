@@ -160,13 +160,3 @@ if [[ -L "${FORGE_CMD}" ]] || [[ -f "${FORGE_CMD}" ]]; then
 fi
 
 info "Forge has been uninstalled"
-
-# Very sad panda says goodbye
-echo
-echo "${BOLD}     ∩___∩"
-echo "    ╱ ${RESET}•́${BOLD} ˕ ${RESET}•̀${BOLD} ╲"
-echo "   ╱  ${RESET}︶${BOLD}     ╲  ${RESET}Sad to see you go..."
-echo "${BOLD}  ｜${RESET}  ˍ    ${BOLD}｜"
-echo "  ｜${RESET}ノ     ヽ${BOLD}｜  ${RESET}Come back soon! ${YELLOW};_;${RESET}"
-echo "${BOLD}  ―︶―︶―"
-echo "${RESET}"
