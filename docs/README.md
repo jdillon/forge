@@ -38,6 +38,7 @@ Understanding the architecture:
 | Document | Purpose |
 |----------|---------|
 | **[command-patterns.md](command-patterns.md)** | Quick reference for writing commands |
+| **[testing.md](testing.md)** | Test infrastructure and patterns |
 
 ### Directories
 | Directory | Purpose |
@@ -122,6 +123,7 @@ Forge v2 prioritizes delightful UX:
 docs/
 ├── README.md                      # This file
 ├── command-patterns.md            # User guide: writing commands
+├── testing.md                     # Test infrastructure and patterns
 ├── whats-working-now.md           # Status and features
 ├── xdg-paths.md                   # Directory structure
 ├── dependencies.md                # Security policy

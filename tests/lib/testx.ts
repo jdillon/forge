@@ -5,7 +5,7 @@
  * Import everything else directly from 'bun:test':
  *
  * @example
- * import { describe, test } from './lib/extension';
+ * import { describe, test } from './lib/testx';
  * import { expect, beforeEach } from 'bun:test';
  *
  * describe('My Suite', () => {
@@ -39,9 +39,6 @@ type TestFunction = (ctx: TestContext) => void | Promise<void>;
 // Track describe block stack (reset per file)
 let describeStack: string[] = [];
 
-// Track current file (set by getTestFileName when first test runs)
-let currentFileName: string | undefined;
-
 // Track whether we're in Bun's execution phase (to skip our own tracking)
 let inBunExecution = false;
 
@@ -49,16 +46,13 @@ let inBunExecution = false;
  * Get the current test file name from stack trace
  */
 function getTestFileName(): string {
-  if (currentFileName) return currentFileName;
-
   const err = new Error();
   const stack = err.stack || '';
 
   // Look for .test.ts or .test.js in stack trace
   const match = stack.match(/([^/\s]+\.test\.[tj]s)/);
   if (match) {
-    currentFileName = match[1];
-    return currentFileName;
+    return match[1];
   }
 
   return 'unknown.test.ts';

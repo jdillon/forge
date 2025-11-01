@@ -5,7 +5,7 @@
  * Verbose: VERBOSE=1 bun test tests/extension-demo.test.ts
  */
 
-import { describe, test } from './lib/extension';
+import { describe, test } from './lib/testx';
 import { expect } from 'bun:test';
 import { setupTestLogs, runCommandWithLogs, println } from './lib/utils';
 import { spawnSync } from 'bun';
@@ -35,7 +35,7 @@ describe('Extension Demo - Basic Usage', () => {
     println('logBaseName:', logs.logBaseName);
 
     // Directory based on file name
-    expect(logs.logDir).toContain('extension-demo-test-ts');
+    expect(logs.logDir).toContain('extension-demo');
 
     // Base name based on test name
     expect(logs.logBaseName).toBe('uses-context-for-automatic-log-setup');
@@ -88,7 +88,7 @@ describe('Extension Demo - Nested Describes', () => {
 
         // But logs still use file name for directory (not describe path)
         const logs = await setupTestLogs(ctx);
-        expect(logs.logDir).toContain('extension-demo-test-ts');
+        expect(logs.logDir).toContain('extension-demo');
         expect(logs.logBaseName).toBe('shows-full-path-in-nested-context');
       });
     });
@@ -117,7 +117,7 @@ describe('Extension Demo - Comparison with Manual', () => {
     println('logBaseName:', logs.logBaseName);
 
     // Uses file name for directory (better for multiple describe blocks in same file)
-    expect(logs.logDir).toContain('extension-demo-test-ts');
+    expect(logs.logDir).toContain('extension-demo');
     expect(logs.logBaseName).toBe('context-approach-new-way');
   });
 });

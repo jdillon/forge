@@ -6,12 +6,14 @@ import { spawn } from "child_process";
 import { createWriteStream } from "fs";
 import { join } from "path";
 import { mkdir } from "fs/promises";
+import type { TestContext } from "./testx";
 
 // Check for verbose mode via environment variable
 const VERBOSE = process.env.VERBOSE === "1" || process.env.TEST_VERBOSE === "1";
 
 // Test output directories
-const projectRoot = join(import.meta.dir, "..");
+// import.meta.dir is tests/lib/, so we need to go up two levels to reach project root
+const projectRoot = join(import.meta.dir, "../..");
 export const TEST_DIRS = {
   /** HTML/XML test reports (junit, coverage, etc) */
   reports: join(projectRoot, "build", "test-reports"),
@@ -39,16 +41,6 @@ export function normalizeName(name: string): string {
 }
 
 /**
- * Test context from lib/extension.ts
- */
-export interface TestContext {
-  fileName: string;
-  testName: string;
-  describePath: string[];
-  fullName: string;
-}
-
-/**
  * Create and return paths for a test's log directory.
  *
  * Can be called two ways:
@@ -60,7 +52,7 @@ export interface TestContext {
  * - Log base name: <normalized-test-name>
  *
  * @example
- * // With TestContext (from lib/extension.ts)
+ * // With TestContext (from lib/testx.ts)
  * test('should display help', async (ctx) => {
  *   const logs = await setupTestLogs(ctx);
  *   // logs.logDir = "build/test-logs/cli-help-test-ts/"
@@ -88,7 +80,9 @@ export async function setupTestLogs(
   } else {
     // New: TestContext
     const ctx = ctxOrGroupName;
-    const normalizedFileName = normalizeName(ctx.fileName);
+    // Strip .test.ts or .test.js extension from filename
+    const fileNameWithoutExt = ctx.fileName.replace(/\.test\.[tj]s$/, '');
+    const normalizedFileName = normalizeName(fileNameWithoutExt);
     logDir = join(TEST_DIRS.logs, normalizedFileName);
     logBaseName = normalizeName(ctx.testName);
   }
