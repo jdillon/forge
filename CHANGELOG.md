@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Installation system via `install.sh` script (Phase 1 of Module Distribution System)
+- Package metadata in `package.json` with `@planet57/forge` scoped package name
+- Wrapper script installation at `~/.local/bin/forge`
+- Meta-project pattern for shared module storage at `~/.local/share/forge`
+- Package exports for programmatic use (`@planet57/forge`, `@planet57/forge/types`)
 - Bun test suite with 32 passing tests covering logger, validation, formats, colors
 - Test documentation in `tests/README.md`
 - Session stash support via `.claude/stashes/` for resuming work

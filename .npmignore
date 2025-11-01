@@ -1,0 +1,26 @@
+# Test outputs
+test-results/
+build/
+coverage/
+
+# Tests
+tests/
+*.test.ts
+
+# Temporary files
+tmp/
+
+# Development
+.claude/
+.specify/
+test-home/
+sandbox/
+
+# CI/CD
+.github/
+
+# Documentation (not needed in package)
+docs/
+
+# Examples (users can get from repo)
+examples/

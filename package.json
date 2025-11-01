@@ -4,7 +4,7 @@
   "description": "Modern CLI framework for deployments - TypeScript/Bun implementation",
   "type": "module",
   "bin": {
-    "forge": "./bin/forge2"
+    "forge": "./bin/forge"
   },
   "exports": {
     ".": "./lib/core.ts",
@@ -22,9 +22,11 @@
     "url": "https://github.com/jdillon/forge.git"
   },
   "scripts": {
-    "test": "bun test",
-    "test:junit": "mkdir -p test-results && bun test --reporter=junit --reporter-outfile=test-results/junit.xml",
-    "typecheck": "tsc --noEmit"
+    "test": "bun run pack && bun test",
+    "test:junit": "bun run pack && mkdir -p build/test-reports && bun test --reporter=junit --reporter-outfile=build/test-reports/junit.xml",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf build/",
+    "pack": "bun pm pack --destination build/ --quiet"
   },
   "keywords": [
     "cli",

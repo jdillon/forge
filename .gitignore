@@ -21,16 +21,11 @@ config.local.js
 .vscode/
 .idea/
 
+# Build outputs
+build/
+
 # Testing
-test-output/
-test-results/
 sandbox/
-test-home/Library/Caches/
-test-home/.local/bin/
-test-home/.local/share/forge
-test-home/.local/state/
-test-home/.config/
-test-home/.cache/
 
 # Dependencies
 node_modules/

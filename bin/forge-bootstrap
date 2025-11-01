@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Forge bootstrap script - delegates to installed version
+set -euo pipefail
+
+FORGE_SHARE="${XDG_DATA_HOME:-$HOME/.local/share}/forge"
+FORGE_CLI="${FORGE_SHARE}/node_modules/@planet57/forge/bin/forge"
+
+if [[ ! -f "${FORGE_CLI}" ]]; then
+  echo "Error: Forge not found at ${FORGE_CLI}" >&2
+  echo "Run install.sh to reinstall forge" >&2
+  exit 1
+fi
+
+exec bun "${FORGE_CLI}" "$@"
