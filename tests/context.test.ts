@@ -2,28 +2,28 @@
  * Tests for ForgeContext fields
  */
 
-import { describe, test, expect } from 'bun:test';
-import { spawnSync } from 'bun';
+import { describe, test } from './lib/testx';
+import { expect } from 'bun:test';
+import { setupTestLogs, runCommandWithLogs } from './lib/utils';
 import { join } from 'path';
 
 describe('ForgeContext', () => {
   const fixtureRoot = join(process.cwd(), 'tests/fixtures/test-project');
 
-  test('should include logLevel, logFormat, and color in context', () => {
-    const result = spawnSync([
-      './bin/forge',
-      '--root', fixtureRoot,
-      '--log-level', 'debug',
-      '--log-format', 'json',
-      '--no-color',
-      'test', 'context'
-    ], {
+  test('should include logLevel, logFormat, and color in context', async (ctx) => {
+    const logs = await setupTestLogs(ctx);
+
+    const result = await runCommandWithLogs({
+      command: './bin/forge',
+      args: ['--root', fixtureRoot, '--log-level', 'debug', '--log-format', 'json', '--no-color', 'test', 'context'],
       env: { ...process.env },
+      logDir: logs.logDir,
+      logBaseName: logs.logBaseName,
     });
 
     expect(result.exitCode).toBe(0);
 
-    const output = result.stdout.toString().trim();
+    const output = (await Bun.file(result.stdoutLog).text()).trim();
 
     // Parse JSON output
     let contextData;
@@ -45,19 +45,20 @@ describe('ForgeContext', () => {
     expect(contextData.color).toBe(false); // --no-color was set
   });
 
-  test('should have color=true by default', () => {
-    const result = spawnSync([
-      './bin/forge',
-      '--root', fixtureRoot,
-      '--log-format', 'json',
-      'test', 'context'
-    ], {
+  test('should have color=true by default', async (ctx) => {
+    const logs = await setupTestLogs(ctx);
+
+    const result = await runCommandWithLogs({
+      command: './bin/forge',
+      args: ['--root', fixtureRoot, '--log-format', 'json', 'test', 'context'],
       env: { ...process.env },
+      logDir: logs.logDir,
+      logBaseName: logs.logBaseName,
     });
 
     expect(result.exitCode).toBe(0);
 
-    const contextData = JSON.parse(result.stdout.toString().trim());
+    const contextData = JSON.parse((await Bun.file(result.stdoutLog).text()).trim());
     expect(contextData.color).toBe(true); // default is colors enabled
   });
 

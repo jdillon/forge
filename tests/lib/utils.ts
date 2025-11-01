@@ -96,6 +96,33 @@ export async function setupTestLogs(
 }
 
 /**
+ * Create and return an isolated test home directory with a descriptive name.
+ *
+ * Uses TestContext to create a unique, readable directory name based on the
+ * test file and test name.
+ *
+ * Directory pattern: build/test-tmp/<normalized-file-name>/<normalized-test-name>/
+ *
+ * @example
+ * test('creates required directories', async (ctx) => {
+ *   const testHome = await setupTestHome(ctx);
+ *   // testHome = "build/test-tmp/install/creates-required-directories/"
+ *   // Use as: env: { HOME: testHome }
+ * });
+ */
+export async function setupTestHome(ctx: TestContext): Promise<string> {
+  // Strip .test.ts or .test.js extension from filename
+  const fileNameWithoutExt = ctx.fileName.replace(/\.test\.[tj]s$/, '');
+  const normalizedFileName = normalizeName(fileNameWithoutExt);
+  const normalizedTestName = normalizeName(ctx.testName);
+
+  const testHome = join(TEST_DIRS.tmp, normalizedFileName, normalizedTestName);
+  await mkdir(testHome, { recursive: true });
+
+  return testHome;
+}
+
+/**
  * Print a line only in verbose mode.
  * Use this instead of console.log in tests to keep output clean by default.
  *

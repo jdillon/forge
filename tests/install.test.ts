@@ -5,16 +5,18 @@
  * mutating the user's actual home directory.
  */
 
-import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtemp, mkdir, stat, lstat } from "fs/promises";
+import { describe, test } from "./lib/testx";
+import { expect } from "bun:test";
+import { mkdir, stat, lstat } from "fs/promises";
 import { join } from "path";
 import { homedir } from "os";
 import {
   runCommandWithLogs,
   println,
   setupTestLogs,
-  TEST_DIRS,
+  setupTestHome,
 } from "./lib/utils";
+import type { TestContext } from "./lib/testx";
 
 const projectRoot = join(import.meta.dir, "..");
 
@@ -22,20 +24,26 @@ const projectRoot = join(import.meta.dir, "..");
 const realUserHome = homedir();
 const bunCacheDir = join(realUserHome, ".bun", "install", "cache");
 
-let testHome: string;
-let originalHome: string | undefined;
-
 // Helper to run install script
-async function runInstall(testName: string) {
+async function runInstall(ctx: TestContext, testHome: string) {
   const installScript = join(projectRoot, "bin/install.sh");
   const tarballPath = join(
     projectRoot,
     "build/planet57-forge-2.0.0-alpha.1.tgz",
   );
 
-  const logs = await setupTestLogs("install.sh", testName);
+  // Check tarball exists before attempting install
+  const tarballExists = await stat(tarballPath).then(() => true).catch(() => false);
+  if (!tarballExists) {
+    throw new Error(
+      `Tarball not found: ${tarballPath}\n` +
+      `Run 'bun run pack' to create it before running install tests.`
+    );
+  }
 
-  println("\n=== Running install for:", testName, "===");
+  const logs = await setupTestLogs(ctx);
+
+  println("\n=== Running install for:", ctx.testName, "===");
   println("Test home:", testHome);
   println("Logs:", logs.logDir);
 
@@ -65,11 +73,11 @@ async function runInstall(testName: string) {
 }
 
 // Helper to run uninstall script
-async function runUninstall(testName: string, purge = false) {
+async function runUninstall(ctx: TestContext, testHome: string, purge = false) {
   const uninstallScript = join(projectRoot, "bin/uninstall.sh");
-  const logs = await setupTestLogs("uninstall.sh", testName);
+  const logs = await setupTestLogs(ctx);
 
-  println("\n=== Running uninstall for:", testName, "===");
+  println("\n=== Running uninstall for:", ctx.testName, "===");
   println("Test home:", testHome);
   println("Purge:", purge);
   println("Logs:", logs.logDir);
@@ -101,29 +109,11 @@ async function runUninstall(testName: string, purge = false) {
   return result;
 }
 
-beforeEach(async () => {
-  // Ensure test tmp directory exists
-  await mkdir(TEST_DIRS.tmp, { recursive: true });
-
-  // Create isolated test home directory under build/test-tmp/
-  testHome = await mkdtemp(join(TEST_DIRS.tmp, "home-"));
-  originalHome = process.env.HOME;
-});
-
-afterEach(async () => {
-  // Restore original HOME
-  if (originalHome !== undefined) {
-    process.env.HOME = originalHome;
-  }
-
-  // NOTE: No automatic cleanup - use "bun run clean" to clean build artifacts
-  // This avoids slow cleanup and allows inspection of test output
-});
-
 describe('Installation and Uninstallation', () => {
 
-test("creates required directories", async () => {
-  const result = await runInstall("creates required directories");
+test("creates required directories", async (ctx) => {
+  const testHome = await setupTestHome(ctx);
+  const result = await runInstall(ctx, testHome);
 
   // Should succeed
   expect(result.exitCode).toBe(0);
@@ -161,14 +151,15 @@ test("creates required directories", async () => {
   expect(forgeIsSymlink).toBe(true);
 }, 60000);
 
-test("creates working bootstrap script", async () => {
-  const result = await runInstall("creates working bootstrap script");
+test("creates working bootstrap script", async (ctx) => {
+  const testHome = await setupTestHome(ctx);
+  const result = await runInstall(ctx, testHome);
 
   // Should succeed
   expect(result.exitCode).toBe(0);
 
   const forgeCmd = join(testHome, ".local/bin/forge");
-  const logs = await setupTestLogs("install.sh", "forge-version-check");
+  const logs = await setupTestLogs(ctx);
 
   // Run forge --version through bootstrap
   const versionResult = await runCommandWithLogs({
@@ -188,8 +179,9 @@ test("creates working bootstrap script", async () => {
   expect(versionOutput.trim()).toMatch(/^\d+\.\d+\.\d+/);
 }, 60000);
 
-test("creates meta-project package.json", async () => {
-  const result = await runInstall("creates meta-project package.json");
+test("creates meta-project package.json", async (ctx) => {
+  const testHome = await setupTestHome(ctx);
+  const result = await runInstall(ctx, testHome);
 
   // Should succeed
   expect(result.exitCode).toBe(0);
@@ -201,10 +193,12 @@ test("creates meta-project package.json", async () => {
   expect(pkg.private).toBe(true);
 }, 60000);
 
-test("is idempotent (can run multiple times)", async () => {
+test("is idempotent (can run multiple times)", async (ctx) => {
+  const testHome = await setupTestHome(ctx);
+
   // Run install twice
-  const result1 = await runInstall("idempotent-run1");
-  const result2 = await runInstall("idempotent-run2");
+  const result1 = await runInstall(ctx, testHome);
+  const result2 = await runInstall(ctx, testHome);
 
   // Both should succeed
   expect(result1.exitCode).toBe(0);
@@ -212,7 +206,7 @@ test("is idempotent (can run multiple times)", async () => {
 
   // Bootstrap should still work
   const forgeCmd = join(testHome, ".local/bin/forge");
-  const logs = await setupTestLogs("install.sh", "idempotent-version-check");
+  const logs = await setupTestLogs(ctx);
 
   const versionResult = await runCommandWithLogs({
     command: "bash",
@@ -225,9 +219,11 @@ test("is idempotent (can run multiple times)", async () => {
   expect(versionResult.exitCode).toBe(0);
 }, 120000); // 120 second timeout - runs install twice
 
-test("uninstall removes installation", async () => {
+test("uninstall removes installation", async (ctx) => {
+  const testHome = await setupTestHome(ctx);
+
   // First install
-  const installResult = await runInstall("uninstall-removes-installation");
+  const installResult = await runInstall(ctx, testHome);
   expect(installResult.exitCode).toBe(0);
 
   // Verify things exist
@@ -238,7 +234,7 @@ test("uninstall removes installation", async () => {
   expect(await lstat(forgeCmd).then((s) => s.isSymbolicLink()).catch(() => false)).toBe(true);
 
   // Uninstall
-  const uninstallResult = await runUninstall("uninstall-removes-installation");
+  const uninstallResult = await runUninstall(ctx, testHome);
   expect(uninstallResult.exitCode).toBe(0);
 
   // Verify things are removed
@@ -246,9 +242,11 @@ test("uninstall removes installation", async () => {
   expect(await stat(forgeCmd).then(() => true).catch(() => false)).toBe(false);
 }, 60000);
 
-test("uninstall preserves config by default", async () => {
+test("uninstall preserves config by default", async (ctx) => {
+  const testHome = await setupTestHome(ctx);
+
   // Install
-  await runInstall("uninstall-preserves-config");
+  await runInstall(ctx, testHome);
 
   // Create fake config directory
   const configDir = join(testHome, ".config/forge");
@@ -256,7 +254,7 @@ test("uninstall preserves config by default", async () => {
   await Bun.write(join(configDir, "config.yml"), "test: true\n");
 
   // Uninstall without --purge
-  const result = await runUninstall("uninstall-preserves-config", false);
+  const result = await runUninstall(ctx, testHome, false);
   expect(result.exitCode).toBe(0);
 
   // Config should still exist
@@ -264,9 +262,11 @@ test("uninstall preserves config by default", async () => {
   expect(await Bun.file(join(configDir, "config.yml")).text()).toBe("test: true\n");
 }, 60000);
 
-test("uninstall --purge removes config", async () => {
+test("uninstall --purge removes config", async (ctx) => {
+  const testHome = await setupTestHome(ctx);
+
   // Install
-  await runInstall("uninstall-purge-removes-config");
+  await runInstall(ctx, testHome);
 
   // Create fake config directory
   const configDir = join(testHome, ".config/forge");
@@ -274,7 +274,7 @@ test("uninstall --purge removes config", async () => {
   await Bun.write(join(configDir, "config.yml"), "test: true\n");
 
   // Uninstall with --purge
-  const result = await runUninstall("uninstall-purge-removes-config", true);
+  const result = await runUninstall(ctx, testHome, true);
   expect(result.exitCode).toBe(0);
 
   // Config should be removed
