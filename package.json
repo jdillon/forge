@@ -1,10 +1,25 @@
 {
-  "name": "forge2",
-  "version": "2.0.0-prototype",
+  "name": "@planet57/forge",
+  "version": "2.0.0-alpha.1",
   "description": "Modern CLI framework for deployments - TypeScript/Bun implementation",
   "type": "module",
   "bin": {
-    "forge2": "./bin/forge2"
+    "forge": "./bin/forge2"
+  },
+  "exports": {
+    ".": "./lib/core.ts",
+    "./types": "./lib/types.ts",
+    "./cli": "./lib/cli.ts"
+  },
+  "files": [
+    "bin/",
+    "lib/**/*.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jdillon/forge.git"
   },
   "scripts": {
     "test": "bun test",
