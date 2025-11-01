@@ -1019,6 +1019,54 @@ gh project item-add <project-id> --owner jdillon --url https://github.com/jdillo
 
 # View project (opens in browser)
 gh project view <project-id> --owner jdillon --web
+
+# Move issue to different status (e.g., "In Progress")
+# Step 1: Get all the required IDs
+gh api graphql -f query='
+  query {
+    user(login: "jdillon") {
+      projectV2(number: 3) {
+        id
+        field(name: "Status") {
+          ... on ProjectV2SingleSelectField {
+            id
+            options {
+              id
+              name
+            }
+          }
+        }
+        items(first: 100) {
+          nodes {
+            id
+            content {
+              ... on Issue {
+                number
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+' --jq '.data.user.projectV2 | {projectId: .id, statusFieldId: .field.id, inProgressId: (.field.options[] | select(.name == "In Progress") | .id), itemId: (.items.nodes[] | select(.content.number == 10) | .id)}'
+
+# Step 2: Update the status using the IDs from above
+gh project item-edit \
+  --id <item-id> \
+  --project-id <project-id> \
+  --field-id <status-field-id> \
+  --single-select-option-id <option-id>
+
+# Example (for issue #10 on Forge v2 Roadmap project):
+gh project item-edit \
+  --id PVTI_lAHNTpLOARt9es4IJgNB \
+  --project-id PVT_kwHNTpLOARt9eg \
+  --field-id PVTSSF_lAHNTpLOARt9es4N8rpG \
+  --single-select-option-id 47fc9ee4
+
+# Verify status changed
+gh issue view 10 --json projectItems --jq '.projectItems[0].status.name'
 ```
 
 ---
