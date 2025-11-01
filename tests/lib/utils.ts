@@ -39,27 +39,65 @@ export function normalizeName(name: string): string {
 }
 
 /**
+ * Test context from lib/extension.ts
+ */
+export interface TestContext {
+  fileName: string;
+  testName: string;
+  describePath: string[];
+  fullName: string;
+}
+
+/**
  * Create and return paths for a test's log directory.
- * Creates: build/test-logs/<group-name>/
  *
- * Log files are created by runCommandWithLogs with format: <logBaseName>-{stdout,stderr}.log
+ * Can be called two ways:
+ * 1. With TestContext from test extension: setupTestLogs(ctx)
+ * 2. With manual strings (legacy): setupTestLogs("group-name", "test-name")
  *
- * @param groupName - Describe block name (e.g., "install.sh")
- * @param testName - Test name (e.g., "creates required directories")
- * @returns Object with logDir path
+ * When using TestContext:
+ * - Directory: build/test-logs/<normalized-file-name>/
+ * - Log base name: <normalized-test-name>
  *
  * @example
+ * // With TestContext (from lib/extension.ts)
+ * test('should display help', async (ctx) => {
+ *   const logs = await setupTestLogs(ctx);
+ *   // logs.logDir = "build/test-logs/cli-help-test-ts/"
+ *   // Use: runCommandWithLogs({ logDir: logs.logDir, logBaseName: logs.logBaseName })
+ * });
+ *
+ * @example
+ * // Legacy manual strings
  * const logs = await setupTestLogs("install.sh", "creates required directories");
  * // logs.logDir = "build/test-logs/install-sh/"
  */
-export async function setupTestLogs(groupName: string, testName: string) {
-  const normalizedGroup = normalizeName(groupName);
-  const logDir = join(TEST_DIRS.logs, normalizedGroup);
+export async function setupTestLogs(
+  ctxOrGroupName: TestContext | string,
+  testName?: string
+) {
+  let logDir: string;
+  let logBaseName: string;
+
+  if (typeof ctxOrGroupName === 'string') {
+    // Legacy: manual strings
+    const groupName = ctxOrGroupName;
+    const normalizedGroup = normalizeName(groupName);
+    logDir = join(TEST_DIRS.logs, normalizedGroup);
+    logBaseName = testName ? normalizeName(testName) : 'output';
+  } else {
+    // New: TestContext
+    const ctx = ctxOrGroupName;
+    const normalizedFileName = normalizeName(ctx.fileName);
+    logDir = join(TEST_DIRS.logs, normalizedFileName);
+    logBaseName = normalizeName(ctx.testName);
+  }
 
   await mkdir(logDir, { recursive: true });
 
   return {
     logDir,
+    logBaseName,
   };
 }
 

@@ -14,7 +14,7 @@ import {
   println,
   setupTestLogs,
   TEST_DIRS,
-} from "./test-utils";
+} from "./lib/utils";
 
 const projectRoot = join(import.meta.dir, "..");
 
