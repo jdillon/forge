@@ -89,6 +89,7 @@ This file provides guidance to Claude Code when working with this repository.
 ```bash
 # Testing
 bun test                    # Run all tests
+CLAUDECODE=1 bun test       # AI-friendly output (failures only)
 bun test --watch            # Watch mode
 bun test --bail             # Stop on first failure
 bun run test:junit          # Generate JUnit XML
