@@ -5,7 +5,7 @@
  * mutating the user's actual home directory.
  */
 
-import { test, expect, beforeEach, afterEach } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { mkdtemp, mkdir, stat, lstat } from "fs/promises";
 import { join } from "path";
 import { homedir } from "os";
@@ -119,6 +119,8 @@ afterEach(async () => {
   // NOTE: No automatic cleanup - use "bun run clean" to clean build artifacts
   // This avoids slow cleanup and allows inspection of test output
 });
+
+describe('Installation and Uninstallation', () => {
 
 test("creates required directories", async () => {
   const result = await runInstall("creates required directories");
@@ -278,3 +280,5 @@ test("uninstall --purge removes config", async () => {
   // Config should be removed
   expect(await stat(configDir).then(() => true).catch(() => false)).toBe(false);
 }, 60000);
+
+});
