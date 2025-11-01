@@ -7,11 +7,12 @@
 
 import { describe, test } from './lib/testx';
 import { expect } from 'bun:test';
-import { setupTestLogs, runCommandWithLogs, println } from './lib/utils';
+import { setupTestLogs, runCommandWithLogs, println, TEST_DIRS } from './lib/utils';
 import { spawnSync } from 'bun';
+import { join } from 'path';
 
 const cliPath = './bin/forge';
-const projectRoot = `${process.cwd()}/tests/fixtures/test-project`;
+const projectRoot = join(TEST_DIRS.fixtures, 'test-project');
 
 describe('Extension Demo - Basic Usage', () => {
   test('shows context in simple test', async (ctx) => {

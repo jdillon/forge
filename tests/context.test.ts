@@ -4,11 +4,11 @@
 
 import { describe, test } from './lib/testx';
 import { expect } from 'bun:test';
-import { setupTestLogs, runCommandWithLogs } from './lib/utils';
+import { setupTestLogs, runCommandWithLogs, TEST_DIRS } from './lib/utils';
 import { join } from 'path';
 
 describe('ForgeContext', () => {
-  const fixtureRoot = join(process.cwd(), 'tests/fixtures/test-project');
+  const fixtureRoot = join(TEST_DIRS.fixtures, 'test-project');
 
   test('should include logLevel, logFormat, and color in context', async (ctx) => {
     const logs = await setupTestLogs(ctx);

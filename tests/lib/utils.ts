@@ -15,6 +15,10 @@ const VERBOSE = process.env.VERBOSE === "1" || process.env.TEST_VERBOSE === "1";
 // import.meta.dir is tests/lib/, so we need to go up two levels to reach project root
 const projectRoot = join(import.meta.dir, "../..");
 export const TEST_DIRS = {
+  /** Project root directory */
+  root: projectRoot,
+  /** Test fixtures directory (test data, mock projects) */
+  fixtures: join(projectRoot, "tests", "fixtures"),
   /** HTML/XML test reports (junit, coverage, etc) */
   reports: join(projectRoot, "build", "test-reports"),
   /** Temporary files during test execution (test homes, sandboxes) */

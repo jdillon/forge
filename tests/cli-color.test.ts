@@ -4,11 +4,12 @@
 
 import { describe, test } from './lib/testx';
 import { expect } from 'bun:test';
-import { setupTestLogs, runCommandWithLogs } from './lib/utils';
+import { setupTestLogs, runCommandWithLogs, TEST_DIRS } from './lib/utils';
+import { join } from 'path';
 
 describe('CLI Color Detection', () => {
   const cliPath = './bin/forge';
-  const projectRoot = `${process.cwd()}/tests/fixtures/test-project`;
+  const projectRoot = join(TEST_DIRS.fixtures, 'test-project');
 
   test('should use colors by default', async (ctx) => {
     const logs = await setupTestLogs(ctx);

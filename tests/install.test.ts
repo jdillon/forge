@@ -15,10 +15,11 @@ import {
   println,
   setupTestLogs,
   setupTestHome,
+  TEST_DIRS,
 } from "./lib/utils";
 import type { TestContext } from "./lib/testx";
 
-const projectRoot = join(import.meta.dir, "..");
+const projectRoot = TEST_DIRS.root;
 
 // Use the real user's Bun cache to speed up installs
 const realUserHome = homedir();

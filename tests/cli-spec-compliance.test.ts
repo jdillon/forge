@@ -7,8 +7,10 @@
 
 import { describe, test, expect } from 'bun:test';
 import { spawnSync } from 'bun';
+import { TEST_DIRS } from './lib/utils';
+import { join } from 'path';
 
-const CLI_PATH = './tests/fixtures/cli-spec.ts';
+const CLI_PATH = join(TEST_DIRS.fixtures, 'cli-spec.ts');
 
 describe('CLI Specification Compliance', () => {
   // ==========================================================================
