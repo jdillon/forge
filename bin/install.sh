@@ -90,15 +90,32 @@ FORGE_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/forge"
 FORGE_BIN="${HOME}/.local/bin"
 FORGE_CMD="${FORGE_BIN}/forge"
 
-# Determine repository URL (SSH for private repos)
-FORGE_REPO="${FORGE_REPO:-git+ssh://git@github.com/jdillon/forge}"
+# Auto-detect local development mode
+# If running from a git repo with a local tarball, use that instead of GitHub
+if [[ -z "${FORGE_REPO:-}" ]]; then
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-# Determine branch (default to module-system for Phase 1, unless explicitly set to empty)
-if [[ -z "${FORGE_BRANCH+x}" ]]; then
-  # Variable is unset, use default
-  FORGE_BRANCH="module-system"
+  # Check if we're in the forge git repo and have a local tarball
+  if [[ -d "${REPO_ROOT}/.git" ]] && [[ -f "${REPO_ROOT}/build/planet57-forge-2.0.0-alpha.1.tgz" ]]; then
+    # Use local tarball for development
+    FORGE_REPO="file://${REPO_ROOT}/build/planet57-forge-2.0.0-alpha.1.tgz"
+    FORGE_BRANCH=""
+    info "Detected local development mode - using tarball from ${REPO_ROOT}/build/"
+  else
+    # Use GitHub for production installs
+    FORGE_REPO="git+ssh://git@github.com/jdillon/forge"
+    # Determine branch (default to module-system for Phase 1, unless explicitly set to empty)
+    if [[ -z "${FORGE_BRANCH+x}" ]]; then
+      FORGE_BRANCH="module-system"
+    fi
+  fi
+else
+  # FORGE_REPO was explicitly set, use it
+  if [[ -z "${FORGE_BRANCH+x}" ]]; then
+    FORGE_BRANCH="module-system"
+  fi
 fi
-# If FORGE_BRANCH is set (even to empty string), use that value
 
 # Show installation plan
 echo
