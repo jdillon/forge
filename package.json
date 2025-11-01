@@ -6,11 +6,6 @@
   "bin": {
     "forge": "./bin/forge"
   },
-  "exports": {
-    ".": "./lib/core.ts",
-    "./types": "./lib/types.ts",
-    "./cli": "./lib/cli.ts"
-  },
   "files": [
     "bin/",
     "lib/**/*.ts",
@@ -26,15 +21,11 @@
     "test:junit": "bun run pack && mkdir -p build/test-reports && bun test --reporter=junit --reporter-outfile=build/test-reports/junit.xml",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf build/",
-    "pack": "bun pm pack --destination build/ --quiet"
+    "pack": "bun pm pack --destination build/ --quiet",
+    "testsuite": "bun clean && bun install && bun pack && bun test"
   },
   "keywords": [
-    "cli",
-    "deployment",
-    "devops",
-    "aws",
-    "terraform",
-    "kubernetes"
+    "cli"
   ],
   "author": "Jason Dillon",
   "license": "Apache-2.0",
