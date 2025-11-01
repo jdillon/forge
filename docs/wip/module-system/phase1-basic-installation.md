@@ -1,8 +1,14 @@
 # Phase 1: Basic Installation & Local Modules
 
+**Epic**: [#2 Module Distribution System](https://github.com/jdillon/forge-bash/issues/2)
+**Issue**: [#10 Phase 1: Basic Installation & Local Modules](https://github.com/jdillon/forge-bash/issues/10)
 **Spec Reference**: [installation-and-module-system.md](../../planning/installation-and-module-system.md#phase-1-basic-installation--local-modules)
-**Status**: Not Started
-**Started**: TBD
+**Status**: Ready to Start
+**Branch**: `module-system` (to be created from `v2-prototype`)
+
+**Related Docs**:
+- [phase1-execution-plan.md](./phase1-execution-plan.md) - Full execution plan with branching strategy
+- [phase1-summary.md](./phase1-summary.md) - Quick reference guide
 
 ---
 
@@ -272,12 +278,37 @@ process.exit(await result.exited);
 
 ---
 
+## Current State
+
+**Branch**: Working on `v2-prototype`
+**Tests**: 39 passing, 0 skipping, 0 failing
+**Examples**: `examples/website/` working with local modules
+**Module loading**: Currently loads from `.forge2/*.ts` only
+
 ## Open Questions
 
 1. **Package name**: Confirm `@planet57/forge` is correct scope
 2. **Version number**: Start with `2.0.0-alpha.1` or `0.2.0`?
 3. **npm registry**: Publish to npm or just GitHub packages?
 4. **Homebrew**: Create formula for easier installation?
+
+## Implementation Notes
+
+**Key files**:
+- `cli.ts` - Current entry point (will become bin target)
+- `lib/core.ts` - Framework implementation
+- `examples/website/.forge2/` - Local module example (DO NOT modify in tests)
+- `tests/fixtures/` - Use for testing
+
+**Installation approach**:
+- Meta project at `~/.local/share/forge/`
+- Wrapper script at `~/.local/bin/forge`
+- Install via `bun add github:jdillon/forge#module-system`
+
+**Testing strategy**:
+- Keep existing 39 tests passing
+- Add tests for installation flow
+- Mark any temporary tests clearly (see phase1-execution-plan.md § Testing Strategy)
 
 ---
 

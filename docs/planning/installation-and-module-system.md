@@ -690,7 +690,13 @@ if (await shouldCheckForUpdates()) {
 
 ## Implementation Phases
 
+**Epic Issue**: [#2 Module Distribution System](https://github.com/jdillon/forge-bash/issues/2)
+
+---
+
 ### Phase 1: Basic Installation & Local Modules
+
+**Issue**: [#10 Phase 1: Basic Installation & Local Modules](https://github.com/jdillon/forge-bash/issues/10)
 
 **Goal**: Get forge installable with local modules working
 
@@ -719,6 +725,8 @@ if (await shouldCheckForUpdates()) {
 ---
 
 ### Phase 2: Meta Project & Dependencies
+
+**Issue**: [#11 Phase 2: Meta Project & Dependencies](https://github.com/jdillon/forge-bash/issues/11)
 
 **Goal**: Support dependencies in config.yml
 
@@ -763,6 +771,8 @@ import { S3Client } from '@aws-sdk/client-s3';
 
 ### Phase 3: Git Module Loading
 
+**Issue**: [#12 Phase 3: Git Module Loading](https://github.com/jdillon/forge-bash/issues/12)
+
 **Goal**: Load modules from git repositories
 
 **Tasks**:
@@ -801,6 +811,8 @@ modules:
 
 ### Phase 4: Upgrade Commands
 
+**Issue**: [#13 Phase 4: Upgrade Commands](https://github.com/jdillon/forge-bash/issues/13)
+
 **Goal**: Easy upgrades for forge and modules
 
 **Tasks**:
@@ -827,6 +839,8 @@ modules:
 ---
 
 ### Phase 5: Polish & Documentation
+
+**Issue**: [#14 Phase 5: Polish & Documentation](https://github.com/jdillon/forge-bash/issues/14)
 
 **Goal**: Production-ready release
 
