@@ -208,7 +208,7 @@ export class Forge {
   }
 
   private showUsage(): void {
-    console.log(`usage: forge2 <command> [options]\n`);
+    console.log(`usage: forge <command> [options]\n`);
     console.log('Available commands:\n');
 
     const commands = Object.entries(this.commands);

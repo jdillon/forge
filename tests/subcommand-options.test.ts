@@ -9,7 +9,7 @@ import { describe, test, expect } from 'bun:test';
 import { spawnSync } from 'bun';
 
 describe('Subcommand Options', () => {
-  const cliPath = './bin/forge2';
+  const cliPath = './bin/forge';
   const projectRoot = `${process.cwd()}/tests/fixtures/test-project`;
 
   test('should parse subcommand flags (--loud)', () => {

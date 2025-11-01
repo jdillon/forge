@@ -11,7 +11,7 @@ describe('ForgeContext', () => {
 
   test('should include logLevel, logFormat, and color in context', () => {
     const result = spawnSync([
-      './bin/forge2',
+      './bin/forge',
       '--root', fixtureRoot,
       '--log-level', 'debug',
       '--log-format', 'json',
@@ -47,7 +47,7 @@ describe('ForgeContext', () => {
 
   test('should have color=true by default', () => {
     const result = spawnSync([
-      './bin/forge2',
+      './bin/forge',
       '--root', fixtureRoot,
       '--log-format', 'json',
       'test', 'context'

@@ -146,7 +146,7 @@ export function createLogger(name?: string): pino.Logger {
 
   const logger = pino(
     {
-      name: name || 'forge2',
+      name: name || 'forge',
       level: config.level,
     },
     stream

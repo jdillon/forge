@@ -6,7 +6,7 @@ import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { spawnSync } from 'bun';
 
 describe('CLI Color Detection', () => {
-  const cliPath = './bin/forge2';
+  const cliPath = './bin/forge';
   const projectRoot = `${process.cwd()}/tests/fixtures/test-project`;
 
   test('should use colors by default', () => {

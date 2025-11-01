@@ -6,7 +6,7 @@ import { describe, test, expect } from 'bun:test';
 import { spawnSync } from 'bun';
 
 describe('CLI Help Output', () => {
-  const cliPath = './bin/forge2';
+  const cliPath = './bin/forge';
   const projectRoot = `${process.cwd()}/tests/fixtures/test-project`;
 
   test('should display help with --help', () => {
@@ -16,7 +16,7 @@ describe('CLI Help Output', () => {
 
     expect(result.exitCode).toBe(0);
     const output = result.stdout.toString();  // Help goes to stdout
-    expect(output).toContain('Usage: forge2');
+    expect(output).toContain('Usage: forge');
     expect(output).toContain('Modern CLI framework');
     expect(output).toContain('Options:');
     expect(output).toContain('Commands:');
@@ -29,7 +29,7 @@ describe('CLI Help Output', () => {
 
     expect(result.exitCode).toBe(0);
     const output = result.stdout.toString();  // Help goes to stdout
-    expect(output).toContain('Usage: forge2');
+    expect(output).toContain('Usage: forge');
   });
 
   test('should show all core options', () => {
@@ -76,7 +76,7 @@ describe('CLI Help Output', () => {
     const stderr = result.stderr.toString();
     const stdout = result.stdout.toString();
     expect(stderr).toContain('ERROR: unknown option');
-    expect(stderr).toContain("Try 'forge2 --help' for more information");
+    expect(stderr).toContain("Try 'forge --help' for more information");
     // Spec says: terse error only, no help dump
     expect(stdout).toBe('');
   });

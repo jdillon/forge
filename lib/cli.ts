@@ -106,7 +106,7 @@ interface BootstrapConfig {
 function bootstrap(cliArgs: string[]): BootstrapConfig {
   const bootProgram = new Command();
 
-  bootProgram.name('forge2');
+  bootProgram.name('forge');
   // Note: Don't call .version() - we'll let real CLI handle --version
 
   addTopLevelOptions(bootProgram)
@@ -140,7 +140,7 @@ async function buildRealCLI(config: BootstrapConfig): Promise<Command> {
   const program = new Command();
 
   program
-    .name('forge2')
+    .name('forge')
     .description('Modern CLI framework for deployments')
     .version(pkg.version);
 
@@ -210,7 +210,7 @@ function showError(message: string): never {
   // Strip "error: " prefix from Commander messages
   const cleanMessage = message.replace(/^error:\s*/i, '');
   console.error(`ERROR: ${cleanMessage}`);
-  console.error(`Try 'forge2 --help' for more information.`);
+  console.error(`Try 'forge --help' for more information.`);
   exit(1);
 }
 
@@ -283,7 +283,7 @@ async function run(): Promise<void> {
       if (unknownCmd) {
         showError(`unknown command '${unknownCmd}'`);
       } else {
-        showError('unknown command. Run \'forge2 --help\' to see available commands');
+        showError('unknown command. Run \'forge --help\' to see available commands');
       }
     }
 
