@@ -64,6 +64,43 @@ async function runInstall(testName: string) {
   return result;
 }
 
+// Helper to run uninstall script
+async function runUninstall(testName: string, purge = false) {
+  const uninstallScript = join(projectRoot, "bin/uninstall.sh");
+  const logs = await setupTestLogs("uninstall.sh", testName);
+
+  println("\n=== Running uninstall for:", testName, "===");
+  println("Test home:", testHome);
+  println("Purge:", purge);
+  println("Logs:", logs.logDir);
+
+  const args = ["-y"];
+  if (purge) {
+    args.push("--purge");
+  }
+
+  const result = await runCommandWithLogs({
+    command: "bash",
+    args: [uninstallScript, ...args],
+    env: {
+      ...process.env,
+      HOME: testHome,
+    },
+    logDir: logs.logDir,
+    logBaseName: "uninstall",
+  });
+
+  println("Exit code:", result.exitCode);
+
+  if (result.exitCode !== 0) {
+    console.error("Uninstall failed - check logs:");
+    console.error("  stdout:", result.stdoutLog);
+    console.error("  stderr:", result.stderrLog);
+  }
+
+  return result;
+}
+
 beforeEach(async () => {
   // Ensure test tmp directory exists
   await mkdir(TEST_DIRS.tmp, { recursive: true });
@@ -185,3 +222,59 @@ test("is idempotent (can run multiple times)", async () => {
 
   expect(versionResult.exitCode).toBe(0);
 }, 120000); // 120 second timeout - runs install twice
+
+test("uninstall removes installation", async () => {
+  // First install
+  const installResult = await runInstall("uninstall-removes-installation");
+  expect(installResult.exitCode).toBe(0);
+
+  // Verify things exist
+  const dataDir = join(testHome, ".local/share/forge");
+  const forgeCmd = join(testHome, ".local/bin/forge");
+
+  expect(await stat(dataDir).then((s) => s.isDirectory()).catch(() => false)).toBe(true);
+  expect(await lstat(forgeCmd).then((s) => s.isSymbolicLink()).catch(() => false)).toBe(true);
+
+  // Uninstall
+  const uninstallResult = await runUninstall("uninstall-removes-installation");
+  expect(uninstallResult.exitCode).toBe(0);
+
+  // Verify things are removed
+  expect(await stat(dataDir).then(() => true).catch(() => false)).toBe(false);
+  expect(await stat(forgeCmd).then(() => true).catch(() => false)).toBe(false);
+}, 60000);
+
+test("uninstall preserves config by default", async () => {
+  // Install
+  await runInstall("uninstall-preserves-config");
+
+  // Create fake config directory
+  const configDir = join(testHome, ".config/forge");
+  await mkdir(configDir, { recursive: true });
+  await Bun.write(join(configDir, "config.yml"), "test: true\n");
+
+  // Uninstall without --purge
+  const result = await runUninstall("uninstall-preserves-config", false);
+  expect(result.exitCode).toBe(0);
+
+  // Config should still exist
+  expect(await stat(configDir).then((s) => s.isDirectory()).catch(() => false)).toBe(true);
+  expect(await Bun.file(join(configDir, "config.yml")).text()).toBe("test: true\n");
+}, 60000);
+
+test("uninstall --purge removes config", async () => {
+  // Install
+  await runInstall("uninstall-purge-removes-config");
+
+  // Create fake config directory
+  const configDir = join(testHome, ".config/forge");
+  await mkdir(configDir, { recursive: true });
+  await Bun.write(join(configDir, "config.yml"), "test: true\n");
+
+  // Uninstall with --purge
+  const result = await runUninstall("uninstall-purge-removes-config", true);
+  expect(result.exitCode).toBe(0);
+
+  // Config should be removed
+  expect(await stat(configDir).then(() => true).catch(() => false)).toBe(false);
+}, 60000);
