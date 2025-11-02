@@ -27,27 +27,19 @@ export async function resolveModule(
   modulePath: string,
   forgeDir: string,
 ): Promise<string> {
-  const debug = process.env.FORGE_DEBUG === '1' || process.argv.includes('--debug');
+  const { log } = await import('./logger');
 
-  if (debug) {
-    console.error('\n=== Module Resolution Debug ===');
-    console.error('Resolving:', modulePath);
-    console.error('From:', forgeDir);
-  }
+  log.debug({ modulePath, forgeDir }, 'Resolving module');
 
   // 1. Local modules (relative paths starting with ./ or ../)
   if (modulePath.startsWith('.')) {
     const localPath = resolve(forgeDir, modulePath);
 
-    if (debug) console.error('Trying local paths...');
-
     // Try with and without extensions
     for (const ext of ['', '.ts', '.js', '.mjs']) {
       const fullPath = localPath + ext;
-      if (debug) console.error(`  Checking: ${fullPath}`);
       if (existsSync(fullPath)) {
-        if (debug) console.error(`  ✓ Found: ${fullPath}`);
-        console.error('===============================\n');
+        log.debug({ fullPath }, 'Module resolved (local)');
         return fullPath;
       }
     }
@@ -62,20 +54,11 @@ export async function resolveModule(
   const forgeHome = getForgeHomePath();
   const sharedPath = join(forgeHome, 'node_modules', modulePath);
 
-  if (debug) {
-    console.error('Trying shared path...');
-    console.error(`  Checking: ${sharedPath}`);
-  }
-
   if (existsSync(sharedPath)) {
-    if (debug) console.error(`  ✓ Found: ${sharedPath}`);
-    console.error('===============================\n');
+    log.debug({ sharedPath }, 'Module resolved (shared)');
     // Return the path and let Node.js/Bun module resolution handle it
     return sharedPath;
   }
-
-  if (debug) console.error('  ✗ Not found');
-  console.error('===============================\n');
 
   // 3. Not found anywhere
   throw new Error(

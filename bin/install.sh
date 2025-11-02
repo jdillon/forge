@@ -160,7 +160,7 @@ cat > package.json << 'EOF'
 }
 EOF
 
-# Create bunfig.toml for bun runtime configuration
+# Create bunfig.toml for bun install configuration
 cat > bunfig.toml << 'EOF'
 [install]
 exact = true
@@ -170,20 +170,8 @@ optional = false
 auto = "disable"
 EOF
 
-# Create tsconfig.json for module resolution
-cat > tsconfig.json << 'EOF'
-{
-  "compilerOptions": {
-    "baseUrl": ".",
-    "paths": { "*": ["./node_modules/*", "*"] },
-    "module": "ESNext",
-    "target": "ESNext",
-    "moduleResolution": "bundler",
-    "esModuleInterop": true,
-    "skipLibCheck": true
-  }
-}
-EOF
+# Note: Module resolution uses NODE_PATH (set in wrapper)
+# No tsconfig.json needed - Bun finds modules via NODE_PATH environment variable
 
 # Install forge from GitHub
 info "Installing @planet57/forge from GitHub..."

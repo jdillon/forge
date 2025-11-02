@@ -10,7 +10,7 @@ import { Command } from 'commander';
 import { StateManager } from './state';
 import { die, exit } from './helpers';
 import { getForgePaths } from './xdg';
-import { getLoggerConfig } from './logger';
+import { getLoggerConfig, log } from './logger';
 import type {
   ForgeCommand,
   ForgeConfig,
@@ -57,19 +57,13 @@ export async function loadModule(
   let groupName: string | false = deriveGroupName(modulePath);
   let description: string | undefined;
 
-  if (debug) {
-    console.error('\n=== Loading Module ===');
-    console.error('Module path:', modulePath);
-    console.error('Derived group name:', groupName);
-  }
+  log.debug({ modulePath, groupName }, 'Loading module');
 
   // Resolve module path with priority: local → shared
   const { resolveModule } = await import('./module-resolver');
   const fullPath = await resolveModule(modulePath, forgeDir);
 
-  if (debug) {
-    console.error('Resolved to:', fullPath);
-  }
+  log.debug({ fullPath }, 'Module resolved');
 
   try {
     const module = await import(fullPath);
@@ -102,10 +96,7 @@ export async function loadModule(
       }
     }
 
-    if (debug) {
-      console.error('Commands discovered:', Object.keys(commands).length > 0 ? Object.keys(commands) : '(none)');
-      console.error('======================\n');
-    }
+    log.debug({ commands: Object.keys(commands) }, 'Commands discovered');
 
     return { groupName, description, commands };
   } catch (err) {
@@ -164,10 +155,7 @@ export class Forge {
         die(`No config found in ${this.projectContext.forgeDir}`);
       }
 
-      if (debug) {
-        console.error('\n=== Config Loading ===');
-        console.error('Modules to load:', this.config.modules);
-      }
+      log.debug({ modules: this.config.modules }, 'Loading modules');
 
       // Auto-discover commands from modules
       if (this.config?.modules) {
@@ -192,13 +180,11 @@ export class Forge {
         }
       }
 
-      if (debug) {
-        console.error('Command groups registered:', Object.keys(this.commandGroups));
-        for (const [group, data] of Object.entries(this.commandGroups)) {
-          console.error(`  ${group}:`, Object.keys(data.commands));
-        }
-        console.error('======================\n');
-      }
+      const groups = Object.keys(this.commandGroups);
+      const groupDetails = Object.fromEntries(
+        Object.entries(this.commandGroups).map(([group, data]) => [group, Object.keys(data.commands)])
+      );
+      log.debug({ groups, groupDetails }, 'Command groups registered');
     } catch (err) {
       die(`Failed to load config: ${err}`);
     }
@@ -259,10 +245,7 @@ export class Forge {
    * This is the bridge between Forge and Commander
    */
   async registerCommands(program: Command): Promise<void> {
-    // Ensure config is loaded
-    if (!this.config) {
-      await this.loadConfig();
-    }
+    log.debug({ groupCount: Object.keys(this.commandGroups).length }, 'Registering command groups with Commander');
 
     // Register command groups as subcommands
     for (const [groupName, group] of Object.entries(this.commandGroups)) {
@@ -282,8 +265,11 @@ export class Forge {
         groupCmd.addCommand(cmd);
       }
 
+      log.debug({ groupName, commandCount: Object.keys(group.commands).length, subcommands: groupCmd.commands.map(c => c.name()) }, 'Registering command group');
       program.addCommand(groupCmd);
     }
+
+    log.debug({ totalCommands: program.commands.length }, 'Commander registration complete');
   }
 
   /**
@@ -299,17 +285,19 @@ export class Forge {
     const cmd = new Command(name);
     cmd.description(forgeCmd.description);
 
-    if (forgeCmd.usage) {
-      cmd.usage(forgeCmd.usage);
-    }
-
     // 2. Let command customize Commander Command (if defined)
     if (forgeCmd.defineCommand) {
       forgeCmd.defineCommand(cmd);
     } else {
-      // If no defineCommand, allow unknown arguments/options
-      cmd.allowUnknownOption(true);
-      cmd.allowExcessArguments(true);
+      // No defineCommand - use simple model: usage string + allowUnknown
+      if (forgeCmd.usage) {
+        // Add usage as argument definition (e.g., '<text...>' or '[options]')
+        cmd.argument(forgeCmd.usage, '');
+      } else {
+        // No usage specified - allow any arguments
+        cmd.allowUnknownOption(true);
+        cmd.allowExcessArguments(true);
+      }
     }
 
     // 3. Install action handler that calls our execute function

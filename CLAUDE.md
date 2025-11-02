@@ -108,10 +108,34 @@ bun run typecheck           # Type checking
 - `log.error()` - App error respecting --silent flag
 
 ### Logging
-- Use `createLogger(name)` from `lib/logger.ts`
-- CLI flags: `-d/--debug`, `-q/--quiet`, `-s/--silent`, `--log-level`, `--log-format`
-- Formats: pretty (default), json
-- Color: `--no-color` flag or `NO_COLOR` env var
+
+**ALWAYS use the logger** - No `console.log/error/warn` except:
+- Bash scripts (no logger available)
+- Very early initialization before logger configured
+
+**Import and use:**
+```typescript
+import { log } from './logger';  // or createLogger('moduleName')
+
+log.debug({ key: value }, 'Terse message');  // Debug info
+log.info('User-facing status');              // Normal info
+log.warn('Something unusual');               // Warnings
+log.error({ error }, 'What failed');         // Errors
+```
+
+**Style guidelines:**
+- Terse messages - simple, to the point
+- Use structured data (first param object) not string concatenation
+- No fancy rendering - logger handles formatting
+- Minimal use of separators/special chars
+
+**CLI flags:**
+- `-d/--debug` - Sets log level to debug
+- `-q/--quiet` - Sets log level to warn
+- `-s/--silent` - Disables all logging
+- `--log-level <level>` - Explicit level
+- `--log-format <format>` - pretty (default) or json
+- `--no-color` - Disable colors (respects `NO_COLOR` env var)
 
 ---
 

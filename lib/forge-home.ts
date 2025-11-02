@@ -12,6 +12,7 @@
  */
 
 import { getForgePaths } from './xdg';
+import { log } from './logger';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { createHash } from 'crypto';
@@ -174,24 +175,16 @@ export async function syncDependencies(
   const debug = process.env.FORGE_DEBUG === '1' || process.argv.includes('--debug');
   const forgeHome = getForgeHomePath();
 
-  if (debug) {
-    console.error('\n=== Dependency Sync Debug ===');
-    console.error('Forge home:', forgeHome);
-    console.error('Dependencies declared:', dependencies);
-    console.error('Install mode:', mode);
-  }
+  log.debug({ forgeHome, dependencies, mode }, 'Dependency sync');
 
   await ensureForgeHome();
 
   // Find missing dependencies
   const missing = dependencies.filter((dep) => !isInstalled(dep));
 
-  if (debug) {
-    console.error('Missing dependencies:', missing.length > 0 ? missing : '(none)');
-  }
+  log.debug({ missing }, 'Missing dependencies check');
 
   if (missing.length === 0) {
-    if (debug) console.error('==============================\n');
     return false; // Nothing to install
   }
 
@@ -206,34 +199,24 @@ export async function syncDependencies(
   if (mode === 'ask') {
     // TODO: Implement prompt (Phase 2.4+)
     // For now, fall through to auto mode
-    console.warn('Ask mode not yet implemented, using auto mode');
+    log.warn('Ask mode not yet implemented, using auto mode');
   }
 
   // Auto mode: Install all missing
-  console.log(
-    `Installing ${missing.length} ${missing.length === 1 ? 'dependency' : 'dependencies'}: ${missing.join(', ')}...`,
-  );
-
-  if (debug) {
-    console.error('Running bun add from:', forgeHome);
-  }
+  log.info({ count: missing.length, dependencies: missing }, 'Installing dependencies');
 
   let anyChanged = false;
   for (const dep of missing) {
-    if (debug) console.error(`Installing: ${dep}`);
     const changed = await installDependency(dep);
-    if (debug) console.error(`  Changed: ${changed}`);
+    log.debug({ dep, changed }, 'Dependency install result');
     if (changed) anyChanged = true;
   }
 
   if (anyChanged) {
-    console.log('✓ Dependencies installed');
+    log.info('Dependencies installed');
   }
 
-  if (debug) {
-    console.error('Restart needed:', anyChanged);
-    console.error('==============================\n');
-  }
+  log.debug({ anyChanged }, 'Dependency sync result');
 
   return anyChanged;
 }

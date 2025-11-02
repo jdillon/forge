@@ -16,7 +16,7 @@ import { join, dirname } from 'path';
 import { existsSync } from 'fs';
 import { Forge } from './core';
 import { die, exit } from './helpers';
-import { configureLogger } from './logger';
+import { configureLogger, log } from './logger';
 import { getForgePaths } from './xdg';
 import pkg from '../package.json' assert { type: 'json' };
 
@@ -193,8 +193,9 @@ async function buildRealCLI(config: BootstrapConfig): Promise<Command> {
     projectRoot = await discoverProject();
   }
 
-  // Create Forge instance and let it register commands with Commander
+  // Create Forge instance, load config, and register commands with Commander
   const forge = new Forge(projectRoot, config);
+  await forge.loadConfig();
   await forge.registerCommands(program);
 
   return program;
@@ -246,17 +247,14 @@ async function run(): Promise<void> {
   const config = bootstrap(cliArgs);
 
   // Configure logger before loading modules (modules create loggers at import time)
+  const logLevel = config.logLevel || (config.debug ? 'debug' : config.quiet ? 'warn' : 'info');
   configureLogger({
-    level: config.logLevel || (config.debug ? 'debug' : config.quiet ? 'warn' : undefined),
+    level: logLevel,
     format: config.logFormat,
     color: config.color,
   });
 
-  // Debug: Show module resolution paths if debug enabled
-  if (config.debug || process.env.FORGE_DEBUG === '1') {
-    const { debugModulePaths } = await import('./debug-paths');
-    debugModulePaths();
-  }
+  log.debug({ logLevel, debug: config.debug, logFormat: config.logFormat }, 'Logger configured');
 
   // Phase 1.5: Dependency sync (before loading modules)
   // This ensures dependencies are available when modules are imported
@@ -265,10 +263,7 @@ async function run(): Promise<void> {
     projectRoot = await discoverProject();
   }
 
-  if (config.debug || process.env.FORGE_DEBUG === '1') {
-    console.error('\n=== Bootstrap Phase 1.5 ===');
-    console.error('Project root:', projectRoot || '(none)');
-  }
+  log.debug({ projectRoot, NODE_PATH: process.env.NODE_PATH }, 'Bootstrap Phase 1.5');
 
   if (projectRoot) {
     try {
@@ -277,9 +272,7 @@ async function run(): Promise<void> {
       const { config: userConfigDir } = getForgePaths();
       const forgeConfig = await loadLayeredConfig(projectRoot, userConfigDir);
 
-      if (config.debug || process.env.FORGE_DEBUG === '1') {
-        console.error('Config loaded, dependencies:', forgeConfig.dependencies || '(none)');
-      }
+      log.debug({ dependencies: forgeConfig.dependencies }, 'Config loaded');
 
       // Check if this is a restarted process (via env var from wrapper)
       const isRestarted = process.env.FORGE_RESTARTED === '1';
@@ -289,10 +282,7 @@ async function run(): Promise<void> {
       const forgeDir = join(projectRoot, '.forge2');
       const needsRestart = await autoInstallDependencies(forgeConfig, forgeDir, isRestarted);
 
-      if (config.debug || process.env.FORGE_DEBUG === '1') {
-        console.error('Needs restart:', needsRestart);
-        console.error('===========================\n');
-      }
+      log.debug({ needsRestart }, 'Dependency sync complete');
 
       if (needsRestart) {
         // Exit with magic code - wrapper will restart us
@@ -308,10 +298,13 @@ async function run(): Promise<void> {
   // Phase 2: Build and run real CLI (strict)
   const program = await buildRealCLI(config);
 
+  log.debug({ commandNames: program.commands.map(c => c.name()), cliArgs }, 'About to parse CLI args');
+
   try {
     await program.parseAsync(cliArgs, { from: 'user' });
   } catch (err: any) {
     // Handle Commander errors
+    log.debug({ errorCode: err.code, errorMessage: err.message }, 'Commander error caught');
     if (err.code === 'commander.helpDisplayed') {
       exit(0);  // Help was shown successfully (explicit --help)
     }

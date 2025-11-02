@@ -10,6 +10,7 @@
  */
 
 import { syncDependencies } from './forge-home';
+import { log } from './logger';
 import type { ForgeConfig } from './types';
 
 /**
@@ -33,28 +34,18 @@ export async function autoInstallDependencies(
 ): Promise<boolean> {
   const debug = process.env.FORGE_DEBUG === '1' || process.argv.includes('--debug');
 
-  if (debug) {
-    console.error('\n=== Auto-Install Debug ===');
-    console.error('Is restarted:', isRestarted);
-    console.error('Config has dependencies:', !!config.dependencies);
-  }
+  log.debug({ isRestarted, hasDependencies: !!config.dependencies }, 'Auto-install check');
 
   // No dependencies declared
   if (!config.dependencies || config.dependencies.length === 0) {
-    if (debug) {
-      console.error('No dependencies declared');
-      console.error('==========================\n');
-    }
+    log.debug('No dependencies declared');
     return false;
   }
 
   const mode = config.installMode || 'auto';
   const offline = config.offline || false;
 
-  if (debug) {
-    console.error('Install mode:', mode);
-    console.error('Offline:', offline);
-  }
+  log.debug({ mode, offline }, 'Install settings');
 
   // Offline mode check
   if (offline && mode === 'auto') {
@@ -65,7 +56,7 @@ export async function autoInstallDependencies(
 
     if (missing.length > 0) {
       throw new Error(
-        `Offline mode is enabled but ${missing.length} ${missing.length === 1 ? 'dependency is' : 'dependencies are'} missing\n\n` +
+        `Offline mode is enabled but ${missing.length === 1 ? 'dependency is' : 'dependencies are'} missing\n\n` +
           `Missing: ${missing.join(', ')}\n\n` +
           `Suggestions:\n` +
           `  1. Disable offline mode and retry\n` +
@@ -87,14 +78,14 @@ export async function autoInstallDependencies(
           `Dependencies were installed but still missing after restart\n\n` +
             `This should not happen. Please report this as a bug.\n\n` +
             `Suggestions:\n` +
-            `  1. Check forge home: ~/.local/share/forge2/\n` +
+            `  1. Check forge home: ~/.local/share/forge/\n` +
             `  2. Try manual install: forge module install\n` +
             `  3. Check for errors in bun installation`,
         );
       }
 
       // First run - signal restart needed
-      console.log('Restarting to pick up changes...');
+      log.info('Restarting to pick up dependency changes');
       return true;
     }
 

@@ -114,6 +114,10 @@ class PrettyStream extends Writable {
 export function configureLogger(options: { level?: string; format?: 'json' | 'pretty'; color?: boolean }): void {
   if (options.level) {
     config.level = options.level;
+    // Update all existing logger instances
+    for (const logger of loggers) {
+      logger.level = options.level;
+    }
   }
   if (options.format) {
     config.format = options.format;
