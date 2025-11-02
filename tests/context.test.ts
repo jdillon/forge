@@ -12,10 +12,11 @@ describe('ForgeContext', () => {
 
   test('should include logLevel, logFormat, and color in context', async (ctx) => {
     const logs = await setupTestLogs(ctx);
+    const outputFile = join(logs.logDir, 'context-output.json');
 
     const result = await runCommandWithLogs({
       command: './bin/forge',
-      args: ['--root', fixtureRoot, '--log-level', 'debug', '--log-format', 'json', '--no-color', 'test', 'context'],
+      args: ['--root', fixtureRoot, '--log-level', 'debug', '--log-format', 'json', '--no-color', 'test', 'context', outputFile],
       env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
@@ -23,16 +24,9 @@ describe('ForgeContext', () => {
 
     expect(result.exitCode).toBe(0);
 
-    const output = (await Bun.file(result.stdoutLog).text()).trim();
-
-    // Parse JSON output
-    let contextData;
-    try {
-      contextData = JSON.parse(output);
-    } catch (err) {
-      console.log('Failed to parse JSON:', err);
-      throw new Error(`Output is not valid JSON: ${output}`);
-    }
+    // Read JSON from output file instead of stdout
+    const output = (await Bun.file(outputFile).text()).trim();
+    const contextData = JSON.parse(output);
 
     expect(contextData.hasForge).toBe(true);
     expect(contextData.hasConfig).toBe(true);
@@ -47,10 +41,11 @@ describe('ForgeContext', () => {
 
   test('should have color=true by default', async (ctx) => {
     const logs = await setupTestLogs(ctx);
+    const outputFile = join(logs.logDir, 'context-output.json');
 
     const result = await runCommandWithLogs({
       command: './bin/forge',
-      args: ['--root', fixtureRoot, '--log-format', 'json', 'test', 'context'],
+      args: ['--root', fixtureRoot, '--log-format', 'json', 'test', 'context', outputFile],
       env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
@@ -58,7 +53,8 @@ describe('ForgeContext', () => {
 
     expect(result.exitCode).toBe(0);
 
-    const contextData = JSON.parse((await Bun.file(result.stdoutLog).text()).trim());
+    // Read JSON from output file instead of stdout
+    const contextData = JSON.parse((await Bun.file(outputFile).text()).trim());
     expect(contextData.color).toBe(true); // default is colors enabled
   });
 

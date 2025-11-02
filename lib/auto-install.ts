@@ -10,8 +10,10 @@
  */
 
 import { syncDependencies } from './forge-home';
-import { log } from './logger';
+import { getGlobalLogger } from './logging';
 import type { ForgeConfig } from './types';
+
+const log = getGlobalLogger();
 
 /**
  * Magic exit code to signal wrapper that restart is needed

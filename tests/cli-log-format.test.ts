@@ -24,8 +24,8 @@ describe('CLI --log-format Validation', () => {
 
     // Should succeed
     expect(result.exitCode).toBe(0);
-    const output = await Bun.file(result.stdoutLog).text();
-    // JSON format should output structured logs
+    const output = await Bun.file(result.stderrLog).text();
+    // JSON format should output structured logs to stderr
     expect(output).toContain('"level"');
   });
 
@@ -126,8 +126,8 @@ describe('CLI --log-format Validation', () => {
     });
 
     expect(result.exitCode).toBe(0);
-    const output = await Bun.file(result.stdoutLog).text();
-    // Pretty format should have timestamps and human-readable output
+    const output = await Bun.file(result.stderrLog).text();
+    // Pretty format should have timestamps and human-readable output on stderr
     expect(output).toMatch(/\d{2}:\d{2}:\d{2}/); // timestamp pattern
   });
 });

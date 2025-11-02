@@ -10,7 +10,8 @@ import { Command } from 'commander';
 import { StateManager } from './state';
 import { die, exit } from './helpers';
 import { getForgePaths } from './xdg';
-import { getLoggerConfig, log } from './logger';
+import { getLoggerConfig, createLogger } from './logging';
+import type pino from 'pino';
 import type {
   ForgeCommand,
   ForgeConfig,
@@ -18,6 +19,8 @@ import type {
   ForgeProjectContext,
   ForgeContext
 } from './types';
+
+const log = createLogger('core');
 
 // ============================================================================
 // Module Loading & Command Discovery
@@ -114,6 +117,7 @@ export async function loadModule(
 export class Forge {
   private projectContext: ForgeProjectContext;
   public config: ForgeConfig | null = null;  // Public so commands can access settings
+  private log: pino.Logger;
 
   // Command groups (subcommands)
   public commandGroups: Record<string, {
@@ -132,6 +136,7 @@ export class Forge {
     };
     this.state = projectRoot ? new StateManager(projectRoot) : null as any;
     this.globalOptions = globalOptions;
+    this.log = createLogger('forge');
   }
 
   async loadConfig(): Promise<void> {

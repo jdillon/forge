@@ -2,15 +2,23 @@
  * Test commands for verifying Forge functionality
  */
 
-import type { ForgeCommand } from '../../../../lib/types';
-import { createLogger } from '../../../../lib/logger';
+import type { ForgeCommand } from '@planet57/forge/types';
+import { createLogger } from '@planet57/forge/logger';
 
 const log = createLogger('test');
 
 // Command to output context fields as JSON
 export const context: ForgeCommand = {
-  description: 'Output ForgeContext fields as JSON',
+  description: 'Output ForgeContext fields as JSON to a file',
+  usage: '<output-file>',
   async execute(options, args, context) {
+    const outputFile = args[0];
+    if (!outputFile) {
+      console.error('ERROR: output file required');
+      console.error('Usage: forge test context <output-file>');
+      process.exit(1);
+    }
+
     // Output context as JSON for test verification
     const output = {
       hasForge: !!context.forge,
@@ -25,7 +33,8 @@ export const context: ForgeCommand = {
       settings: context.settings,
     };
 
-    console.log(JSON.stringify(output));
+    // Write to file instead of stdout
+    await Bun.write(outputFile, JSON.stringify(output));
   }
 };
 

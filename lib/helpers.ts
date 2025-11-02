@@ -15,11 +15,33 @@ export async function confirm(prompt: string = 'Continue?'): Promise<boolean> {
 }
 
 /**
- * Exit process with code
- * Centralized exit point for better testability
+ * Clean exit notification - thrown when application should exit normally
+ * Used for --help, --version, or other clean exits
+ */
+export class ExitNotification extends Error {
+  constructor(public exitCode: number = 0, message?: string) {
+    super(message || `Exit with code ${exitCode}`);
+    this.name = 'ExitNotification';
+  }
+}
+
+/**
+ * Fatal error exception - thrown when application encounters unrecoverable error
+ * Logged with stack trace and exits with non-zero code
+ */
+export class FatalError extends Error {
+  constructor(message: string, public exitCode: number = 1) {
+    super(message);
+    this.name = 'FatalError';
+  }
+}
+
+/**
+ * Exit process with code (clean exit)
+ * Throws ExitNotification for normal exits
  */
 export function exit(code: number = 0): never {
-  process.exit(code);
+  throw new ExitNotification(code);
 }
 
 /**
@@ -31,10 +53,10 @@ export function error(message: string): void {
 }
 
 /**
- * Die with error message and exit(1)
- * Fatal errors that must always show (not affected by --silent)
+ * Die with fatal error (unrecoverable)
+ * Throws FatalError - caught by main error handler
+ * This is safe to use anywhere - it throws so stack traces are preserved
  */
 export function die(message: string): never {
-  error(message);
-  exit(1);
+  throw new FatalError(message);
 }

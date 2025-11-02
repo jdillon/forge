@@ -14,6 +14,7 @@
 import { resolve, join } from 'path';
 import { existsSync } from 'fs';
 import { getForgeHomePath } from './forge-home';
+import { getGlobalLogger } from './logging';
 
 /**
  * Resolve module path with priority: local → shared
@@ -27,7 +28,7 @@ export async function resolveModule(
   modulePath: string,
   forgeDir: string,
 ): Promise<string> {
-  const { log } = await import('./logger');
+  const log = getGlobalLogger();
 
   log.debug({ modulePath, forgeDir }, 'Resolving module');
 

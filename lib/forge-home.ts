@@ -12,8 +12,10 @@
  */
 
 import { getForgePaths } from './xdg';
-import { log } from './logger';
+import { getGlobalLogger } from './logging';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+
+const log = getGlobalLogger();
 import { join } from 'path';
 import { createHash } from 'crypto';
 

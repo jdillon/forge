@@ -125,7 +125,7 @@ test("creates required directories", async (ctx) => {
   const forgeSymlink = join(binDir, "forge");
   const bootstrap = join(
     shareDir,
-    "node_modules/@planet57/forge/bin/forge-bootstrap",
+    "node_modules/@planet57/forge/bin/forge",
   );
 
   // Use stat() to check directories exist

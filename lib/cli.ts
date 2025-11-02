@@ -8,15 +8,12 @@
  * 2. Real CLI: Parse with full validation (strict, Commander handles it)
  */
 
-import { Command, Option } from 'commander';
+import { Command } from 'commander';
 import { styleText } from 'node:util';
-import chalk from 'chalk';
-import updateNotifier from 'update-notifier';
 import { join, dirname } from 'path';
 import { existsSync } from 'fs';
-import { Forge } from './core';
-import { die, exit } from './helpers';
-import { configureLogger, log } from './logger';
+import { die, exit, FatalError, ExitNotification } from './helpers';
+import { initLogging, getGlobalLogger, isLoggingInitialized } from './logging';
 import { getForgePaths } from './xdg';
 import pkg from '../package.json' assert { type: 'json' };
 
@@ -193,6 +190,9 @@ async function buildRealCLI(config: BootstrapConfig): Promise<Command> {
     projectRoot = await discoverProject();
   }
 
+  // Load core module dynamically (after logging initialized)
+  const { Forge } = await import('./core');
+
   // Create Forge instance, load config, and register commands with Commander
   const forge = new Forge(projectRoot, config);
   await forge.loadConfig();
@@ -221,20 +221,16 @@ function showError(message: string): never {
 // ============================================================================
 
 export async function main(): Promise<void> {
-  // Check for updates (once per day)
-  updateNotifier({
-    pkg,
-    updateCheckInterval: 1000 * 60 * 60 * 24
-  }).notify();
-
   try {
     await run();
   } catch (err: any) {
-    // Don't print error for Commander's help/version (they already printed their output)
+    // Commander help/version - clean exit
     if (err.code && (err.code === 'commander.helpDisplayed' || err.code === 'commander.version')) {
-      exit(err.exitCode ?? 0);
+      process.exit(err.exitCode ?? 0);
     }
-    die(err.message);
+
+    // Handle errors with logging if available, otherwise stderr
+    handleError(err);
   }
 }
 
@@ -246,15 +242,16 @@ async function run(): Promise<void> {
   // Phase 1: Bootstrap - extract config (permissive)
   const config = bootstrap(cliArgs);
 
-  // Configure logger before loading modules (modules create loggers at import time)
+  // Initialize logger before loading modules (modules create loggers at import time)
   const logLevel = config.logLevel || (config.debug ? 'debug' : config.quiet ? 'warn' : 'info');
-  configureLogger({
+  initLogging({
     level: logLevel,
     format: config.logFormat,
     color: config.color,
   });
 
-  log.debug({ logLevel, debug: config.debug, logFormat: config.logFormat }, 'Logger configured');
+  // Now safe to use logger
+  const log = getGlobalLogger();
 
   // Phase 1.5: Dependency sync (before loading modules)
   // This ensures dependencies are available when modules are imported
@@ -266,32 +263,26 @@ async function run(): Promise<void> {
   log.debug({ projectRoot, NODE_PATH: process.env.NODE_PATH }, 'Bootstrap Phase 1.5');
 
   if (projectRoot) {
-    try {
-      // Load minimal config to check dependencies
-      const { loadLayeredConfig } = await import('./config-loader');
-      const { config: userConfigDir } = getForgePaths();
-      const forgeConfig = await loadLayeredConfig(projectRoot, userConfigDir);
+    // Load minimal config to check dependencies
+    const { loadLayeredConfig } = await import('./config-loader');
+    const { config: userConfigDir } = getForgePaths();
+    const forgeConfig = await loadLayeredConfig(projectRoot, userConfigDir);
 
-      log.debug({ dependencies: forgeConfig.dependencies }, 'Config loaded');
+    log.debug({ dependencies: forgeConfig.dependencies }, 'Config loaded');
 
-      // Check if this is a restarted process (via env var from wrapper)
-      const isRestarted = process.env.FORGE_RESTARTED === '1';
+    // Check if this is a restarted process (via env var from wrapper)
+    const isRestarted = process.env.FORGE_RESTARTED === '1';
 
-      // Auto-install dependencies if needed
-      const { autoInstallDependencies, RESTART_EXIT_CODE } = await import('./auto-install');
-      const forgeDir = join(projectRoot, '.forge2');
-      const needsRestart = await autoInstallDependencies(forgeConfig, forgeDir, isRestarted);
+    // Auto-install dependencies if needed
+    const { autoInstallDependencies, RESTART_EXIT_CODE } = await import('./auto-install');
+    const forgeDir = join(projectRoot, '.forge2');
+    const needsRestart = await autoInstallDependencies(forgeConfig, forgeDir, isRestarted);
 
-      log.debug({ needsRestart }, 'Dependency sync complete');
+    log.debug({ needsRestart }, 'Dependency sync complete');
 
-      if (needsRestart) {
-        // Exit with magic code - wrapper will restart us
-        exit(RESTART_EXIT_CODE);
-      }
-    } catch (err: any) {
-      // If dependency sync fails, show error and exit
-      // Don't continue to buildRealCLI
-      die(err.message);
+    if (needsRestart) {
+      // Exit with magic code - wrapper will restart us
+      exit(RESTART_EXIT_CODE);
     }
   }
 
@@ -339,7 +330,41 @@ async function run(): Promise<void> {
   }
 }
 
-// Self-execute when run directly (like Python's if __name__ == "__main__")
+/**
+ * Handle errors at top level
+ * Uses logger if initialized, otherwise stderr
+ */
+function handleError(err: any): never {
+  // Clean exit - no error message needed
+  if (err instanceof ExitNotification) {
+    process.exit(err.exitCode);
+  }
+
+  // Fatal error or unexpected exception
+  const isFatal = err instanceof FatalError;
+  const message = err.message || String(err);
+  const exitCode = isFatal ? err.exitCode : 1;
+
+  // Try to use logger if initialized, otherwise fall back to stderr
+  if (isLoggingInitialized()) {
+    const log = getGlobalLogger();
+    log.error({ err }, message);
+  } else {
+    // Logging not initialized - use primordial error handling
+    console.error('ERROR:', message);
+    if (err.stack) {
+      console.error('\nStack trace:');
+      console.error(err.stack);
+    }
+  }
+
+  process.exit(exitCode);
+}
+
+// ============================================================================
+// MAIN
+// ============================================================================
+
 if (import.meta.main) {
   await main();
 }
