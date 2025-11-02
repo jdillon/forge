@@ -1,36 +1,43 @@
 #!/usr/bin/env bash
-# Forge bootstrap script - delegates to installed version
+# IMPORANT: retain compatibility with bash v3 (macOS)
 set -euo pipefail
 
-FORGE_SHARE="${XDG_DATA_HOME:-$HOME/.local/share}/forge"
-FORGE_CLI="${FORGE_SHARE}/node_modules/@planet57/forge/lib/cli.ts"
+# Detect dev vs installed mode
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+dev_cli="${script_dir}/../lib/cli.ts"
+dev_package="${script_dir}/../package.json"
 
-if [[ ! -f "${FORGE_CLI}" ]]; then
-  echo "ERROR: Forge not found at ${FORGE_CLI}" >&2
-  echo "Run install.sh to reinstall forge" >&2
-  exit 1
+if [[ -f "${dev_cli}" ]] && [[ -f "${dev_package}" ]]; then
+  # Dev mode - running from repository
+  forge_cli="${dev_cli}"
+  forge_home="${XDG_DATA_HOME:-$HOME/.local/share}/forge"
+  node_path="${script_dir}/../node_modules${NODE_PATH:+:$NODE_PATH}"
+else
+  # Installed mode - use installed version
+  forge_home="${XDG_DATA_HOME:-$HOME/.local/share}/forge"
+  forge_cli="${forge_home}/node_modules/@planet57/forge/lib/cli.ts"
+  node_path="${forge_home}/node_modules${NODE_PATH:+:$NODE_PATH}"
+  
+  if [[ ! -f "${forge_cli}" ]]; then
+    echo "ERROR: Forge not found at ${forge_cli}" >&2
+    echo "Run install.sh to reinstall forge" >&2
+    exit 1
+  fi
 fi
 
-# Forge home - where dependencies are managed
-FORGE_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/forge"
-
-# Run forge with proper bun configuration
-# Sets up:
-#   - NODE_PATH for module resolution from forge home
-#   - Optional FORGE_RESTARTED flag for dependency restart
+# Run forge with proper configuration
 run_forge() {
   local restarted="${1:-}"
-
-  # Set NODE_PATH to include forge home node_modules (enables shared dependencies)
-  export NODE_PATH="${FORGE_HOME}/node_modules${NODE_PATH:+:$NODE_PATH}"
 
   # Set restart flag if provided
   if [[ -n "$restarted" ]]; then
     export FORGE_RESTARTED=1
   fi
 
-  # Run forge CLI with NODE_PATH set for shared dependency resolution
-  bun run "${FORGE_CLI}" "${@:2}"
+  export NODE_PATH="${node_path}"
+
+  # Run forge CLI
+  bun run "${forge_cli}" "${@:2}"
 }
 
 # Run forge and capture exit code
@@ -40,6 +47,7 @@ EXIT_CODE=$?
 set -e
 
 # Exit code 42 = restart needed (dependencies installed)
+# "I checked it very thoroughly, and that quite definitely is the answer."
 if [[ $EXIT_CODE -eq 42 ]]; then
   # Re-run with FORGE_RESTARTED=1 to prevent infinite loops
   run_forge "restarted" "$@"

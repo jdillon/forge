@@ -1,0 +1,17 @@
+# Example: Using forge-standard library
+#
+# This demonstrates loading modules from a package installed
+# to forge home (~/.local/share/forge/node_modules/)
+
+dependencies:
+  # For local development, forge-standard is installed via:
+  # cd ~/.local/share/forge && bun add file:/Users/jason/ws/jdillon/forge-standard
+  #
+  # For production use, this would be:
+  # - git+ssh://git@github.com/jdillon/forge-standard.git
+  - file:/Users/jason/ws/jdillon/forge-standard
+
+modules:
+  # Load the hello module from forge-standard
+  # This creates a "hello" command group with "greet" and "info" commands
+  - "@jdillon/forge-standard/hello"

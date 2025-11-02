@@ -51,14 +51,27 @@ export async function resolveModule(
     );
   }
 
-  // 2. Shared modules (package names, from forge home node_modules)
+  // 2. Package modules (from forge home node_modules)
+  // Examples: "@jdillon/forge-standard/hello", "cowsay"
   const forgeHome = getForgeHomePath();
-  const sharedPath = join(forgeHome, 'node_modules', modulePath);
 
-  if (existsSync(sharedPath)) {
-    log.debug({ sharedPath }, 'Module resolved (shared)');
-    // Return the path and let Node.js/Bun module resolution handle it
-    return sharedPath;
+  // For scoped packages with subpaths like "@jdillon/forge-standard/hello"
+  // we need to resolve the full path including the submodule
+  const packagePath = join(forgeHome, 'node_modules', modulePath);
+
+  // Try with extensions for the package module
+  for (const ext of ['', '.ts', '.js', '.mjs']) {
+    const fullPath = packagePath + ext;
+    if (existsSync(fullPath)) {
+      log.debug({ fullPath }, 'Module resolved (package)');
+      return fullPath;
+    }
+  }
+
+  // If no extension worked, check if it's a directory (package without submodule)
+  if (existsSync(packagePath)) {
+    log.debug({ packagePath }, 'Module resolved (package directory)');
+    return packagePath;
   }
 
   // 3. Not found anywhere
@@ -66,7 +79,7 @@ export async function resolveModule(
     `Module not found: ${modulePath}\n` +
       `Searched:\n` +
       `  - Local: ${forgeDir}\n` +
-      `  - Shared: ${join(forgeHome, 'node_modules')}\n\n` +
+      `  - Package: ${join(forgeHome, 'node_modules', modulePath)}\n\n` +
       `Suggestions:\n` +
       `  1. Add to config.yml dependencies section\n` +
       `  2. Run: forge module install`,

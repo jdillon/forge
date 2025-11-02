@@ -348,7 +348,7 @@ function handleError(err: any): never {
   // Try to use logger if initialized, otherwise fall back to stderr
   if (isLoggingInitialized()) {
     const log = getGlobalLogger();
-    log.error({ err }, message);
+    log.error({ error: err }, message);
   } else {
     // Logging not initialized - use primordial error handling
     console.error('ERROR:', message);

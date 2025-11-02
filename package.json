@@ -18,7 +18,6 @@
     "url": "https://github.com/jdillon/forge.git"
   },
   "files": [
-    "bin/",
     "lib/**/*.ts",
     "README.md",
     "LICENSE"

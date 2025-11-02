@@ -5,8 +5,8 @@
  */
 
 import pino from 'pino';
+import pretty from 'pino-pretty';
 import { Writable } from 'stream';
-import { PrettyStream } from './pretty-stream';
 
 // Logger configuration state
 interface LoggerConfig {
@@ -43,7 +43,16 @@ export function createLogger(name?: string): pino.Logger {
   let stream: Writable;
   if (config.format === 'pretty') {
     // Pretty format - human-readable with optional colors
-    stream = new PrettyStream(config.color);
+    // stream = pretty({
+    //   colorize: config.color,
+    //   translateTime: 'HH:MM:ss',
+    //   ignore: 'hostname,pid',
+    //   levelFirst: true,
+    //   messageFormat: '{msg}',
+    //   sync: true, // Required for CLI to ensure output order
+    //   errorProps: 'stack', // Show error.stack property (multiline)
+    //   errorLikeObjectKeys: ['err', 'error'], // Keys that should be treated as errors
+    // });
   } else {
     // JSON format - output to stderr
     stream = process.stderr;
@@ -54,7 +63,7 @@ export function createLogger(name?: string): pino.Logger {
       name: name || 'forge',
       level: config.level,
     },
-    stream
+    // stream
   );
 
   // Register for cleanup
