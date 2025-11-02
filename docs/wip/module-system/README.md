@@ -2,7 +2,7 @@
 
 **Spec**: [docs/planning/installation-and-module-system.md](../../planning/installation-and-module-system.md)
 **Started**: 2025-10-31
-**Current Phase**: Phase 1 - Basic Installation & Local Modules
+**Current Phase**: Phase 2 - Meta Project & Dependencies
 
 ---
 
@@ -36,33 +36,41 @@ Implementing installation, upgrade, and module distribution system for Forge v2.
 
 ---
 
-### 🚧 Phase 1: Basic Installation & Local Modules
-**Status**: Not Started
+### ✅ Phase 1: Basic Installation & Local Modules
+**Status**: Complete
+**Completed**: 2025-11-01
 **Document**: [phase1-basic-installation.md](phase1-basic-installation.md)
+**Summary**: [phase1-summary.md](phase1-summary.md)
 
-**Goals:**
-- Create `install.sh` script
-- Add `package.json` with proper metadata
-- Test installation flow
-- Verify wrapper script works
-- Keep existing local modules working
+**Completed:**
+- ✅ Created `install.sh` and `uninstall.sh` scripts
+- ✅ Added `package.json` with proper metadata
+- ✅ Test installation flow (7 install tests)
+- ✅ Test infrastructure overhaul (test extension framework)
+- ✅ All 87 tests passing
+- ✅ Local modules working unchanged
 
-**Success Criteria:**
-- Can install forge via `install.sh`
-- `forge --version` works
-- Local modules (`.forge2/*.ts`) still work
+**Artifacts:**
+- Installation scripts: `bin/install.sh`, `bin/uninstall.sh`
+- Test infrastructure: `tests/lib/testx.ts`, `tests/lib/utils.ts`
+- Documentation: `docs/testing.md`
 
 ---
 
-### 📋 Phase 2: Meta Project & Dependencies
+### 🚧 Phase 2: Forge Home & Dependencies
 **Status**: Planned
-**Document**: [phase2-meta-project-deps.md](phase2-meta-project-deps.md) *(to be created)*
+**Document**: [phase2-meta-project-deps.md](phase2-meta-project-deps.md)
 
 **Goals:**
 - Parse `dependencies:` from config.yml
-- Install dependencies to shared location
-- Implement module resolver
-- Auto-install on first use
+- Install dependencies to forge home (`~/.local/share/forge/node_modules/`)
+- Implement programmatic module resolver (local → shared → project)
+- Auto-install on first use with caching
+- Comprehensive error handling
+
+**Terminology:**
+- **forge home** = `~/.local/share/forge/` (where forge is installed, manages shared dependencies)
+- **forge project** = Directory with `.forge2/` (your project with local modules)
 
 ---
 
@@ -103,6 +111,26 @@ Implementing installation, upgrade, and module distribution system for Forge v2.
 ## Key Decisions
 
 *(Track major decisions here as we implement)*
+
+### 2025-11-01: Phase 1 Completion
+
+**Package Exports:**
+- Removed package exports temporarily until API is stable
+- Current exports don't match actual usage patterns (examples use `lib/command.ts` via tsconfig alias)
+- `bin/forge` uses relative imports instead of package exports
+- Will add back once API is finalized and tested
+
+**Test Infrastructure:**
+- Created test extension framework (`testx.ts`) for auto-context injection
+- Descriptive test directory naming instead of UUIDs (`build/test-logs/<test-file>/<test-name>-{stdout,stderr}.log`)
+- Centralized directory constants via `TEST_DIRS` (root, fixtures, reports, tmp, logs)
+- All CLI tests converted to new pattern (31 tests total)
+
+**Installation:**
+- Install script is idempotent and checks prerequisites
+- Explicit tarball check with clear error message
+- Uninstall with `--purge` option to remove all data
+- 7 installation tests covering all flows
 
 ### 2025-10-31: Architecture Decisions
 
