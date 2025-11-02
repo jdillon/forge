@@ -2,6 +2,62 @@
 
 This guide covers the test infrastructure and patterns for writing tests in Forge.
 
+## Quick Reference
+
+### Running Tests
+
+```bash
+# Run all tests
+bun test
+
+# Run specific test file
+bun test tests/cli-help.test.ts
+
+# Run specific test by name pattern
+bun test -t "should display help"
+
+# Watch mode
+bun test --watch
+
+# Stop on first failure
+bun test --bail
+
+# Generate JUnit XML report
+bun run test:junit
+```
+
+### Verbose Output
+
+By default, test logs are silent. Enable verbose output for debugging:
+
+```bash
+# Enable verbose test logger output
+VERBOSE=1 bun test
+
+# Run specific test with verbose output
+VERBOSE=1 bun test -t "creates required directories"
+```
+
+The `VERBOSE=1` flag enables:
+- Test logger output (pino-pretty formatted)
+- Diagnostic information from test helpers
+- Structured logging with timestamps and context
+
+### Viewing Test Logs
+
+All test output is captured to files in `build/test-logs/`:
+
+```bash
+# View logs for a specific test file
+ls build/test-logs/cli-help-test-ts/
+
+# View stdout from a specific test
+cat build/test-logs/cli-help-test-ts/should-display-help-with--help-stdout.log
+
+# View stderr from a specific test
+cat build/test-logs/cli-help-test-ts/should-display-help-with--help-stderr.log
+```
+
 ## Test Extension
 
 Forge provides a lightweight extension for Bun's `describe` and `test` functions that automatically injects a `TestContext` parameter with:
@@ -102,6 +158,98 @@ describe('Outer', () => {
 });
 ```
 
+## Test Runner
+
+The `runForge()` function executes the local development version of the CLI (`lib/cli.ts`) in tests, eliminating the need to run `bun reinstall` between test iterations.
+
+### Usage
+
+```typescript
+import { describe, test } from './lib/testx';
+import { expect } from 'bun:test';
+import { setupTestLogs, TEST_DIRS } from './lib/utils';
+import { runForge } from './lib/runner';
+import { join } from 'path';
+
+describe('CLI Tests', () => {
+  test('should run local CLI', async (ctx) => {
+    const logs = await setupTestLogs(ctx);
+    const projectRoot = join(TEST_DIRS.fixtures, 'test-project');
+
+    const result = await runForge({
+      args: ['--root', projectRoot, '--help'],
+      logDir: logs.logDir,
+      logBaseName: logs.logBaseName,
+    });
+
+    expect(result.exitCode).toBe(0);
+    const output = await Bun.file(result.stdoutLog).text();
+    expect(output).toContain('Modern CLI framework');
+  });
+});
+```
+
+### Configuration Options
+
+```typescript
+interface RunForgeConfig {
+  args: string[];              // CLI arguments
+  env?: Record<string, string>; // Environment variables
+  cwd?: string;                 // Working directory (default: process.cwd())
+  logDir: string;               // Directory for log files
+  logBaseName?: string;         // Base name for log files (default: 'output')
+  teeToConsole?: boolean;       // Echo output to console (default: false)
+}
+```
+
+### How It Works
+
+- Executes local `lib/cli.ts` directly (not the installed version)
+- Sets up `NODE_PATH` to point to forge home node_modules (like production wrapper)
+- Captures stdout/stderr to log files
+- Returns exit code and log file paths
+- No need to reinstall between test runs during development
+
+## Test Logger
+
+Use `createLogger()` from `tests/lib/logger.ts` for structured logging in test helpers and utilities:
+
+```typescript
+import { createLogger } from './lib/logger';
+
+const log = createLogger('install-test');
+
+async function setupTest() {
+  log.info({ testDir }, 'Setting up test environment');
+  log.debug({ config }, 'Using configuration');
+  log.error({ error }, 'Setup failed');
+}
+```
+
+### Features
+
+- **Pino-pretty formatting**: Human-readable output with colors and timestamps
+- **Silent by default**: Only outputs when `VERBOSE=1` is set
+- **Structured logging**: Pass objects as first parameter for context
+- **Timestamped**: Shows HH:MM:ss.l format
+- **Named loggers**: Pass name to identify source in output
+
+### Output Format
+
+```
+INFO  [install-test] Setting up test environment
+DEBUG [install-test] Using configuration
+ERROR [install-test] Setup failed
+```
+
+### When to Use
+
+- ✅ Test helpers and utilities (setupTestHome, runInstall, etc.)
+- ✅ Diagnostic information during test setup/teardown
+- ✅ Complex test scenarios that benefit from structured logging
+- ❌ Simple assertions (use expect() instead)
+- ❌ Production code (use the app logger from lib/logger.ts)
+
 ## File-Based Logging Strategy
 
 **Decision**: Use test file name for log directory, normalized test name for log file base name.
@@ -136,37 +284,38 @@ build/test-logs/
 tests/
 ├── lib/                          # Test infrastructure
 │   ├── testx.ts                  # Test framework extensions (~200 lines)
+│   ├── runner.ts                 # Test runner for local CLI execution
+│   ├── logger.ts                 # Structured logging for tests
 │   └── utils.ts                  # Test utilities
 ├── fixtures/                     # Test data
 │   └── test-project/
-├── extension-demo.test.ts          # Demo of extension usage
 └── *.test.ts                     # Test cases
 ```
 
-## Files Created
+## Test Infrastructure Files
 
 1. **tests/lib/testx.ts** (~200 lines)
    - Extends `describe` and `test` with all variants (skip, only, todo, if, skipIf, each)
    - Tracks describe stack
    - Injects TestContext
 
-2. **tests/lib/utils.ts** (updated)
-   - `setupTestLogs()` now accepts TestContext or manual strings
-   - Backwards compatible with existing tests
-   - Returns `{ logDir, logBaseName }`
+2. **tests/lib/runner.ts**
+   - `runForge()` function to execute local CLI in tests
+   - Sets up NODE_PATH like production wrapper
+   - Captures output to log files
+   - Eliminates need for `bun reinstall` during development
 
-3. **tests/extension-demo.test.ts** (~150 lines)
-   - Comprehensive examples
-   - Shows all usage patterns
-   - Comparison with old approach
+3. **tests/lib/logger.ts**
+   - `createLogger()` for structured logging
+   - Pino-pretty formatting with colors and timestamps
+   - Silent by default, verbose with `VERBOSE=1`
+   - For test helpers/utilities, not production code
 
-## Advantages Over Alternatives
-
-| Approach | Context Access | Maintenance | Compatibility |
-|----------|---------------|-------------|---------------|
-| **test-extension** | ✅ Auto (file + test + path) | ✅ ~200 LOC, one-time | ✅ Full Bun API |
-| **node:test** | ⚠️ `t.name`, `t.fullName` | ✅ Zero (standard) | ⚠️ Mixed imports |
-| **Manual strings** | ❌ Manual duplication | ✅ Zero | ✅ Full Bun API |
+4. **tests/lib/utils.ts**
+   - `setupTestLogs()` accepts TestContext or manual strings
+   - `setupTestHome()` creates isolated HOME directories
+   - `runCommandWithLogs()` executes commands with output capture
+   - `TEST_DIRS` constants for test directories
 
 ## Supported Test Variants
 
@@ -187,59 +336,35 @@ All Bun test variants are extended:
 - `test.skipIf(condition)(name, fn, timeout?)`
 - `test.each(table)(name, fn, timeout?)`
 
-## Migration Path
+## Current Limitations
 
-### Option A: Gradual Migration
-- Keep both patterns working (setupTestLogs accepts both)
-- Migrate tests one file at a time
-- Update imports as you go
+### Output Capture
 
-### Option B: All-at-Once
-- Update all test files in one pass
-- Simpler, cleaner cutover
-- Can be done with find/replace for imports
+**Current behavior:**
+- Test output (stdout/stderr) from spawned processes is captured to files
+- Console.log from test code goes to stdout (captured by Bun test runner)
+- Test logger output goes to stderr (not captured unless VERBOSE=1)
 
-### Recommended: Start with new tests
-- Use extension for any new tests written
-- Migrate existing tests opportunistically
-- Low risk, high value
+**What we don't have:**
+- Per-test output capture to files (like Maven Surefire)
+- Automatic capture of all console.log/console.error to test-specific files
+- Multiple report formats simultaneously (HTML + JSON + JUnit)
 
-## Demo
+### Future Improvements
 
-Run the demo to see it in action:
+See [Issue #17: Consider migrating to Vitest](https://github.com/jdillon/forge/issues/17) for evaluation of alternative test frameworks that provide:
 
-```bash
-# Clean output
-bun test tests/extension-demo.test.ts
+- Rich HTML reports with interactive debugging UI
+- Multiple output formats simultaneously (JUnit XML, JSON, HTML)
+- Better console output capture and control
+- Browser mode for component testing
+- Benchmarking and type testing features
 
-# Verbose output to see context values
-VERBOSE=1 bun test tests/extension-demo.test.ts
-
-# Check generated logs
-ls -R build/test-logs/extension-demo.test.ts/
-```
-
-## Next Steps
-
-1. **Review and approve** this approach
-2. **Test with real test migration** - Convert cli-help.test.ts as proof of concept
-3. **Decide on migration strategy** - Gradual vs all-at-once
-4. **Update documentation** - Add to tests/README.md
-5. **Standardize** - Make this the recommended pattern for new tests
-
-## Questions to Resolve
-
-1. **Should we apply this to all tests immediately?**
-   - Or just use for new tests going forward?
-
-2. **Do we want describe path in logs?**
-   - Current: Uses file name only
-   - Alternative: Could use `fullName` to create subdirectories
-
-3. **Should this be the default import?**
-   - Could make tests/index.ts that re-exports the wrapper
-   - Then: `import { describe, test } from '../tests'`
+**Recommendation:** Stay with Bun test for now (fastest option), consider Vitest later if:
+- Test suite grows large enough that debugging becomes painful
+- CI/CD requires multiple report formats
+- Team wants better local development debugging experience
 
 ---
 
-**Status**: ✅ Working prototype, ready for review and testing
+**Status**: ✅ Stable test infrastructure with Bun test runner

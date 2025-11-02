@@ -6,47 +6,82 @@
  */
 
 import { describe, test } from "./lib/testx";
-import { expect } from "bun:test";
+import { expect, beforeAll } from "bun:test";
 import { mkdir, stat, lstat } from "fs/promises";
 import { join } from "path";
 import { homedir } from "os";
+import { spawnSync } from "bun";
 import {
   runCommandWithLogs,
-  println,
   setupTestLogs,
   setupTestHome,
   TEST_DIRS,
 } from "./lib/utils";
+import { createLogger } from "./lib/logger";
 import type { TestContext } from "./lib/testx";
 
 const projectRoot = TEST_DIRS.root;
+const log = createLogger('install-test');
 
 // Use the real user's Bun cache to speed up installs
 const realUserHome = homedir();
 const bunCacheDir = join(realUserHome, ".bun", "install", "cache");
 
+// Fresh tarball location for install tests
+const testTmpDir = join(projectRoot, "build/test-tmp/install");
+const testTarballFilename = "forge-test.tgz";
+let testTarballPath: string;
+
+/**
+ * Create a fresh tarball for install tests
+ * Uses --filename with full path to avoid version-dependent naming
+ */
+async function createTestTarball(): Promise<string> {
+  log.info('Creating fresh tarball for install tests');
+
+  // Create test-tmp directory
+  await mkdir(testTmpDir, { recursive: true });
+
+  const tarballPath = join(testTmpDir, testTarballFilename);
+
+  // Run bun pm pack with full path as filename
+  const packResult = spawnSync([
+    "bun",
+    "pm",
+    "pack",
+    "--filename", tarballPath,
+  ], {
+    cwd: projectRoot,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+
+  if (packResult.exitCode !== 0) {
+    log.error({ stderr: packResult.stderr.toString() }, 'Failed to create tarball');
+    throw new Error("Tarball creation failed");
+  }
+
+  // Verify it exists
+  const exists = await stat(tarballPath).then(() => true).catch(() => false);
+  if (!exists) {
+    throw new Error(`Tarball not created at ${tarballPath}`);
+  }
+
+  log.info({ tarballPath }, 'Tarball created');
+  return tarballPath;
+}
+
 // Helper to run install script
 async function runInstall(ctx: TestContext, testHome: string) {
   const installScript = join(projectRoot, "bin/install.sh");
-  const tarballPath = join(
-    projectRoot,
-    "build/planet57-forge-2.0.0-alpha.1.tgz",
-  );
-
-  // Check tarball exists before attempting install
-  const tarballExists = await stat(tarballPath).then(() => true).catch(() => false);
-  if (!tarballExists) {
-    throw new Error(
-      `Tarball not found: ${tarballPath}\n` +
-      `Run 'bun run pack' to create it before running install tests.`
-    );
-  }
-
   const logs = await setupTestLogs(ctx);
 
-  println("\n=== Running install for:", ctx.testName, "===");
-  println("Test home:", testHome);
-  println("Logs:", logs.logDir);
+  log.info({
+    testName: ctx.testName,
+    testHome,
+    tarball: testTarballPath,
+    logDir: logs.logDir
+  }, 'Running install script');
 
   const result = await runCommandWithLogs({
     command: "bash",
@@ -54,7 +89,7 @@ async function runInstall(ctx: TestContext, testHome: string) {
     env: {
       ...process.env,
       HOME: testHome,
-      FORGE_REPO: `file://${tarballPath}`,
+      FORGE_REPO: `file://${testTarballPath}`,
       FORGE_BRANCH: "",
       BUN_INSTALL_CACHE_DIR: bunCacheDir,
     },
@@ -62,12 +97,14 @@ async function runInstall(ctx: TestContext, testHome: string) {
     logBaseName: "install",
   });
 
-  println("Exit code:", result.exitCode);
-
   if (result.exitCode !== 0) {
-    console.error("Install failed - check logs:");
-    console.error("  stdout:", result.stdoutLog);
-    console.error("  stderr:", result.stderrLog);
+    log.error({
+      exitCode: result.exitCode,
+      stdoutLog: result.stdoutLog,
+      stderrLog: result.stderrLog
+    }, 'Install failed');
+  } else {
+    log.info({ exitCode: result.exitCode }, 'Install completed');
   }
 
   return result;
@@ -78,10 +115,12 @@ async function runUninstall(ctx: TestContext, testHome: string, purge = false) {
   const uninstallScript = join(projectRoot, "bin/uninstall.sh");
   const logs = await setupTestLogs(ctx);
 
-  println("\n=== Running uninstall for:", ctx.testName, "===");
-  println("Test home:", testHome);
-  println("Purge:", purge);
-  println("Logs:", logs.logDir);
+  log.info({
+    testName: ctx.testName,
+    testHome,
+    purge,
+    logDir: logs.logDir
+  }, 'Running uninstall script');
 
   const args = ["-y"];
   if (purge) {
@@ -99,18 +138,25 @@ async function runUninstall(ctx: TestContext, testHome: string, purge = false) {
     logBaseName: "uninstall",
   });
 
-  println("Exit code:", result.exitCode);
-
   if (result.exitCode !== 0) {
-    console.error("Uninstall failed - check logs:");
-    console.error("  stdout:", result.stdoutLog);
-    console.error("  stderr:", result.stderrLog);
+    log.error({
+      exitCode: result.exitCode,
+      stdoutLog: result.stdoutLog,
+      stderrLog: result.stderrLog
+    }, 'Uninstall failed');
+  } else {
+    log.info({ exitCode: result.exitCode }, 'Uninstall completed');
   }
 
   return result;
 }
 
 describe('Installation and Uninstallation', () => {
+
+  // Create fresh tarball before running install tests
+  beforeAll(async () => {
+    testTarballPath = await createTestTarball();
+  });
 
   test("creates required directories", async (ctx) => {
     const testHome = await setupTestHome(ctx);
