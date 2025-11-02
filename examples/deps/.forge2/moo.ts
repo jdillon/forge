@@ -5,7 +5,7 @@
  */
 
 import cowsay from 'cowsay';
-import type { ForgeCommand } from '../../../lib/types';
+import type { ForgeCommand } from '@planet57/forge/types';
 
 /**
  * Make a cow say something

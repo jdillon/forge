@@ -2,9 +2,15 @@
   "name": "@planet57/forge",
   "version": "2.0.0-alpha.1",
   "description": "Modern CLI framework for deployments - TypeScript/Bun implementation",
+  "author": "Jason Dillon",
+  "license": "Apache-2.0",
   "type": "module",
-  "bin": {
-    "forge": "./bin/forge"
+  "keywords": [
+    "cli"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jdillon/forge.git"
   },
   "files": [
     "bin/",
@@ -12,10 +18,6 @@
     "README.md",
     "LICENSE"
   ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/jdillon/forge.git"
-  },
   "scripts": {
     "test": "bun run pack && bun test",
     "test:junit": "bun run pack && mkdir -p build/test-reports && bun test --reporter=junit --reporter-outfile=build/test-reports/junit.xml",
@@ -25,11 +27,6 @@
     "testsuite": "bun clean && bun install && bun pack && bun test",
     "reinstall": "bin/uninstall.sh -y && bun pm pack --destination build/ --quiet && bin/install.sh -y"
   },
-  "keywords": [
-    "cli"
-  ],
-  "author": "Jason Dillon",
-  "license": "Apache-2.0",
   "dependencies": {
     "boxen": "^7.1.1",
     "chalk": "^5.3.0",
