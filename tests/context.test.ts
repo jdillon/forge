@@ -4,7 +4,8 @@
 
 import { describe, test } from './lib/testx';
 import { expect } from 'bun:test';
-import { setupTestLogs, runCommandWithLogs, TEST_DIRS } from './lib/utils';
+import { setupTestLogs, TEST_DIRS } from './lib/utils';
+import { runForge } from './lib/runner';
 import { join } from 'path';
 
 describe('ForgeContext', () => {
@@ -14,10 +15,8 @@ describe('ForgeContext', () => {
     const logs = await setupTestLogs(ctx);
     const outputFile = join(logs.logDir, 'context-output.json');
 
-    const result = await runCommandWithLogs({
-      command: './bin/forge',
+    const result = await runForge({
       args: ['--root', fixtureRoot, '--log-level', 'debug', '--log-format', 'json', '--no-color', 'test', 'context', outputFile],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -43,10 +42,8 @@ describe('ForgeContext', () => {
     const logs = await setupTestLogs(ctx);
     const outputFile = join(logs.logDir, 'context-output.json');
 
-    const result = await runCommandWithLogs({
-      command: './bin/forge',
+    const result = await runForge({
       args: ['--root', fixtureRoot, '--log-format', 'json', 'test', 'context', outputFile],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });

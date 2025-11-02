@@ -7,20 +7,18 @@
 
 import { describe, test } from './lib/testx';
 import { expect } from 'bun:test';
-import { setupTestLogs, runCommandWithLogs, TEST_DIRS } from './lib/utils';
+import { setupTestLogs, TEST_DIRS } from './lib/utils';
+import { runForge } from './lib/runner';
 import { join } from 'path';
 
 describe('Subcommand Options', () => {
-  const cliPath = './bin/forge';
   const projectRoot = join(TEST_DIRS.fixtures, 'test-project');
 
   test('should parse subcommand flags (--loud)', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, 'test', 'greet', 'Alice', '--loud'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -33,10 +31,8 @@ describe('Subcommand Options', () => {
   test('should parse subcommand short flags (-l)', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, 'test', 'greet', 'Bob', '-l'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -49,10 +45,8 @@ describe('Subcommand Options', () => {
   test('should work without flags', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, 'test', 'greet', 'Charlie'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -65,10 +59,8 @@ describe('Subcommand Options', () => {
   test('should work with no arguments', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, 'test', 'greet'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });

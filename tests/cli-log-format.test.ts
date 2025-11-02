@@ -4,20 +4,18 @@
 
 import { describe, test } from './lib/testx';
 import { expect } from 'bun:test';
-import { setupTestLogs, runCommandWithLogs, TEST_DIRS } from './lib/utils';
+import { setupTestLogs, TEST_DIRS } from './lib/utils';
+import { runForge } from './lib/runner';
 import { join } from 'path';
 
 describe('CLI --log-format Validation', () => {
-  const cliPath = './bin/forge';
   const projectRoot = join(TEST_DIRS.fixtures, 'test-project');
 
   test('should accept "json" format', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, '--log-format', 'json', 'test', 'greet'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -32,10 +30,8 @@ describe('CLI --log-format Validation', () => {
   test('should accept "pretty" format', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, '--log-format', 'pretty', 'test', 'greet'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -47,10 +43,8 @@ describe('CLI --log-format Validation', () => {
   test('should reject invalid format "plain"', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, '--log-format', 'plain', 'test', 'greet'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -65,10 +59,8 @@ describe('CLI --log-format Validation', () => {
   test('should reject invalid format "xyz"', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, '--log-format', 'xyz', 'test', 'greet'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -83,10 +75,8 @@ describe('CLI --log-format Validation', () => {
   test('should reject numeric format "123"', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, '--log-format', '123', 'test', 'greet'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -100,10 +90,8 @@ describe('CLI --log-format Validation', () => {
   test('should show valid formats in error message', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, '--log-format', 'invalid', 'test', 'greet'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -117,10 +105,8 @@ describe('CLI --log-format Validation', () => {
   test('should use pretty format by default', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, 'test', 'greet'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });

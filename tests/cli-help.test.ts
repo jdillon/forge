@@ -31,10 +31,8 @@ describe('CLI Help Output', () => {
   test('should display help with -h', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, '-h'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -47,10 +45,8 @@ describe('CLI Help Output', () => {
   test('should show all core options', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, '--help'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -68,10 +64,8 @@ describe('CLI Help Output', () => {
   test('should show version with --version', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--version'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -84,10 +78,8 @@ describe('CLI Help Output', () => {
   test('should show version with -V', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['-V'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -100,10 +92,8 @@ describe('CLI Help Output', () => {
   test('should show terse error for unknown options', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, '--invalid-option'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -120,10 +110,8 @@ describe('CLI Help Output', () => {
   test('should list commands in help output', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, '--help'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -135,10 +123,8 @@ describe('CLI Help Output', () => {
   test('should sort options alphabetically', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, '--help'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });

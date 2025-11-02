@@ -4,20 +4,18 @@
 
 import { describe, test } from './lib/testx';
 import { expect } from 'bun:test';
-import { setupTestLogs, runCommandWithLogs, TEST_DIRS } from './lib/utils';
+import { setupTestLogs, TEST_DIRS } from './lib/utils';
+import { runForge } from './lib/runner';
 import { join } from 'path';
 
 describe('CLI Color Detection', () => {
-  const cliPath = './bin/forge';
   const projectRoot = join(TEST_DIRS.fixtures, 'test-project');
 
   test('should use colors by default', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, '--help'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -29,10 +27,8 @@ describe('CLI Color Detection', () => {
   test('should disable colors with --no-color flag', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, '--no-color', '--help'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -46,10 +42,9 @@ describe('CLI Color Detection', () => {
   test('should disable colors with NO_COLOR env var', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, '--help'],
-      env: { ...process.env, NO_COLOR: '1' },
+      env: { NO_COLOR: '1' },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -62,10 +57,8 @@ describe('CLI Color Detection', () => {
   test('should prioritize --no-color flag over env', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, '--no-color', '--help'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
