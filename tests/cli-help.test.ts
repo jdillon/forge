@@ -4,20 +4,18 @@
 
 import { describe, test } from './lib/testx';
 import { expect } from 'bun:test';
-import { setupTestLogs, runCommandWithLogs, TEST_DIRS } from './lib/utils';
+import { setupTestLogs, TEST_DIRS } from './lib/utils';
+import { runForge } from './lib/runner';
 import { join } from 'path';
 
 describe('CLI Help Output', () => {
-  const cliPath = './bin/forge';
   const projectRoot = join(TEST_DIRS.fixtures, 'test-project');
 
   test('should display help with --help', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
-    const result = await runCommandWithLogs({
-      command: cliPath,
+    const result = await runForge({
       args: ['--root', projectRoot, '--help'],
-      env: { ...process.env },
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
