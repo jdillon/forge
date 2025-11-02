@@ -160,6 +160,31 @@ cat > package.json << 'EOF'
 }
 EOF
 
+# Create bunfig.toml for bun runtime configuration
+cat > bunfig.toml << 'EOF'
+[install]
+exact = true
+dev = false
+peer = true
+optional = false
+auto = "disable"
+EOF
+
+# Create tsconfig.json for module resolution
+cat > tsconfig.json << 'EOF'
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "*": ["./node_modules/*", "*"] },
+    "module": "ESNext",
+    "target": "ESNext",
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  }
+}
+EOF
+
 # Install forge from GitHub
 info "Installing @planet57/forge from GitHub..."
 # Build package spec with optional branch suffix
@@ -201,11 +226,13 @@ ln -sf "${FORGE_BOOTSTRAP}" "${FORGE_CMD}"
 
 # Verify installation works
 info "Verifying installation..."
-if "${FORGE_CMD}" --version &>/dev/null; then
-  VERSION=$("${FORGE_CMD}" --version 2>&1 || echo "unknown")
+if VERSION=$("${FORGE_CMD}" --version 2>&1); then
   info "Successfully installed forge ${VERSION}"
 else
-  die "Installation verification failed: forge --version did not succeed"
+  echo "ERROR: Installation verification failed" >&2
+  echo "Output from 'forge --version':" >&2
+  echo "${VERSION}" >&2
+  exit 1
 fi
 
 # Check PATH

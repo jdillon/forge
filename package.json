@@ -22,7 +22,8 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf build/",
     "pack": "bun pm pack --destination build/ --quiet",
-    "testsuite": "bun clean && bun install && bun pack && bun test"
+    "testsuite": "bun clean && bun install && bun pack && bun test",
+    "reinstall": "bin/uninstall.sh -y && bun pack && bin/install.sh -y"
   },
   "keywords": [
     "cli"

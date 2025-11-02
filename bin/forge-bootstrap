@@ -6,9 +6,58 @@ FORGE_SHARE="${XDG_DATA_HOME:-$HOME/.local/share}/forge"
 FORGE_CLI="${FORGE_SHARE}/node_modules/@planet57/forge/bin/forge"
 
 if [[ ! -f "${FORGE_CLI}" ]]; then
-  echo "Error: Forge not found at ${FORGE_CLI}" >&2
+  echo "ERROR: Forge not found at ${FORGE_CLI}" >&2
   echo "Run install.sh to reinstall forge" >&2
   exit 1
 fi
 
-exec bun "${FORGE_CLI}" "$@"
+# Forge home - where dependencies are managed
+FORGE_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/forge"
+export BUN_INSTALL_GLOBAL_DIR="${FORGE_HOME}"
+
+# Run forge with proper bun configuration
+# Sets up:
+#   - NODE_PATH for module resolution
+#   - --config for bunfig.toml (if exists)
+#   - Optional FORGE_RESTARTED flag for dependency restart
+run_forge() {
+  local restarted="${1:-}"
+
+  # Set NODE_PATH to include forge home node_modules (for Phase 2 dependencies)
+  # export NODE_PATH="${FORGE_HOME}/node_modules${NODE_PATH:+:$NODE_PATH}"
+
+  # Set restart flag if provided
+  if [[ -n "$restarted" ]]; then
+    export FORGE_RESTARTED=1
+  fi
+
+  # Verify required config files exist
+  if [[ ! -f "${FORGE_HOME}/bunfig.toml" ]]; then
+    echo "ERROR: ${FORGE_HOME}/bunfig.toml not found" >&2
+    echo "Run install.sh to reinstall forge" >&2
+    exit 1
+  fi
+
+  # Run bun with explicit config from forge-home
+  # Note: --tsconfig-override causes Bun internal errors, so we rely on NODE_PATH
+  bun run \
+    --config="${FORGE_HOME}/bunfig.toml" \
+    "${FORGE_CLI}" \
+    "${@:2}"
+}
+
+# Run forge and capture exit code
+set +e  # Don't exit on non-zero
+run_forge "" "$@"
+EXIT_CODE=$?
+set -e
+
+# Exit code 42 = restart needed (dependencies installed)
+if [[ $EXIT_CODE -eq 42 ]]; then
+  # Re-run with FORGE_RESTARTED=1 to prevent infinite loops
+  run_forge "restarted" "$@"
+  exit $?
+fi
+
+# Normal exit
+exit $EXIT_CODE

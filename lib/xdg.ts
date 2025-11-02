@@ -41,15 +41,15 @@ export function getXDGStateHome(): string {
 }
 
 /**
- * Get forge2 installation paths (XDG-compliant)
+ * Get forge installation paths (XDG-compliant)
  */
 export function getForgePaths() {
   return {
-    data: join(getXDGDataHome(), 'forge2'),
-    config: join(getXDGConfigHome(), 'forge2'),
-    cache: join(getXDGCacheHome(), 'forge2'),
-    state: join(getXDGStateHome(), 'forge2'),
-    modules: join(getXDGDataHome(), 'forge2', 'modules'),
-    runtime: join(getXDGDataHome(), 'forge2', 'runtime'),
+    data: join(getXDGDataHome(), 'forge'),
+    config: join(getXDGConfigHome(), 'forge'),
+    cache: join(getXDGCacheHome(), 'forge'),
+    state: join(getXDGStateHome(), 'forge'),
+    modules: join(getXDGDataHome(), 'forge', 'modules'),
+    runtime: join(getXDGDataHome(), 'forge', 'runtime'),
   };
 }

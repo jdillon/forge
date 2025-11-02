@@ -69,6 +69,15 @@ export interface ForgeConfig {
   // Command-specific settings (layered config)
   // Example: { 'basic.greet': { defaultName: 'World' } }
   settings?: Record<string, Record<string, any>>;
+
+  // Phase 2: Dependencies to install to forge home
+  dependencies?: string[];  // e.g., ["@aws-sdk/client-s3@^3.0.0", "lodash@^4.0.0"]
+
+  // Phase 2: Dependency installation mode
+  installMode?: 'auto' | 'manual' | 'ask';  // Default: 'auto'
+
+  // Phase 2: Offline mode
+  offline?: boolean;  // Default: false
 }
 
 /**

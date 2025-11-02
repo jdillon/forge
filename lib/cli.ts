@@ -8,7 +8,7 @@
  * 2. Real CLI: Parse with full validation (strict, Commander handles it)
  */
 
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 import { styleText } from 'node:util';
 import chalk from 'chalk';
 import updateNotifier from 'update-notifier';
@@ -17,6 +17,7 @@ import { existsSync } from 'fs';
 import { Forge } from './core';
 import { die, exit } from './helpers';
 import { configureLogger } from './logger';
+import { getForgePaths } from './xdg';
 import pkg from '../package.json' assert { type: 'json' };
 
 // ============================================================================
@@ -250,6 +251,59 @@ async function run(): Promise<void> {
     format: config.logFormat,
     color: config.color,
   });
+
+  // Debug: Show module resolution paths if debug enabled
+  if (config.debug || process.env.FORGE_DEBUG === '1') {
+    const { debugModulePaths } = await import('./debug-paths');
+    debugModulePaths();
+  }
+
+  // Phase 1.5: Dependency sync (before loading modules)
+  // This ensures dependencies are available when modules are imported
+  let projectRoot = config.root || getProjectRoot();
+  if (!projectRoot) {
+    projectRoot = await discoverProject();
+  }
+
+  if (config.debug || process.env.FORGE_DEBUG === '1') {
+    console.error('\n=== Bootstrap Phase 1.5 ===');
+    console.error('Project root:', projectRoot || '(none)');
+  }
+
+  if (projectRoot) {
+    try {
+      // Load minimal config to check dependencies
+      const { loadLayeredConfig } = await import('./config-loader');
+      const { config: userConfigDir } = getForgePaths();
+      const forgeConfig = await loadLayeredConfig(projectRoot, userConfigDir);
+
+      if (config.debug || process.env.FORGE_DEBUG === '1') {
+        console.error('Config loaded, dependencies:', forgeConfig.dependencies || '(none)');
+      }
+
+      // Check if this is a restarted process (via env var from wrapper)
+      const isRestarted = process.env.FORGE_RESTARTED === '1';
+
+      // Auto-install dependencies if needed
+      const { autoInstallDependencies, RESTART_EXIT_CODE } = await import('./auto-install');
+      const forgeDir = join(projectRoot, '.forge2');
+      const needsRestart = await autoInstallDependencies(forgeConfig, forgeDir, isRestarted);
+
+      if (config.debug || process.env.FORGE_DEBUG === '1') {
+        console.error('Needs restart:', needsRestart);
+        console.error('===========================\n');
+      }
+
+      if (needsRestart) {
+        // Exit with magic code - wrapper will restart us
+        exit(RESTART_EXIT_CODE);
+      }
+    } catch (err: any) {
+      // If dependency sync fails, show error and exit
+      // Don't continue to buildRealCLI
+      die(err.message);
+    }
+  }
 
   // Phase 2: Build and run real CLI (strict)
   const program = await buildRealCLI(config);

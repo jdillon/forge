@@ -52,16 +52,24 @@ export async function loadModule(
   modulePath: string,
   forgeDir: string
 ): Promise<{ groupName: string | false; description?: string; commands: Record<string, ForgeCommand> }> {
+  const debug = process.env.FORGE_DEBUG === '1' || process.argv.includes('--debug');
   const commands: Record<string, ForgeCommand> = {};
   let groupName: string | false = deriveGroupName(modulePath);
   let description: string | undefined;
 
-  // Resolve module path to absolute path for import()
-  // If relative (starts with .), resolve relative to .forge2/
-  // Otherwise, treat as absolute or node_modules path
-  const fullPath = modulePath.startsWith('.')
-    ? resolve(forgeDir, modulePath)
-    : modulePath;
+  if (debug) {
+    console.error('\n=== Loading Module ===');
+    console.error('Module path:', modulePath);
+    console.error('Derived group name:', groupName);
+  }
+
+  // Resolve module path with priority: local → shared
+  const { resolveModule } = await import('./module-resolver');
+  const fullPath = await resolveModule(modulePath, forgeDir);
+
+  if (debug) {
+    console.error('Resolved to:', fullPath);
+  }
 
   try {
     const module = await import(fullPath);
@@ -92,6 +100,11 @@ export async function loadModule(
         // Named export becomes command name
         commands[name] = value as ForgeCommand;
       }
+    }
+
+    if (debug) {
+      console.error('Commands discovered:', Object.keys(commands).length > 0 ? Object.keys(commands) : '(none)');
+      console.error('======================\n');
     }
 
     return { groupName, description, commands };
@@ -131,6 +144,8 @@ export class Forge {
   }
 
   async loadConfig(): Promise<void> {
+    const debug = process.env.FORGE_DEBUG === '1' || process.argv.includes('--debug');
+
     // Skip loading config if no project root (for --help/--version)
     if (!this.projectContext.projectRoot) {
       this.config = null;
@@ -147,6 +162,11 @@ export class Forge {
       // Verify we got a valid config
       if (!this.config) {
         die(`No config found in ${this.projectContext.forgeDir}`);
+      }
+
+      if (debug) {
+        console.error('\n=== Config Loading ===');
+        console.error('Modules to load:', this.config.modules);
       }
 
       // Auto-discover commands from modules
@@ -170,6 +190,14 @@ export class Forge {
           }
           // else: groupName === false means top-level, skip for now
         }
+      }
+
+      if (debug) {
+        console.error('Command groups registered:', Object.keys(this.commandGroups));
+        for (const [group, data] of Object.entries(this.commandGroups)) {
+          console.error(`  ${group}:`, Object.keys(data.commands));
+        }
+        console.error('======================\n');
       }
     } catch (err) {
       die(`Failed to load config: ${err}`);
