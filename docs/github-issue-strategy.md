@@ -842,6 +842,93 @@ In issue body or comments:
 - `Part of #2` - Show relationship
 - `Blocked by #2` - Show dependency
 
+### Create Parent-Child Relationships
+
+GitHub supports native parent-child issue relationships via the GraphQL API.
+
+**Method 1: GraphQL API (Recommended)**
+
+```bash
+# Get the GraphQL node IDs
+PARENT_ID=$(gh issue view 2 --repo owner/repo --json id --jq ".id")
+CHILD_ID=$(gh issue view 12 --repo owner/repo --json id --jq ".id")
+
+# Create the parent-child relationship
+gh api graphql -H "GraphQL-Features: sub_issues" -f query="
+mutation {
+  addSubIssue(input: {
+    issueId: \"$PARENT_ID\",
+    subIssueId: \"$CHILD_ID\"
+  }) {
+    issue { title }
+    subIssue { title }
+  }
+}"
+```
+
+**Method 2: Bash Helper Function**
+
+```bash
+gh_add_subissue() {
+    local parent_num=$1
+    local child_num=$2
+    local repo=${3:-"owner/repo"}  # Optional repo parameter
+
+    local parent_id=$(gh issue view "$parent_num" --repo "$repo" --json id --jq ".id")
+    local child_id=$(gh issue view "$child_num" --repo "$repo" --json id --jq ".id")
+
+    gh api graphql -H "GraphQL-Features: sub_issues" -f query="
+    mutation {
+      addSubIssue(input: {
+        issueId: \"$parent_id\",
+        subIssueId: \"$child_id\"
+      }) {
+        issue { title }
+        subIssue { title }
+      }
+    }"
+}
+
+# Usage: gh_add_subissue 2 12 jdillon/forge
+```
+
+**Method 3: Third-Party Extension**
+
+```bash
+# Install the extension
+gh extension install agbiotech/gh-sub-issue
+
+# Add a sub-issue
+gh sub-issue add <parent-number> <child-number>
+```
+
+**Remove Sub-Issue Relationship**
+
+```bash
+PARENT_ID=$(gh issue view 2 --repo owner/repo --json id --jq ".id")
+CHILD_ID=$(gh issue view 12 --repo owner/repo --json id --jq ".id")
+
+gh api graphql -H "GraphQL-Features: sub_issues" -f query="
+mutation {
+  removeSubIssue(input: {
+    issueId: \"$PARENT_ID\",
+    subIssueId: \"$CHILD_ID\"
+  }) {
+    issue { title }
+  }
+}"
+```
+
+**Important Notes:**
+
+1. **GraphQL Feature Header Required**: The `GraphQL-Features: sub_issues` header is required
+2. **ID vs Number**:
+   - `gh issue view --json id` returns the GraphQL node ID (e.g., `I_kwDOQMbpzM7U84L8`)
+   - Issue numbers are what you see in the UI (e.g., `#2`, `#12`)
+3. **Cross-repo Support**: You can create relationships across repositories within the same organization
+4. **Nesting Limit**: Up to 50 sub-issues per parent, with up to 8 levels of nesting
+5. **Alternative to Task Lists**: This creates formal parent-child relationships, whereas `- [ ] #10` in issue body creates task list items (both work, formal relationships show in UI sidebar)
+
 ---
 
 ## Benefits
