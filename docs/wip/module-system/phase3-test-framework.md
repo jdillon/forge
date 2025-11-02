@@ -131,7 +131,10 @@ const result = await ForgeTestRunner.create(runner => {
 - ✅ Scoped configuration
 - ❌ Less familiar in TS/JS ecosystem
 
-**Recommendation**: Start with **Configuration Object** style for conciseness, add fluent builder if needed for complex scenarios.
+**Decision**: Use **Configuration Object** style (Option 2)
+- Most concise for typical test cases
+- Option 3 (callback) would need Option 2 as foundation anyway
+- Can add Option 1 (fluent) later if complex scenarios need it
 
 ### Benefits
 
@@ -143,11 +146,13 @@ const result = await ForgeTestRunner.create(runner => {
 
 ### Implementation Plan
 
-#### Step 1: Create ForgeTestRunner builder
-- Location: `tests/lib/forge-test-runner.ts`
-- Implement builder pattern with fluent API
+#### Step 1: Create test runner
+- **Location**: `tests/lib/runner.ts` (simple name, no need for extra complexity)
+- Implement with Configuration Object API (Option 2)
 - Set up NODE_PATH and other env from wrapper script
 - Execute local `lib/cli.ts` instead of `bin/forge`
+- Expose: working-dir, forge-home, env-vars, args, log output location
+- Handle: running tool, ensuring exit, timeout (defer timeout for now)
 
 #### Step 2: Manual testing on one failing test
 - Pick one currently failing test (e.g., `tests/cli-help.test.ts`)
@@ -164,10 +169,11 @@ const result = await ForgeTestRunner.create(runner => {
   - `tests/context.test.ts`
   - Other tests using `runCommandWithLogs()`
 
-#### Step 4: Integrate with existing test helpers
-- Update `runCommandWithLogs()` to use ForgeTestRunner internally
-- Or deprecate in favor of builder pattern
-- Ensure all tests pass
+#### Step 4: Handle runCommandWithLogs
+- Tests should use runner directly
+- Runner should implement log handling internally (simpler than delegating to `runCommandWithLogs`)
+- May retain `runCommandWithLogs()` if needed for other use cases
+- **Simpler is better** - inline log handling if it reduces complexity
 
 ### Alternative Approaches Considered
 
@@ -176,15 +182,28 @@ const result = await ForgeTestRunner.create(runner => {
 - **Con**: Bash wrapper still uses installed version
 - **Con**: Would need to modify wrapper to support local dev mode
 
+**Decision**: Defer this approach
+- Eventually want to test entire system including bash script
+- Need GitHub issue to track this future work
+- For now, focus on local code testing
+
 #### 2. Mock installed location to point to local code
 - **Pro**: No test changes needed
 - **Con**: Fragile symlink/copy approach
 - **Con**: Could interfere with actual installation
 
+**Decision**: Rejected
+- Avoid mocks - want to assert actual functionality
+- Need real execution, not mocked paths
+
 #### 3. Separate dev wrapper script
 - **Pro**: Clean separation
 - **Con**: Another script to maintain
 - **Con**: Could drift from production wrapper
+
+**Decision**: Rejected
+- More code to maintain, different code paths
+- Will address unified strategy later (see GitHub issue from option 1)
 
 ### Future Improvements
 
@@ -193,12 +212,47 @@ Once working:
 2. Add `--dev` flag to wrapper to use local code
 3. Builder could then call wrapper with `--dev` flag
 
-## Open Questions
+## Decisions on Open Questions
 
-1. Should ForgeTestRunner completely replace `runCommandWithLogs()` or extend it?
-2. How to handle cleanup/teardown in builder pattern?
-3. Should we capture all env setup from wrapper or just NODE_PATH?
-4. How to handle tests that explicitly test the installed version?
+### 1. Should test runner replace `runCommandWithLogs()`?
+**Answer**: Tests use runner directly; runner implements log handling if simpler
+- Runner may or may not use `runCommandWithLogs()` internally - whichever is simpler
+- Main goal: run forge for testing
+- `runCommandWithLogs()` may be unnecessary after refactor
+- **Principle**: Simpler is better
+
+### 2. How to handle cleanup/teardown?
+**Answer**: Runner's responsibility is limited to execution
+- Runner handles:
+  - Taking config input (args, env, working-dir, log dirs)
+  - Running the tool
+  - Ensuring tool exits
+  - Timeout with exception (defer until needed)
+- Test-specific cleanup is **not** runner's concern
+- Each test handles its own setup/teardown
+
+### 3. What environment config should runner expose?
+**Answer**: Expose all important configuration
+- working-dir
+- forge-home
+- env-vars
+- args
+- location to output console logs
+
+### 4. How to handle tests of installed version?
+**Answer**: Leave them alone for now
+- Focus on local development tests first
+- Once bash script testing is resolved (see GitHub issue), normalize all tests to use runner
+
+## Action Items
+
+### Create GitHub Issue: Test Entire System with Bash Script
+**Summary**: Eventually want to test complete system including bash wrapper script
+- Current approach: Tests run local `lib/cli.ts` directly
+- Future: Tests should also verify bash wrapper (`bin/forge`)
+- This ensures production wrapper script is tested, not just library code
+- Story should be in module distribution epic
+- Deferred until local development testing is working
 
 ## Success Criteria
 
