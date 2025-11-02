@@ -338,3 +338,8 @@ async function run(): Promise<void> {
     throw err;
   }
 }
+
+// Self-execute when run directly (like Python's if __name__ == "__main__")
+if (import.meta.main) {
+  await main();
+}

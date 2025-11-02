@@ -203,7 +203,7 @@ fi
 
 # Create symlink to bootstrap script in bin directory
 info "Creating bootstrap symlink..."
-FORGE_BOOTSTRAP="${FORGE_PKG_DIR}/bin/forge-bootstrap"
+FORGE_BOOTSTRAP="${FORGE_PKG_DIR}/bin/forge"
 
 if [[ ! -f "${FORGE_BOOTSTRAP}" ]]; then
   die "Bootstrap script not found at ${FORGE_BOOTSTRAP}"
