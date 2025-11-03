@@ -8,7 +8,7 @@ import { join, dirname, resolve } from 'path';
 import { existsSync } from 'fs';
 import { Command } from 'commander';
 import { StateManager } from './state';
-import { die, exit } from './helpers';
+import { die } from './helpers';
 import { getForgePaths } from './xdg';
 import { getLoggerConfig, createLogger } from './logging';
 import type pino from 'pino';
@@ -187,6 +187,9 @@ export class Forge {
     log.debug({ groups, groupDetails }, 'Command groups registered');
   }
 
+  // DEAD CODE - These methods are from an older design and are not used
+  // TODO: Remove after confirming no dependencies
+  /*
   async run(commandName: string, args: string[]): Promise<void> {
     if (!this.config) {
       await this.loadConfig();
@@ -236,6 +239,7 @@ export class Forge {
   getContext(): ForgeContext {
     return this.context;
   }
+  */
 
   /**
    * Register all discovered commands with Commander program

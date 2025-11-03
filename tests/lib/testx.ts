@@ -131,7 +131,7 @@ describe.only = function(name: string, fn: () => void): void {
 };
 
 describe.todo = function(name: string): void {
-  return bunDescribe.todo(name);
+  return bunDescribe.todo(name, () => {});
 };
 
 // ============================================================================
@@ -177,7 +177,7 @@ test.todo = function(name: string, fn?: TestFunction, timeout?: number): void {
       await fn(ctx);
     }, timeout);
   }
-  return bunTest.todo(name);
+  return bunTest.todo(name, () => {});
 };
 
 test.if = function(condition: boolean) {

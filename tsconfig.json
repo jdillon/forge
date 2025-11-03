@@ -17,7 +17,10 @@
   },
   "include": [
     "lib/**/*",
-    "bin/**/*",
-    "examples/**/*"
+    "examples/**/*",
+    "tests/**/*"
+  ],
+  "exclude": [
+    "tests/fixtures/**/*"
   ]
 }

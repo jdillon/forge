@@ -71,9 +71,9 @@ function getProjectRoot(): string | null {
 function addTopLevelOptions(program: Command): Command {
   return program
     .option('-r, --root <path>', 'Project root directory')
-    .option('-d, --debug', 'Debug output (sets log level to debug)')
-    .option('-q, --quiet', 'Quiet mode (sets log level to warn)')
-    .option('-s, --silent', 'Silent mode (disables all logging)')
+    .option('-d, --debug', 'Debug output')
+    .option('-q, --quiet', 'Quiet mode')
+    .option('-s, --silent', 'Silent mode')
     .addOption(
       program.createOption('--log-level <level>', 'Set log level')
         .choices(['silent', 'trace', 'debug', 'info', 'warn', 'error', 'fatal'])
@@ -91,6 +91,8 @@ function addTopLevelOptions(program: Command): Command {
 
 interface BootstrapConfig {
   debug: boolean;
+  quiet: boolean;
+  silent: boolean;
   logLevel: string;
   logFormat: 'json' | 'pretty' | undefined;
   color: boolean;
@@ -119,6 +121,8 @@ function bootstrap(cliArgs: string[]): BootstrapConfig {
   // Return extracted config - that's it!
   return {
     debug: opts.debug || false,
+    quiet: opts.quiet || false,
+    silent: opts.silent || false,
     logLevel: opts.logLevel,
     logFormat: opts.logFormat as 'json' | 'pretty' | undefined,
     color: opts.color !== false,

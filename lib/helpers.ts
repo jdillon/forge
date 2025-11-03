@@ -7,14 +7,6 @@
 import chalk from 'chalk';
 
 /**
- * Simple confirmation prompt
- */
-export async function confirm(prompt: string = 'Continue?'): Promise<boolean> {
-  const input = await Bun.prompt(`${prompt} [y/N] `);
-  return input?.toLowerCase() === 'y';
-}
-
-/**
  * Clean exit notification - thrown when application should exit normally
  * Used for --help, --version, or other clean exits
  */

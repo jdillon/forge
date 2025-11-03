@@ -28,7 +28,7 @@ export type {
 // ============================================================================
 
 export { createLogger } from './logging/logger';
-export { confirm, die, exit, error } from './helpers';
+export { die, exit, error } from './helpers';
 export { getForgePaths } from './xdg';
 
 // ============================================================================
@@ -61,11 +61,6 @@ export { boxenDefault as boxen };
 
 // Task lists
 export { Listr } from 'listr2';
-
-// Prompts
-import enquirerDefault from 'enquirer';
-export { enquirerDefault as enquirer };
-export const { prompt, confirm: enquirerConfirm } = enquirerDefault;
 
 // Tables
 import TableDefault from 'cli-table3';
