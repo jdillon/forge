@@ -85,7 +85,6 @@ export function initLogging(options: { level?: string; format?: 'json' | 'pretty
         messageFormat: '{msg}',
         errorLikeObjectKeys: ['err', 'error'],
       },
-      sync: true, // Required for CLI to ensure output order
     });
   } else {
     // JSON format - output to stderr
