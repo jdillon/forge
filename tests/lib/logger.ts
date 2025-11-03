@@ -6,30 +6,28 @@
 import pino from 'pino';
 import pretty from 'pino-pretty';
 
-/**
- * Create a logger for tests.
- * Uses pino-pretty for human-readable output
- *
- * Only outputs when VERBOSE=1 is set (like println())
- */
-export const createLogger = (name?: string): pino.Logger => {
-  const stream = pretty({
+const root = pino(
+  {
+    // Silent by default, debug when VERBOSE=1 (matches println behavior)
+    level: process.env.VERBOSE ? 'debug' : 'silent',
+    serializers: {
+      err: pino.stdSerializers.err,
+      error: pino.stdSerializers.err,
+    },
+  },
+  pretty({
     colorize: true,
     translateTime: 'HH:MM:ss.l',
     ignore: 'hostname,pid',
     sync: true, // Required for test environments
-  });
+  })
+);
 
-  return pino(
-    {
-      name: name || 'test',
-      // Silent by default, debug when VERBOSE=1 (matches println behavior)
-      level: process.env.VERBOSE ? 'debug' : 'silent',
-      serializers: {
-        err: pino.stdSerializers.err,
-        error: pino.stdSerializers.err,
-      },
-    },
-    stream
-  );
+/**
+ * Create a logger for tests.
+ */
+export const createLogger = (name?: string): pino.Logger => {
+  return root.child({
+      name: name || 'test'
+    });
 };
