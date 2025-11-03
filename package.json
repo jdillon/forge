@@ -19,9 +19,13 @@
   },
   "files": [
     "lib/**/*.ts",
+    "bin/forge",
     "README.md",
     "LICENSE"
   ],
+  "_comments": {
+    "files_bin": "bin/forge is required by install.sh to bootstrap the CLI after installation"
+  },
   "scripts": {
     "test": "bun run pack && bun test",
     "test:junit": "bun run pack && mkdir -p build/test-reports && bun test --reporter=junit --reporter-outfile=build/test-reports/junit.xml",

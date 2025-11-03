@@ -13,7 +13,7 @@
 
 import { resolve, join } from 'path';
 import { existsSync } from 'fs';
-import { getForgeHomePath } from './forge-home';
+import { getNodeModulesPath } from './forge-home';
 import { getGlobalLogger } from './logging';
 
 /**
@@ -51,13 +51,13 @@ export async function resolveModule(
     );
   }
 
-  // 2. Package modules (from forge home node_modules)
+  // 2. Package modules (from node_modules)
   // Examples: "@jdillon/forge-standard/hello", "cowsay"
-  const forgeHome = getForgeHomePath();
+  const nodeModules = getNodeModulesPath();
 
   // For scoped packages with subpaths like "@jdillon/forge-standard/hello"
   // we need to resolve the full path including the submodule
-  const packagePath = join(forgeHome, 'node_modules', modulePath);
+  const packagePath = join(nodeModules, modulePath);
 
   // Try with extensions for the package module
   for (const ext of ['', '.ts', '.js', '.mjs']) {
@@ -79,7 +79,7 @@ export async function resolveModule(
     `Module not found: ${modulePath}\n` +
       `Searched:\n` +
       `  - Local: ${forgeDir}\n` +
-      `  - Package: ${join(forgeHome, 'node_modules', modulePath)}\n\n` +
+      `  - Package: ${join(nodeModules, modulePath)}\n\n` +
       `Suggestions:\n` +
       `  1. Add to config.yml dependencies section\n` +
       `  2. Run: forge module install`,

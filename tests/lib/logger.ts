@@ -4,7 +4,6 @@
  */
 
 import pino from 'pino';
-import pretty from 'pino-pretty';
 
 /**
  * Create a logger for tests.
@@ -13,12 +12,17 @@ import pretty from 'pino-pretty';
  * Only outputs when VERBOSE=1 is set (like println())
  */
 export const createLogger = (name?: string): pino.Logger => {
-  const stream = pretty({
-    colorize: true,
-    translateTime: 'HH:MM:ss.l',
-    ignore: 'hostname,pid',
-    levelFirst: true,
-    messageFormat: '{levelLabel} [{name}] {msg}',
+  const transport = pino.transport({
+    target: 'pino-pretty',
+    options: {
+      colorize: true,
+      translateTime: 'HH:MM:ss.l',
+      ignore: 'hostname,pid',
+      levelFirst: true,
+      singleLine: true,
+      messageFormat: '{msg}',
+      errorLikeObjectKeys: ['err', 'error'],
+    },
     sync: true, // Required for test environments
   });
 
@@ -27,7 +31,11 @@ export const createLogger = (name?: string): pino.Logger => {
       name: name || 'test',
       // Silent by default, debug when VERBOSE=1 (matches println behavior)
       level: process.env.VERBOSE ? 'debug' : 'silent',
+      serializers: {
+        err: pino.stdSerializers.err,
+        error: pino.stdSerializers.err,
+      },
     },
-    stream
+    transport
   );
 };

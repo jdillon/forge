@@ -1,15 +1,15 @@
 /**
  * Test runner for executing local forge CLI
  *
- * Runs local lib/cli.ts with proper environment (NODE_PATH, etc.)
- * instead of installed version. Enables fast test-driven development
- * without needing `bun reinstall` after every change.
+ * Runs local bin/forge bootstrap script which handles dev mode detection
+ * and environment setup (FORGE_NODE_MODULES, NODE_PATH). Enables fast
+ * test-driven development without needing `bun reinstall` after every change.
  */
 
 import { spawn } from 'child_process';
 import { createWriteStream } from 'fs';
 import { join } from 'path';
-import { getForgePaths } from '../../lib/xdg';
+import { TEST_DIRS } from './utils';
 
 /**
  * Configuration for running forge in tests
@@ -67,21 +67,20 @@ export async function runForge(config: RunForgeConfig): Promise<RunForgeResult> 
     teeToConsole = false,
   } = config;
 
-  // Get forge home path (like bin/forge does)
-  const forgeHome = getForgePaths().data; // ~/.local/share/forge
-  const nodeModules = join(forgeHome, 'node_modules');
+  // Path to bootstrap script (handles dev mode detection and env setup)
+  const forgeBin = join(TEST_DIRS.root, 'bin', 'forge');
 
-  // Build environment like bin/forge wrapper does
+  // For tests, use isolated test node_modules unless overridden
+  // This keeps tests isolated from project dependencies
+  const testNodeModules = TEST_DIRS.nodeModules;
+
+  // Build environment - tests get explicit control over FORGE_NODE_MODULES
   const testEnv = {
     ...process.env,
-    ...env,
-    // Set NODE_PATH for module resolution (critical for shared dependencies)
-    NODE_PATH: nodeModules + (process.env.NODE_PATH ? `:${process.env.NODE_PATH}` : ''),
+    // Set FORGE_NODE_MODULES for tests (can be overridden via env param)
+    FORGE_NODE_MODULES: testNodeModules,
+    ...env, // env overrides come last
   };
-
-  // Path to local CLI (not installed version)
-  const projectRoot = join(__dirname, '..', '..');
-  const cliPath = join(projectRoot, 'lib', 'cli.ts');
 
   // Create log file paths
   const stdoutLog = join(logDir, `${logBaseName}-stdout.log`);
@@ -93,7 +92,7 @@ export async function runForge(config: RunForgeConfig): Promise<RunForgeResult> 
 
   // Run command with spawned process
   const exitCode = await new Promise<number>((resolve) => {
-    const proc = spawn('bun', ['run', cliPath, ...args], {
+    const proc = spawn(forgeBin, args, {
       env: testEnv,
       cwd,
     });

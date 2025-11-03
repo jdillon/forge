@@ -112,8 +112,8 @@ describe('CLI --log-format Validation', () => {
     });
 
     expect(result.exitCode).toBe(0);
-    const output = await Bun.file(result.stderrLog).text();
-    // Pretty format should have timestamps and human-readable output on stderr
+    const output = await Bun.file(result.stdoutLog).text();
+    // Pretty format should have timestamps and human-readable output
     expect(output).toMatch(/\d{2}:\d{2}:\d{2}/); // timestamp pattern
   });
 });

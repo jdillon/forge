@@ -5,8 +5,6 @@
  */
 
 import pino from 'pino';
-import pretty from 'pino-pretty';
-import { Writable } from 'stream';
 
 // Logger configuration state
 interface LoggerConfig {
@@ -21,9 +19,6 @@ const config: LoggerConfig = {
   color: true,
 };
 
-// Registry of all logger instances (for future cleanup if needed)
-const loggers: pino.Logger[] = [];
-
 /**
  * Get current logger configuration
  */
@@ -31,52 +26,84 @@ export function getLoggerConfig(): Readonly<LoggerConfig> {
   return config;
 }
 
+// Shared transport (created during initLogging)
+let transport: pino.DestinationStream | null = null;
+
+// Registry of all logger instances (for future cleanup if needed)
+const loggers: pino.Logger[] = [];
+
 /**
- * Create a logger instance
- * Simple factory that uses current configuration
+ * Global logger instance (created after initLogging)
+ */
+let globalLogger: pino.Logger | null = null;
+let initialized = false;
+
+export function isLoggingInitialized(): boolean {
+  return initialized;
+}
+
+/**
+ * Ensure logging is initialized, throw if not
  * @throws {Error} if logging not initialized
  */
-export function createLogger(name?: string): pino.Logger {
-  ensureInitialized();
+function ensureInitialized(): void {
+  if (!initialized) {
+    throw new Error('Logging not initialized. Call initLogging() first.');
+  }
+}
 
-  // Determine output stream based on format
-  let stream: Writable;
-  if (config.format === 'pretty') {
-    // Pretty format - human-readable with optional colors
-    // stream = pretty({
-    //   colorize: config.color,
-    //   translateTime: 'HH:MM:ss',
-    //   ignore: 'hostname,pid',
-    //   levelFirst: true,
-    //   messageFormat: '{msg}',
-    //   sync: true, // Required for CLI to ensure output order
-    //   errorProps: 'stack', // Show error.stack property (multiline)
-    //   errorLikeObjectKeys: ['err', 'error'], // Keys that should be treated as errors
-    // });
-  } else {
-    // JSON format - output to stderr
-    stream = process.stderr;
+/**
+ * Initialize logging system with configuration
+ * Must be called before creating any loggers
+ */
+export function initLogging(options: { level?: string; format?: 'json' | 'pretty'; color?: boolean }): void {
+  if (initialized) {
+    throw new Error('Logging already initialized');
   }
 
-  const logger = pino(
-    {
-      name: name || 'forge',
-      level: config.level,
-    },
-    // stream
-  );
+  // Configure logging
+  if (options.level) {
+    config.level = options.level;
+  }
+  if (options.format) {
+    config.format = options.format;
+  }
+  if (options.color !== undefined) {
+    config.color = options.color;
+  }
 
-  // Register for cleanup
-  loggers.push(logger);
+  // Create shared transport based on format
+  if (config.format === 'pretty') {
+    transport = pino.transport({
+      target: 'pino-pretty',
+      options: {
+        colorize: config.color,
+        translateTime: 'HH:MM:ss',
+        ignore: 'hostname,pid',
+        levelFirst: true,
+        singleLine: true,
+        messageFormat: '{msg}',
+        errorLikeObjectKeys: ['err', 'error'],
+      },
+      sync: true, // Required for CLI to ensure output order
+    });
+  } else {
+    // JSON format - output to stderr
+    transport = process.stderr;
+  }
 
-  return logger;
+  // Create global logger
+  globalLogger = _createLogger('forge');
+  globalLogger.debug({ level: config.level, format: config.format, color: config.color }, 'Logging initialized');
+
+  initialized = true;
 }
 
 /**
  * Cleanup all logger instances
  * Flushes and closes transport workers
  */
-export async function shutdownLoggers(): Promise<void> {
+export async function shutdownLogging(): Promise<void> {
   const promises = [];
 
   for (const logger of loggers) {
@@ -109,50 +136,33 @@ export async function shutdownLoggers(): Promise<void> {
 }
 
 /**
- * Global logger instance (created after initLogging)
- */
-let _globalLogger: pino.Logger | null = null;
-let _initialized = false;
-
-export function isLoggingInitialized(): boolean {
-  return _initialized;
-}
-
-/**
- * Ensure logging is initialized, throw if not
+ * Create a logger instance
+ * Simple factory that uses shared transport configured during initLogging
  * @throws {Error} if logging not initialized
  */
-function ensureInitialized(): void {
-  if (!_initialized) {
-    throw new Error('Logging not initialized. Call initLogging() first.');
-  }
+export function createLogger(name?: string): pino.Logger {
+  ensureInitialized();
+
+  return _createLogger(name);
 }
 
-/**
- * Initialize logging system with configuration
- * Must be called before creating any loggers
- */
-export function initLogging(options: { level?: string; format?: 'json' | 'pretty'; color?: boolean }): void {
-  if (_initialized) {
-    throw new Error('Logging already initialized');
-  }
+function _createLogger(name?: string): pino.Logger {
+  const logger = pino(
+    {
+      name: name || 'forge',
+      level: config.level,
+      serializers: {
+        err: pino.stdSerializers.err,
+        error: pino.stdSerializers.err,
+      },
+    },
+    transport!
+  );
 
-  // Configure logging
-  if (options.level) {
-    config.level = options.level;
-  }
-  if (options.format) {
-    config.format = options.format;
-  }
-  if (options.color !== undefined) {
-    config.color = options.color;
-  }
+  // Register for cleanup
+  loggers.push(logger);
 
-  _initialized = true;
-
-  // Create global logger
-  _globalLogger = createLogger('forge');
-  _globalLogger.debug({ level: config.level, format: config.format, color: config.color }, 'Logging initialized');
+  return logger;
 }
 
 /**
@@ -161,5 +171,5 @@ export function initLogging(options: { level?: string; format?: 'json' | 'pretty
  */
 export function getGlobalLogger(): pino.Logger {
   ensureInitialized();
-  return _globalLogger!;
+  return globalLogger!;
 }

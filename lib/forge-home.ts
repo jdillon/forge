@@ -27,6 +27,26 @@ export function getForgeHomePath(): string {
 }
 
 /**
+ * Get the node_modules directory for Forge
+ * This is where Forge looks for installed modules
+ *
+ * REQUIRES: FORGE_NODE_MODULES environment variable must be set by bootstrap script
+ * @throws {Error} if FORGE_NODE_MODULES not set
+ */
+export function getNodeModulesPath(): string {
+  const path = process.env.FORGE_NODE_MODULES;
+
+  if (!path) {
+    throw new Error(
+      'FORGE_NODE_MODULES environment variable not set. ' +
+        'This should be set by the forge bootstrap script.',
+    );
+  }
+
+  return path;
+}
+
+/**
  * Ensure forge home exists with package.json and bunfig.toml initialized
  */
 export async function ensureForgeHome(): Promise<void> {
@@ -115,6 +135,11 @@ export function parseDependencyName(dep: string): string {
 
 /**
  * Check if a dependency is already installed in forge home
+ *
+ * Handles different dependency types:
+ * - Local paths: file:/path, /path, ../path - checks if value matches
+ * - Git URLs: github:user/repo, git+https://... - checks if value matches
+ * - Package names: lodash@1.0.0, @scope/pkg - checks if key exists
  */
 export function isInstalled(dep: string): boolean {
   const pkgPath = join(getForgeHomePath(), 'package.json');
@@ -124,6 +149,14 @@ export function isInstalled(dep: string): boolean {
     const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
     const deps = pkg.dependencies || {};
 
+    // For local file dependencies, check if the value matches (not the key)
+    // bun installs these with the package name as key, but path/URL as value
+    if (dep.startsWith('file:') || dep.startsWith('/') || dep.startsWith('.') ||
+        dep.startsWith('github:') || dep.startsWith('git+')) {
+      return Object.values(deps).includes(dep);
+    }
+
+    // For package names (lodash, @scope/pkg), check if key exists
     const depName = parseDependencyName(dep);
     return depName in deps;
   } catch (err) {

@@ -10,5 +10,5 @@ export {
   getGlobalLogger,
   createLogger,
   getLoggerConfig,
-  shutdownLoggers,
+  shutdownLogging,
 } from './logger';
