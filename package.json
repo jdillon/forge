@@ -62,5 +62,5 @@
   "_comments": {
     "files_bin": "bin/forge is required by install.sh to bootstrap the CLI after installation",
     "bun-types": "for VS Code to detect Bun.* I had to include @types/bun, it did not like bun-types by itself"
-  },
+  }
 }
