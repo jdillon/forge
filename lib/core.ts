@@ -68,43 +68,39 @@ export async function loadModule(
 
   log.debug({ fullPath }, 'Module resolved');
 
-  try {
-    const module = await import(fullPath);
+  const module = await import(fullPath);
 
-    // Check for __module__ metadata export
-    if (module.__module__) {
-      const metadata = module.__module__ as ForgeModuleMetadata;
-      if (metadata.group !== undefined) {
-        groupName = metadata.group;
-      }
-      description = metadata.description;
+  // Check for __module__ metadata export
+  if (module.__module__) {
+    const metadata = module.__module__ as ForgeModuleMetadata;
+    if (metadata.group !== undefined) {
+      groupName = metadata.group;
     }
+    description = metadata.description;
+  }
 
-    // First: Check default export (could be object of commands)
-    if (module.default && typeof module.default === 'object') {
-      for (const [name, value] of Object.entries(module.default)) {
-        if (isForgeCommand(value)) {
-          commands[name] = value as ForgeCommand;
-        }
-      }
-    }
-
-    // Second: Check all named exports
-    for (const [name, value] of Object.entries(module)) {
-      if (name === 'default' || name === '__module__') continue;  // Skip metadata
-
+  // First: Check default export (could be object of commands)
+  if (module.default && typeof module.default === 'object') {
+    for (const [name, value] of Object.entries(module.default)) {
       if (isForgeCommand(value)) {
-        // Named export becomes command name
         commands[name] = value as ForgeCommand;
       }
     }
-
-    log.debug({ commands: Object.keys(commands) }, 'Commands discovered');
-
-    return { groupName, description, commands };
-  } catch (err) {
-    die(`Failed to load module ${modulePath}: ${err}`);
   }
+
+  // Second: Check all named exports
+  for (const [name, value] of Object.entries(module)) {
+    if (name === 'default' || name === '__module__') continue;  // Skip metadata
+
+    if (isForgeCommand(value)) {
+      // Named export becomes command name
+      commands[name] = value as ForgeCommand;
+    }
+  }
+
+  log.debug({ commands: Object.keys(commands) }, 'Commands discovered');
+
+  return { groupName, description, commands };
 }
 
 // ============================================================================
@@ -148,51 +144,47 @@ export class Forge {
       return;
     }
 
-    try {
-      // Load layered config (user + project + local)
-      const { loadLayeredConfig } = await import('./config-loader');
-      const { config: userConfigDir } = getForgePaths();
+    // Load layered config (user + project + local)
+    const { loadLayeredConfig } = await import('./config-loader');
+    const { config: userConfigDir } = getForgePaths();
 
-      this.config = await loadLayeredConfig(this.projectContext.projectRoot, userConfigDir);
+    this.config = await loadLayeredConfig(this.projectContext.projectRoot, userConfigDir);
 
-      // Verify we got a valid config
-      if (!this.config) {
-        die(`No config found in ${this.projectContext.forgeDir}`);
-      }
-
-      log.debug({ modules: this.config.modules }, 'Loading modules');
-
-      // Auto-discover commands from modules
-      if (this.config?.modules) {
-        for (const modulePath of this.config.modules) {
-          const { groupName, description, commands } = await loadModule(modulePath, this.projectContext.forgeDir);
-
-          if (groupName !== false) {
-            // Store commands under group
-            if (!this.commandGroups[groupName]) {
-              this.commandGroups[groupName] = { commands: {} };
-            }
-
-            // Set description if provided
-            if (description) {
-              this.commandGroups[groupName].description = description;
-            }
-
-            // Merge discovered commands (last wins)
-            Object.assign(this.commandGroups[groupName].commands, commands);
-          }
-          // else: groupName === false means top-level, skip for now
-        }
-      }
-
-      const groups = Object.keys(this.commandGroups);
-      const groupDetails = Object.fromEntries(
-        Object.entries(this.commandGroups).map(([group, data]) => [group, Object.keys(data.commands)])
-      );
-      log.debug({ groups, groupDetails }, 'Command groups registered');
-    } catch (err) {
-      die(`Failed to load config: ${err}`);
+    // Verify we got a valid config
+    if (!this.config) {
+      die(`No config found in ${this.projectContext.forgeDir}`);
     }
+
+    log.debug({ modules: this.config.modules }, 'Loading modules');
+
+    // Auto-discover commands from modules
+    if (this.config?.modules) {
+      for (const modulePath of this.config.modules) {
+        const { groupName, description, commands } = await loadModule(modulePath, this.projectContext.forgeDir);
+
+        if (groupName !== false) {
+          // Store commands under group
+          if (!this.commandGroups[groupName]) {
+            this.commandGroups[groupName] = { commands: {} };
+          }
+
+          // Set description if provided
+          if (description) {
+            this.commandGroups[groupName].description = description;
+          }
+
+          // Merge discovered commands (last wins)
+          Object.assign(this.commandGroups[groupName].commands, commands);
+        }
+        // else: groupName === false means top-level, skip for now
+      }
+    }
+
+    const groups = Object.keys(this.commandGroups);
+    const groupDetails = Object.fromEntries(
+      Object.entries(this.commandGroups).map(([group, data]) => [group, Object.keys(data.commands)])
+    );
+    log.debug({ groups, groupDetails }, 'Command groups registered');
   }
 
   async run(commandName: string, args: string[]): Promise<void> {

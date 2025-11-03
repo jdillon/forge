@@ -27,7 +27,7 @@ export type {
 // Core API - Forge utilities
 // ============================================================================
 
-export { createLogger } from './logging';
+export { createLogger } from './logging/logger';
 export { confirm, die, exit, error } from './helpers';
 export { getForgePaths } from './xdg';
 

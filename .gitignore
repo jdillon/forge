@@ -29,4 +29,6 @@ sandbox/
 
 # Dependencies
 node_modules/
-forge-home
+
+# Dev environment
+dev-home/

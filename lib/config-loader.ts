@@ -19,7 +19,7 @@
 
 import { cosmiconfig } from "cosmiconfig";
 import { join } from "path";
-import type { ForgeConfig } from "./core";
+import type { ForgeConfig } from "./types";
 
 /**
  * TypeScript loader for cosmiconfig using Bun's native TS support

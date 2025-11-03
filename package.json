@@ -6,9 +6,8 @@
   "license": "Apache-2.0",
   "type": "module",
   "exports": {
-    "./types": "./lib/types.ts",
-    "./logger": "./lib/logging/index.ts",
-    "./lib/*": "./lib/*"
+    "./command": "./lib/command.ts",
+    "./*": "./lib/*"
   },
   "keywords": [
     "cli"

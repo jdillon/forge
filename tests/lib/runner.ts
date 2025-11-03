@@ -1,15 +1,19 @@
 /**
- * Test runner for executing local forge CLI
+ * Test runner for executing forge CLI in tests
  *
- * Runs local bin/forge bootstrap script which handles dev mode detection
- * and environment setup (FORGE_NODE_MODULES, NODE_PATH). Enables fast
- * test-driven development without needing `bun reinstall` after every change.
+ * Defaults to dev mode (bin/forge-dev) for reliable testing.
  */
 
 import { spawn } from 'child_process';
 import { createWriteStream } from 'fs';
-import { join } from 'path';
-import { TEST_DIRS } from './utils';
+import { join, resolve } from 'path';
+import type { TestEnvironment } from './test-env';
+import { createLogger } from './logger';
+
+const log = createLogger('test-runner');
+
+// Project root for accessing bin/forge-dev
+const PROJECT_ROOT = resolve(import.meta.dir, '../..');
 
 /**
  * Configuration for running forge in tests
@@ -27,6 +31,8 @@ export interface RunForgeConfig {
   logBaseName?: string;
   /** Show output on console in real-time (default: false) */
   teeToConsole?: boolean;
+  /** Test environment to use (optional - defaults to dev mode) */
+  testEnv?: TestEnvironment;
 }
 
 /**
@@ -65,22 +71,36 @@ export async function runForge(config: RunForgeConfig): Promise<RunForgeResult> 
     logDir,
     logBaseName = 'output',
     teeToConsole = false,
+    testEnv,
   } = config;
 
-  // Path to bootstrap script (handles dev mode detection and env setup)
-  const forgeBin = join(TEST_DIRS.root, 'bin', 'forge');
+  // Use dev mode by default (bin/forge-dev), or test environment if provided
+  const forgeBin = testEnv ? testEnv.forgeCmd : join(PROJECT_ROOT, 'bin/forge-dev');
+  const workingDir = cwd;
 
-  // For tests, use isolated test node_modules unless overridden
-  // This keeps tests isolated from project dependencies
-  const testNodeModules = TEST_DIRS.nodeModules;
-
-  // Build environment - tests get explicit control over FORGE_NODE_MODULES
-  const testEnv = {
+  // Build environment
+  const forgeEnv = {
     ...process.env,
-    // Set FORGE_NODE_MODULES for tests (can be overridden via env param)
-    FORGE_NODE_MODULES: testNodeModules,
-    ...env, // env overrides come last
+    ...env, // User env vars override
   };
+
+  // Log command as copy-pasteable shell command
+  const envVars: string[] = [];
+  for (const [key, value] of Object.entries(env)) {
+    envVars.push(`${key}="${value}"`);
+  }
+
+  const envPrefix = envVars.length > 0 ? envVars.join(' ') + ' ' : '';
+  const shellCommand = `cd "${workingDir}" && ${envPrefix}${forgeBin} ${args.join(' ')}`;
+
+  log.debug({
+    mode: testEnv ? 'test-env' : 'dev',
+    cwd: workingDir,
+    forgeBin,
+    args,
+  }, 'Running forge command');
+
+  log.debug(`Shell command: ${shellCommand}`);
 
   // Create log file paths
   const stdoutLog = join(logDir, `${logBaseName}-stdout.log`);
@@ -93,8 +113,8 @@ export async function runForge(config: RunForgeConfig): Promise<RunForgeResult> 
   // Run command with spawned process
   const exitCode = await new Promise<number>((resolve) => {
     const proc = spawn(forgeBin, args, {
-      env: testEnv,
-      cwd,
+      env: forgeEnv,
+      cwd: workingDir,
     });
 
     // Tee output to both files AND console in real-time

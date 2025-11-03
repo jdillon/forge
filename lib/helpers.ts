@@ -30,9 +30,12 @@ export class ExitNotification extends Error {
  * Logged with stack trace and exits with non-zero code
  */
 export class FatalError extends Error {
-  constructor(message: string, public exitCode: number = 1) {
-    super(message);
+  public exitCode: number;
+
+  constructor(message: string, options?: { exitCode?: number; cause?: unknown }) {
+    super(message, { cause: options?.cause });
     this.name = 'FatalError';
+    this.exitCode = options?.exitCode ?? 1;
   }
 }
 
@@ -56,7 +59,10 @@ export function error(message: string): void {
  * Die with fatal error (unrecoverable)
  * Throws FatalError - caught by main error handler
  * This is safe to use anywhere - it throws so stack traces are preserved
+ *
+ * @param message - Error message describing what went wrong
+ * @param cause - Optional original error that caused this failure (preserves stack trace)
  */
-export function die(message: string): never {
-  throw new FatalError(message);
+export function die(message: string, cause?: unknown): never {
+  throw new FatalError(message, { cause });
 }

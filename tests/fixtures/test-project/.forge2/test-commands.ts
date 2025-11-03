@@ -2,8 +2,8 @@
  * Test commands for verifying Forge functionality
  */
 
-import type { ForgeCommand } from '@planet57/forge/types';
-import { createLogger } from '@planet57/forge/logger';
+import type { ForgeCommand } from '@planet57/forge/command';
+import { createLogger } from '@planet57/forge/command';
 
 const log = createLogger('test');
 
