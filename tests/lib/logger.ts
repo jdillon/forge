@@ -26,8 +26,8 @@ const root = pino(
 /**
  * Create a logger for tests.
  */
-export const createLogger = (name?: string): pino.Logger => {
+export const createLogger = (name: string): pino.Logger => {
   return root.child({
-      name: name || 'test'
+      name: name
     });
 };
