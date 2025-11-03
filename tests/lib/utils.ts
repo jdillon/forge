@@ -17,6 +17,8 @@ const projectRoot = join(import.meta.dir, "../..");
 export const TEST_DIRS = {
   /** Project root directory */
   root: projectRoot,
+  /** Build directory */
+  build: join(projectRoot, "build"),
   /** Test fixtures directory (test data, mock projects) */
   fixtures: join(projectRoot, "tests", "fixtures"),
   /** HTML/XML test reports (junit, coverage, etc) */
@@ -25,6 +27,8 @@ export const TEST_DIRS = {
   tmp: join(projectRoot, "build", "test-tmp"),
   /** Log files from commands run during tests */
   logs: join(projectRoot, "build", "test-logs"),
+  /** Isolated node_modules for test dependencies */
+  nodeModules: join(projectRoot, "build", "test-node_modules"),
 };
 
 /**
