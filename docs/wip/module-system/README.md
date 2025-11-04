@@ -57,16 +57,17 @@ Implementing installation, upgrade, and module distribution system for Forge v2.
 
 ---
 
-### 🚧 Phase 2: Forge Home & Dependencies
-**Status**: Planned
+### ✅ Phase 2: Forge Home & Dependencies
+**Status**: Complete
+**Completed**: 2025-11-03
 **Document**: [phase2-meta-project-deps.md](phase2-meta-project-deps.md)
 
-**Goals:**
-- Parse `dependencies:` from config.yml
-- Install dependencies to forge home (`~/.local/share/forge/node_modules/`)
-- Implement programmatic module resolver (local → shared → project)
-- Auto-install on first use with caching
-- Comprehensive error handling
+**Completed:**
+- ✅ Parse `dependencies:` from config.yml
+- ✅ Install dependencies to forge home (`~/.local/share/forge/node_modules/`)
+- ✅ Auto-install on first use with exit code 42 restart
+- ✅ Support for npm packages, git URLs, and file: references
+- ✅ Working examples: `cowsay` (npm), `forge-standard` (file:)
 
 **Terminology:**
 - **forge home** = `~/.local/share/forge/` (where forge is installed, manages shared dependencies)
@@ -74,14 +75,18 @@ Implementing installation, upgrade, and module distribution system for Forge v2.
 
 ---
 
-### 📋 Phase 3: Git Module Loading
-**Status**: Planned
-**Document**: [phase3-git-modules.md](phase3-git-modules.md) *(to be created)*
+### 🚧 Phase 3: Git Module Loading & tsconfig Resolution
+**Status**: In Progress
+**Started**: 2025-11-03
+**Documents**:
+- [phase3-implementation-proposal.md](phase3-implementation-proposal.md)
+- [phase3-test-framework.md](phase3-test-framework.md)
 
 **Goals:**
-- Git URL parsing and installation
-- Package submodule support
-- Private repo authentication
+- ✅ tsconfig.json infrastructure (forge-home and runtime)
+- ⏳ tsconfig paths generation for git dependencies
+- ⏳ Module loading from git packages via tsconfig paths
+- ⏳ Test with forge-standard repository
 
 ---
 

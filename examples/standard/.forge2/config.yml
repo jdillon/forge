@@ -4,14 +4,11 @@
 # to forge home (~/.local/share/forge/node_modules/)
 
 dependencies:
-  # For local development, forge-standard is installed via:
-  # cd ~/.local/share/forge && bun add file:/Users/jason/ws/jdillon/forge-standard
-  #
-  # For production use, this would be:
-  # - git+ssh://git@github.com/jdillon/forge-standard.git
+  # For local development, use file: reference for fast iteration
+  # For production use: git+ssh://git@github.com/jdillon/forge-standard.git#release
   - file:/Users/jason/ws/jdillon/forge-standard
 
 modules:
   # Load the hello module from forge-standard
-  # This creates a "hello" command group with "greet" and "info" commands
-  - "@jdillon/forge-standard/hello"
+  # Package name comes from forge-standard/package.json: "@planet57/forge-standard"
+  - "@planet57/forge-standard/hello"
