@@ -38,8 +38,7 @@ const CONFIG = {
 function addTopLevelOptions(program: Command): Command {
   return program
     .option('-d, --debug', 'Debug output')
-    .option('--log-level <level>', 'Set log level', 'info')
-    .option('--no-color', 'Disable colored output');
+    .option('--log-level <level>', 'Set log level', 'info');
 }
 
 // ============================================================================
@@ -49,7 +48,6 @@ function addTopLevelOptions(program: Command): Command {
 interface BootstrapConfig {
   debug: boolean;
   logLevel: string;
-  color: boolean;
 }
 
 /**
@@ -76,7 +74,6 @@ function bootstrap(cliArgs: string[]): BootstrapConfig {
   return {
     debug: opts.debug || false,
     logLevel: opts.logLevel,
-    color: opts.color !== false,
   };
 }
 
@@ -125,7 +122,12 @@ function buildRealCLI(config: BootstrapConfig): Command {
     .option('-l, --loud', 'Use uppercase')
     .action((name, options) => {
       if (config.debug) {
-        console.log('[DEBUG] greet command:', { name, options, config });
+        console.log('[DEBUG] greet command');
+        console.log(`  name: ${JSON.stringify(name)}`);
+        console.log(`  options: ${JSON.stringify(options)}`);
+        console.log(`  config: ${JSON.stringify(config)}`);
+        console.log(`  debug: ${config.debug}`);
+        console.log(`  logLevel: ${JSON.stringify(config.logLevel)}`);
       }
 
       const finalName = name || CONFIG.greet.defaultName;
@@ -142,6 +144,7 @@ function buildRealCLI(config: BootstrapConfig): Command {
     .action(() => {
       if (config.debug) {
         console.log('[DEBUG] ping command');
+        console.log(`  debug: ${config.debug}`);
       }
       console.log('pong');
     });
@@ -155,7 +158,10 @@ function buildRealCLI(config: BootstrapConfig): Command {
     .option('--force', 'Force deployment')
     .action((environment, options) => {
       if (config.debug) {
-        console.log('[DEBUG] deploy command:', { environment, options, config });
+        console.log('[DEBUG] deploy command');
+        console.log(`  environment: ${JSON.stringify(environment)}`);
+        console.log(`  options: ${JSON.stringify(options)}`);
+        console.log(`  debug: ${config.debug}`);
       }
       console.log(`Deploying to ${environment}${options.force ? ' (forced)' : ''}...`);
       console.log('Deployment complete!');
@@ -230,6 +236,6 @@ async function main() {
 }
 
 // Declare config for catch block
-let config: BootstrapConfig = { debug: false, logLevel: 'info', color: true };
+let config: BootstrapConfig = { debug: false, logLevel: 'info' };
 
 main();

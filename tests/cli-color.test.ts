@@ -16,6 +16,7 @@ describe('CLI Color Detection', () => {
 
     const result = await runForge({
       args: ['--root', projectRoot, '--help'],
+      env: { NO_COLOR: '' }, // Explicitly enable colors for this test
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });

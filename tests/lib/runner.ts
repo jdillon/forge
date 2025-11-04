@@ -79,9 +79,11 @@ export async function runForge(config: RunForgeConfig): Promise<RunForgeResult> 
   const workingDir = cwd;
 
   // Build environment
+  // Default to NO_COLOR=1 for consistent test output (unless explicitly overridden)
   const forgeEnv = {
     ...process.env,
-    ...env, // User env vars override
+    NO_COLOR: '1', // Disable colors by default for testing
+    ...env, // User env vars override (tests can re-enable colors if needed)
   };
 
   // Log command as copy-pasteable shell command

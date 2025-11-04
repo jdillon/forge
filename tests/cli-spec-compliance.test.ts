@@ -12,6 +12,20 @@ import { join } from 'path';
 
 const CLI_PATH = join(TEST_DIRS.fixtures, 'cli-spec.ts');
 
+/**
+ * Helper to run cli-spec.ts with controlled environment
+ * Defaults to NO_COLOR=1 for consistent output across environments
+ */
+function runCli(args: string[], env?: Record<string, string>) {
+  return spawnSync([CLI_PATH, ...args], {
+    env: {
+      ...process.env,
+      NO_COLOR: '1', // Disable colors by default for consistent testing
+      ...env, // User env vars override
+    },
+  });
+}
+
 describe('CLI Specification Compliance', () => {
   // ==========================================================================
   // Exit Codes - Success (0)
@@ -19,19 +33,19 @@ describe('CLI Specification Compliance', () => {
 
   describe('Exit Code 0 - Success', () => {
     test('should exit 0 for --version', () => {
-      const result = spawnSync([CLI_PATH, '--version']);
+      const result = runCli(['--version']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString()).toContain('1.0.0');
     });
 
     test('should exit 0 for -V', () => {
-      const result = spawnSync([CLI_PATH, '-V']);
+      const result = runCli(['-V']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString()).toContain('1.0.0');
     });
 
     test('should exit 0 for --help', () => {
-      const result = spawnSync([CLI_PATH, '--help']);
+      const result = runCli(['--help']);
       expect(result.exitCode).toBe(0);
       const output = result.stdout.toString();
       expect(output).toContain('Usage: example');
@@ -42,25 +56,25 @@ describe('CLI Specification Compliance', () => {
     });
 
     test('should exit 0 for -h', () => {
-      const result = spawnSync([CLI_PATH, '-h']);
+      const result = runCli(['-h']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString()).toContain('Usage: example');
     });
 
     test('should exit 0 for successful command', () => {
-      const result = spawnSync([CLI_PATH, 'greet', 'Alice']);
+      const result = runCli(['greet', 'Alice']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString()).toContain('Hello, Alice!');
     });
 
     test('should exit 0 for command with optional arg using default', () => {
-      const result = spawnSync([CLI_PATH, 'greet']);
+      const result = runCli(['greet']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString()).toContain('Hello, World!');
     });
 
     test('should exit 0 for command with required arg', () => {
-      const result = spawnSync([CLI_PATH, 'deploy', 'production']);
+      const result = runCli(['deploy', 'production']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString()).toContain('Deploying to production');
     });
@@ -72,7 +86,7 @@ describe('CLI Specification Compliance', () => {
 
   describe('Exit Code 1 - User Input Error', () => {
     test('should exit 1 when no subcommand provided', () => {
-      const result = spawnSync([CLI_PATH]);
+      const result = runCli([]);
       expect(result.exitCode).toBe(1);
       const stderr = result.stderr.toString();
       const stdout = result.stdout.toString();
@@ -81,7 +95,7 @@ describe('CLI Specification Compliance', () => {
     });
 
     test('should exit 1 for invalid top-level option', () => {
-      const result = spawnSync([CLI_PATH, '--foo']);
+      const result = runCli(['--foo']);
       expect(result.exitCode).toBe(1);
       const stderr = result.stderr.toString();
       expect(stderr).toContain('ERROR: unknown option');
@@ -90,7 +104,7 @@ describe('CLI Specification Compliance', () => {
     });
 
     test('should exit 1 for invalid top-level option before subcommand', () => {
-      const result = spawnSync([CLI_PATH, '--foo', 'greet']);
+      const result = runCli(['--foo', 'greet']);
       expect(result.exitCode).toBe(1);
       const stderr = result.stderr.toString();
       expect(stderr).toContain('ERROR: unknown option');
@@ -98,7 +112,7 @@ describe('CLI Specification Compliance', () => {
     });
 
     test('should exit 1 for invalid subcommand option', () => {
-      const result = spawnSync([CLI_PATH, 'greet', '--foo']);
+      const result = runCli(['greet', '--foo']);
       expect(result.exitCode).toBe(1);
       const stderr = result.stderr.toString();
       expect(stderr).toContain('ERROR: unknown option');
@@ -106,7 +120,7 @@ describe('CLI Specification Compliance', () => {
     });
 
     test('should exit 1 for missing required argument', () => {
-      const result = spawnSync([CLI_PATH, 'deploy']);
+      const result = runCli(['deploy']);
       expect(result.exitCode).toBe(1);
       const stderr = result.stderr.toString();
       expect(stderr).toContain('ERROR: missing required argument');
@@ -120,7 +134,7 @@ describe('CLI Specification Compliance', () => {
 
   describe('Top-Level Option Positioning', () => {
     test('should accept top-level option before subcommand', () => {
-      const result = spawnSync([CLI_PATH, '--debug', 'greet', 'Alice']);
+      const result = runCli(['--debug', 'greet', 'Alice']);
       expect(result.exitCode).toBe(0);
       const output = result.stdout.toString();
       expect(output).toContain('[DEBUG]');
@@ -128,7 +142,7 @@ describe('CLI Specification Compliance', () => {
     });
 
     test('should accept multiple top-level options', () => {
-      const result = spawnSync([CLI_PATH, '--debug', '--log-level', 'trace', 'greet', 'Alice']);
+      const result = runCli(['--debug', '--log-level', 'trace', 'greet', 'Alice']);
       expect(result.exitCode).toBe(0);
       const output = result.stdout.toString();
       expect(output).toContain('[DEBUG]');
@@ -136,7 +150,7 @@ describe('CLI Specification Compliance', () => {
     });
 
     test('should accept top-level option after subcommand (global options)', () => {
-      const result = spawnSync([CLI_PATH, 'greet', '--debug']);
+      const result = runCli(['greet', '--debug']);
       expect(result.exitCode).toBe(0);
       const output = result.stdout.toString();
       expect(output).toContain('[DEBUG]');
@@ -150,19 +164,19 @@ describe('CLI Specification Compliance', () => {
 
   describe('Subcommand Option Positioning', () => {
     test('should accept subcommand option after subcommand name', () => {
-      const result = spawnSync([CLI_PATH, 'greet', '--loud', 'Alice']);
+      const result = runCli(['greet', '--loud', 'Alice']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString()).toContain('HELLO, ALICE!');
     });
 
     test('should accept subcommand option after argument', () => {
-      const result = spawnSync([CLI_PATH, 'greet', 'Alice', '--loud']);
+      const result = runCli(['greet', 'Alice', '--loud']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString()).toContain('HELLO, ALICE!');
     });
 
     test('should accept combined top-level and subcommand options', () => {
-      const result = spawnSync([CLI_PATH, '--debug', 'greet', 'Alice', '--loud']);
+      const result = runCli(['--debug', 'greet', 'Alice', '--loud']);
       expect(result.exitCode).toBe(0);
       const output = result.stdout.toString();
       expect(output).toContain('[DEBUG]');
@@ -176,7 +190,7 @@ describe('CLI Specification Compliance', () => {
 
   describe('Help Behavior', () => {
     test('--help should show main program help with subcommands', () => {
-      const result = spawnSync([CLI_PATH, '--help']);
+      const result = runCli(['--help']);
       expect(result.exitCode).toBe(0);
       const output = result.stdout.toString();
       expect(output).toContain('Usage: example');
@@ -187,7 +201,7 @@ describe('CLI Specification Compliance', () => {
     });
 
     test('--help before subcommand should show main program help', () => {
-      const result = spawnSync([CLI_PATH, '--help', 'greet']);
+      const result = runCli(['--help', 'greet']);
       expect(result.exitCode).toBe(0);
       const output = result.stdout.toString();
       expect(output).toContain('Usage: example');
@@ -197,7 +211,7 @@ describe('CLI Specification Compliance', () => {
     });
 
     test('subcommand --help should show subcommand-specific help', () => {
-      const result = spawnSync([CLI_PATH, 'greet', '--help']);
+      const result = runCli(['greet', '--help']);
       expect(result.exitCode).toBe(0);
       const output = result.stdout.toString();
       expect(output).toContain('Usage: example greet');
@@ -207,7 +221,7 @@ describe('CLI Specification Compliance', () => {
     });
 
     test('no subcommand should show error and help with exit code 1', () => {
-      const result = spawnSync([CLI_PATH]);
+      const result = runCli([]);
       expect(result.exitCode).toBe(1);
       const stderr = result.stderr.toString();
       const stdout = result.stdout.toString();
@@ -223,19 +237,19 @@ describe('CLI Specification Compliance', () => {
 
   describe('Version Behavior', () => {
     test('--version should show version and exit 0', () => {
-      const result = spawnSync([CLI_PATH, '--version']);
+      const result = runCli(['--version']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString().trim()).toBe('1.0.0');
     });
 
     test('-V should show version and exit 0', () => {
-      const result = spawnSync([CLI_PATH, '-V']);
+      const result = runCli(['-V']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString().trim()).toBe('1.0.0');
     });
 
     test('--version should work with other options', () => {
-      const result = spawnSync([CLI_PATH, '--debug', '--version']);
+      const result = runCli(['--debug', '--version']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString()).toContain('1.0.0');
     });
@@ -247,25 +261,25 @@ describe('CLI Specification Compliance', () => {
 
   describe('Argument Handling', () => {
     test('optional argument can be omitted', () => {
-      const result = spawnSync([CLI_PATH, 'greet']);
+      const result = runCli(['greet']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString()).toContain('Hello, World!');
     });
 
     test('optional argument can be provided', () => {
-      const result = spawnSync([CLI_PATH, 'greet', 'Alice']);
+      const result = runCli(['greet', 'Alice']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString()).toContain('Hello, Alice!');
     });
 
     test('required argument must be provided', () => {
-      const result = spawnSync([CLI_PATH, 'deploy']);
+      const result = runCli(['deploy']);
       expect(result.exitCode).toBe(1);
       expect(result.stderr.toString()).toContain('missing required argument');
     });
 
     test('required argument works when provided', () => {
-      const result = spawnSync([CLI_PATH, 'deploy', 'production']);
+      const result = runCli(['deploy', 'production']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString()).toContain('Deploying to production');
     });
@@ -277,7 +291,7 @@ describe('CLI Specification Compliance', () => {
 
   describe('Error Message Format', () => {
     test('error messages should be terse with hint', () => {
-      const result = spawnSync([CLI_PATH, '--foo']);
+      const result = runCli(['--foo']);
       expect(result.exitCode).toBe(1);
       const stderr = result.stderr.toString();
       expect(stderr).toContain('ERROR:');
@@ -286,7 +300,7 @@ describe('CLI Specification Compliance', () => {
     });
 
     test('missing argument error should be terse', () => {
-      const result = spawnSync([CLI_PATH, 'deploy']);
+      const result = runCli(['deploy']);
       expect(result.exitCode).toBe(1);
       const stderr = result.stderr.toString();
       expect(stderr).toContain('ERROR:');
@@ -301,7 +315,7 @@ describe('CLI Specification Compliance', () => {
 
   describe('Debug Mode', () => {
     test('--debug flag should enable debug output', () => {
-      const result = spawnSync([CLI_PATH, '--debug', 'greet', 'Alice']);
+      const result = runCli(['--debug', 'greet', 'Alice']);
       expect(result.exitCode).toBe(0);
       const output = result.stdout.toString();
       expect(output).toContain('[DEBUG]');
@@ -310,7 +324,7 @@ describe('CLI Specification Compliance', () => {
     });
 
     test('debug flag should pass through to subcommands', () => {
-      const result = spawnSync([CLI_PATH, '--debug', 'ping']);
+      const result = runCli(['--debug', 'ping']);
       expect(result.exitCode).toBe(0);
       const output = result.stdout.toString();
       expect(output).toContain('[DEBUG]');
@@ -324,25 +338,25 @@ describe('CLI Specification Compliance', () => {
 
   describe('Subcommands', () => {
     test('greet subcommand works', () => {
-      const result = spawnSync([CLI_PATH, 'greet', 'Alice']);
+      const result = runCli(['greet', 'Alice']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString()).toContain('Hello, Alice!');
     });
 
     test('greet --loud option works', () => {
-      const result = spawnSync([CLI_PATH, 'greet', 'Alice', '--loud']);
+      const result = runCli(['greet', 'Alice', '--loud']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString()).toContain('HELLO, ALICE!');
     });
 
     test('ping subcommand works', () => {
-      const result = spawnSync([CLI_PATH, 'ping']);
+      const result = runCli(['ping']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString()).toContain('pong');
     });
 
     test('deploy subcommand works', () => {
-      const result = spawnSync([CLI_PATH, 'deploy', 'production']);
+      const result = runCli(['deploy', 'production']);
       expect(result.exitCode).toBe(0);
       const output = result.stdout.toString();
       expect(output).toContain('Deploying to production');
@@ -350,7 +364,7 @@ describe('CLI Specification Compliance', () => {
     });
 
     test('deploy --force option works', () => {
-      const result = spawnSync([CLI_PATH, 'deploy', 'production', '--force']);
+      const result = runCli(['deploy', 'production', '--force']);
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString()).toContain('Deploying to production (forced)');
     });
