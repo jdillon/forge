@@ -1,0 +1,25 @@
+{
+  // Import maps - control module resolution
+  "imports": {
+    // Deno standard library (JSR packages)
+    "@std/path": "jsr:@std/path@^1.0.0",
+    "@std/fs": "jsr:@std/fs@^1.0.0",
+
+    // Forge internal modules (via import map prefix)
+    "forge/": "./lib/",
+
+    // npm packages
+    "commander": "npm:commander@^12.0.0"
+  },
+
+  // Lockfile - disable for POC, enable for production
+  "lock": false,
+
+  // Node modules behavior - use global Deno cache (versioned, safe)
+  "nodeModulesDir": "none",
+
+  // TypeScript compiler options
+  "compilerOptions": {
+    "strict": true
+  }
+}

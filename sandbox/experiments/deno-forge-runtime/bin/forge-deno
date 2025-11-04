@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Determine POC directory (parent of bin/)
+poc_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Execute via Deno with config file control
+# No env vars needed - using global Deno cache
+exec deno run \
+  --config="${poc_dir}/deno.jsonc" \
+  --allow-all \
+  "${poc_dir}/lib/cli.ts" \
+  "$@"
