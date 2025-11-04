@@ -20,8 +20,23 @@ This file provides guidance to Claude Code when working with this repository.
 - **WAIT for "commit"** - Jason will run `git status`/`git diff` if he wants details
 - **Why**: Helps him understand what changed and learn from your work
 
-### Workflow: Proposals in tmp/
-- **For significant changes**: Create proposal doc in `tmp/` (e.g., `tmp/refactor-proposal.md`)
+### Workflow: Sandbox vs Tmp
+
+**`sandbox/` - Structured work worth keeping**
+- Experiments, proposals, research, analysis
+- Well-documented with README/FINDINGS
+- Referenced in decisions and issues
+- May be archived to `docs/archive/` later
+- **NOT gitignored** - committed to repo
+
+**`tmp/` - True temporary files**
+- Scratch work, quick tests, throwaway files
+- Short-lived, deleted frequently
+- No expectation of structure
+- **Gitignored** - never committed
+
+### Workflow: Proposals in sandbox/
+- **For significant changes**: Create proposal doc in `sandbox/` (e.g., `sandbox/refactor-proposal.md`)
 - **Let Jason review first** - He can adjust before execution
 - **Why it works**:
   - Clear documentation of what will change and why
@@ -30,13 +45,8 @@ This file provides guidance to Claude Code when working with this repository.
 - **When to use**: Reorganizations, refactors, architectural changes, deleting things
 - **Format**: Markdown with problem, solution, trade-offs, questions
 
-### Workflow: Temp Files
-- **Use project `tmp/`** - Project root only, never in subdirs
-- **Purpose**: Proposals, analysis, scratch work
-- **Cleanup**: Jason decides when to delete
-
 ### Workflow: Experiments
-- **Organize in `tmp/experiments/<name>/`** - Each experiment gets its own directory
+- **Organize in `sandbox/experiments/<name>/`** - Each experiment gets its own directory
 - **Always include**:
   - `README.md` - What you're testing, questions to answer, success criteria
   - `FINDINGS.md` - Results, what worked/didn't work, recommendations
@@ -45,7 +55,7 @@ This file provides guidance to Claude Code when working with this repository.
   - Clear documentation of what was learned
   - Easy to reference in decisions
   - Can be moved to `docs/archive/experiments/` if valuable
-- **Examples**: `tmp/experiments/test-plugin/`, `tmp/experiments/deno-prototype/`
+- **Examples**: `sandbox/experiments/test-plugin/`, `sandbox/experiments/deno-prototype/`
 
 ### Documentation Principles
 **Before writing documentation, always check for duplication - it becomes stale**:
@@ -215,3 +225,4 @@ export const myCommand: ForgeCommand = {
 - **Testing patterns**: See `tests/`
 - **Library usage**: See `docs/libraries/`
 - **Design decisions**: See `docs/archive/`
+- **Experiments & research**: See `sandbox/experiments/`
