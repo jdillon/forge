@@ -49,7 +49,7 @@ This file provides guidance to Claude Code when working with this repository.
 - **Organize in `sandbox/experiments/<name>/`** - Each experiment gets its own directory
 - **Always include**:
   - `README.md` - What you're testing, questions to answer, success criteria
-  - `FINDINGS.md` - Results, what worked/didn't work, recommendations
+  - `findings.md` - Results, what worked/didn't work, recommendations
 - **Why it works**:
   - Self-contained and easy to understand later
   - Clear documentation of what was learned
@@ -141,6 +141,26 @@ CLAUDECODE=1 bun test       # AI-friendly output (failures only)
 ---
 
 ## Code Conventions
+
+### File Naming
+
+**Use kebab-case for most files:**
+- Source code: `my-module.ts`, `user-service.ts`
+- Documentation: `getting-started.md`, `api-reference.md`
+- Configs: `bunfig.toml`, `tsconfig.json`
+
+**Use UPPERCASE only for standard/conventional files:**
+- `README.md` - Project readme
+- `CHANGELOG.md` - Version history
+- `CLAUDE.md` - AI assistant instructions
+- `LICENSE` - License file
+- `CONTRIBUTING.md` - Contribution guidelines
+
+**Examples:**
+- ✅ `sandbox/deno-evaluation.md`
+- ✅ `docs/module-resolution.md`
+- ❌ `sandbox/DENO-EVALUATION.md`
+- ❌ `docs/Module-Resolution.md`
 
 ### Error Handling
 - `die(message)` - Fatal error, exits with code 1
