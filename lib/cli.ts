@@ -152,10 +152,12 @@ async function buildRealCLI(config: BootstrapConfig): Promise<Command> {
   // Determine if color should be enabled
   const useColor = !process.env.NO_COLOR && config.color;
 
-  // Suppress Commander's error output - we'll show our own terse errors
-  program.configureOutput({
-    writeErr: () => {}, // Suppress
-  });
+  // Previously suppressed Commander's error output to show our own terse errors
+  // But this also suppressed help output when command groups are invoked without subcommands
+  // Commented out for now - may need selective suppression in the future
+  // program.configureOutput({
+  //   writeErr: () => {}, // Suppress
+  // });
 
   const helpConfig: any = {
     sortSubcommands: true,
@@ -300,11 +302,15 @@ async function run(): Promise<void> {
   } catch (err: any) {
     // Handle Commander errors
     log.debug({ errorCode: err.code, errorMessage: err.message }, 'Commander error caught');
-    if (err.code === 'commander.helpDisplayed') {
-      exit(0);  // Help was shown successfully (explicit --help)
-    }
-    if (err.code === 'commander.version') {
-      exit(0);  // Version was shown successfully
+
+    // All help/version requests are successful exits (code 0)
+    // - commander.helpDisplayed = explicit --help flag
+    // - commander.help = implicit help (e.g., command group without subcommand)
+    // - commander.version = --version flag
+    if (err.code === 'commander.help' ||
+        err.code === 'commander.helpDisplayed' ||
+        err.code === 'commander.version') {
+      exit(0);
     }
     if (err.code === 'commander.missingArgument') {
       showError(err.message);

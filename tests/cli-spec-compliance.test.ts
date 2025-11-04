@@ -78,6 +78,16 @@ describe('CLI Specification Compliance', () => {
       expect(result.exitCode).toBe(0);
       expect(result.stdout.toString()).toContain('Deploying to production');
     });
+
+    // TODO: Add test for command group without subcommand when cli-spec.ts has groups
+    // test('should exit 0 for command group without subcommand (implicit help)', () => {
+    //   const result = runCli(['basic']);
+    //   expect(result.exitCode).toBe(0);
+    //   const output = result.stdout.toString();
+    //   expect(output).toContain('Usage:');
+    //   expect(output).toContain('basic');
+    //   expect(output).toContain('greet'); // Should list subcommands
+    // });
   });
 
   // ==========================================================================

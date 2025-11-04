@@ -156,6 +156,29 @@ Show subcommand-specific help when:
 example greet --help         # --help after subcommand = subcommand help
 ```
 
+### Command Group Without Subcommand
+
+When a command group is invoked without specifying a subcommand:
+1. Display help for that command group (list available subcommands)
+2. Exit with code 0 (not an error - user wants to see what's available)
+
+Example:
+```bash
+$ forge hello
+Usage: forge hello [options] [command]
+
+Hello group
+
+Options:
+  -h, --help      display help for command
+
+Commands:
+  greet [name]    Greet someone
+  info            Show module info
+```
+
+**Rationale:** Running a group without a subcommand is equivalent to requesting help for that group. The user wants to see what commands are available. This should be treated as a successful help request, not an error.
+
 ## Version Behavior
 
 Version should be displayed and program exits with code 0 when:
@@ -192,8 +215,14 @@ example deploy production    # Valid
 
 ### Success (0)
 - Explicit help request: `--help`, `-h`
+- Implicit help request: command group without subcommand (e.g., `forge hello`)
 - Explicit version request: `--version`, `-V`
 - Command executed successfully
+
+**Commander.js error codes that indicate success:**
+- `commander.helpDisplayed` - Explicit help with --help flag
+- `commander.help` - Implicit help (group without subcommand)
+- `commander.version` - Version request
 
 ### User Input Error (1)
 - Invalid option provided
