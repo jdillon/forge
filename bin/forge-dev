@@ -18,12 +18,29 @@ while [ -L "$script_path" ]; do
   [[ $script_path != /* ]] && script_path="$script_dir/$script_path"
 done
 script_dir="$(cd -P "$(dirname "$script_path")" && pwd)"
-project_root="${script_dir}/.."
+project_root="$(cd -P "${script_dir}/.." && pwd)"
 
 # Dev mode: use local code with isolated dev-home
 export XDG_DATA_HOME="${project_root}/dev-home"
 export FORGE_NODE_MODULES="${XDG_DATA_HOME}/forge/node_modules"
 export NODE_PATH="${FORGE_NODE_MODULES}"
 
-# Run local CLI directly (no install needed)
-exec bun run "${project_root}/lib/cli.ts" "$@"
+# Ensure dev-home forge structure exists with tsconfig
+forge_home="${XDG_DATA_HOME}/forge"
+forge_tsconfig="${forge_home}/tsconfig.json"
+
+if [[ ! -f "${forge_tsconfig}" ]]; then
+  mkdir -p "${forge_home}"
+  cat > "${forge_tsconfig}" << 'EOF'
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+    }
+  }
+}
+EOF
+fi
+
+# Run local CLI directly with tsconfig override for module resolution
+exec bun --tsconfig-override="${forge_tsconfig}" run "${project_root}/lib/cli.ts" "$@"

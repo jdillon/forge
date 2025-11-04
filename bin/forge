@@ -11,39 +11,25 @@ while [[ -L "${script_path}" ]]; do
   [[ "${script_path}" != /* ]] && script_path="${script_dir}/${script_path}"
 done
 
-# Detect dev vs installed mode
+# Installed mode only - forge-dev handles dev mode
 script_dir="$(cd "$(dirname "${script_path}")" && pwd)"
-dev_cli="${script_dir}/../lib/cli.ts"
-dev_package="${script_dir}/../package.json"
 
-# Detect mode and set FORGE_NODE_MODULES if not already set (e.g., by tests)
+# Set FORGE_NODE_MODULES if not already set (e.g., by tests)
 if [[ -z "${FORGE_NODE_MODULES:-}" ]]; then
-  if [[ -f "${dev_cli}" ]] && [[ -f "${dev_package}" ]]; then
-    # Dev mode - running from repository
-    forge_node_modules="${script_dir}/../node_modules"
-  else
-    # Installed mode - use installed version
-    forge_home="${XDG_DATA_HOME:-$HOME/.local/share}/forge"
-    forge_node_modules="${forge_home}/node_modules"
-  fi
-
+  forge_home="${XDG_DATA_HOME:-$HOME/.local/share}/forge"
+  forge_node_modules="${forge_home}/node_modules"
   export FORGE_NODE_MODULES="${forge_node_modules}"
 fi
 
-# Detect CLI location based on mode
-if [[ -f "${dev_cli}" ]] && [[ -f "${dev_package}" ]]; then
-  # Dev mode
-  forge_cli="${dev_cli}"
-else
-  # Installed mode
-  forge_home="${XDG_DATA_HOME:-$HOME/.local/share}/forge"
-  forge_cli="${forge_home}/node_modules/@planet57/forge/lib/cli.ts"
+# Installed mode - use forge-home
+forge_home="${XDG_DATA_HOME:-$HOME/.local/share}/forge"
+forge_cli="${forge_home}/node_modules/@planet57/forge/lib/cli.ts"
+forge_tsconfig="${forge_home}/tsconfig.json"
 
-  if [[ ! -f "${forge_cli}" ]]; then
-    echo "ERROR: Forge not found at ${forge_cli}" >&2
-    echo "Run install.sh to reinstall forge" >&2
-    exit 1
-  fi
+if [[ ! -f "${forge_cli}" ]]; then
+  echo "ERROR: Forge not found at ${forge_cli}" >&2
+  echo "Run install.sh to reinstall forge" >&2
+  exit 1
 fi
 
 # Set NODE_PATH for Bun's runtime module resolution
@@ -58,8 +44,9 @@ run_forge() {
     export FORGE_RESTARTED=1
   fi
 
-  # Run forge CLI (FORGE_NODE_MODULES and NODE_PATH already exported above)
-  bun run "${forge_cli}" "${@:2}"
+  # Run forge CLI with tsconfig override for module resolution control
+  # (FORGE_NODE_MODULES and NODE_PATH already exported above)
+  bun --tsconfig-override="${forge_tsconfig}" run "${forge_cli}" "${@:2}"
 }
 
 # Run forge and capture exit code

@@ -170,8 +170,17 @@ optional = false
 auto = "disable"
 EOF
 
-# Note: Module resolution uses NODE_PATH (set in wrapper)
-# No tsconfig.json needed - Bun finds modules via NODE_PATH environment variable
+# Create tsconfig.json for module resolution control
+# This file is used with --tsconfig-override flag to control module resolution
+cat > tsconfig.json << 'EOF'
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+    }
+  }
+}
+EOF
 
 # Install forge from GitHub
 info "Installing @planet57/forge from GitHub..."
