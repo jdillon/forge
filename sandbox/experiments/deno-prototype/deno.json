@@ -1,0 +1,14 @@
+{
+  "imports": {
+    "@planet57/forge/": "./forge-lib/",
+    "@planet57/forge-installed/": "./fake-installed/",
+    "@std/path": "jsr:@std/path@^1.1.2",
+    "@std/fs": "jsr:@std/fs@^1.0.19",
+    "@std/yaml": "jsr:@std/yaml@^1.0.0"
+  },
+  "tasks": {
+    "test-imports": "deno run --allow-read test-1-import-maps.ts",
+    "test-shell": "deno run --allow-run --allow-env --allow-read test-2-shell.ts",
+    "test-apis": "deno run --allow-read --allow-write --allow-env test-4-apis.ts"
+  }
+}

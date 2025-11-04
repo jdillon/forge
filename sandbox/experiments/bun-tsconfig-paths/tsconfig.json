@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      // Map @planet57/forge/* to the CACHE directory
+      // This simulates mapping to ~/.local/share/forge/repos/github.com/...
+      "@planet57/forge/*": ["./cache/forge/*"]
+    }
+  }
+}
