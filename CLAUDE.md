@@ -35,6 +35,18 @@ This file provides guidance to Claude Code when working with this repository.
 - **Purpose**: Proposals, analysis, scratch work
 - **Cleanup**: Jason decides when to delete
 
+### Workflow: Experiments
+- **Organize in `tmp/experiments/<name>/`** - Each experiment gets its own directory
+- **Always include**:
+  - `README.md` - What you're testing, questions to answer, success criteria
+  - `FINDINGS.md` - Results, what worked/didn't work, recommendations
+- **Why it works**:
+  - Self-contained and easy to understand later
+  - Clear documentation of what was learned
+  - Easy to reference in decisions
+  - Can be moved to `docs/archive/experiments/` if valuable
+- **Examples**: `tmp/experiments/test-plugin/`, `tmp/experiments/deno-prototype/`
+
 ### Documentation Principles
 **Before writing documentation, always check for duplication - it becomes stale**:
 
