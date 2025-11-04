@@ -24,9 +24,6 @@ config.local.js
 # Build outputs
 build/
 
-# Testing
-sandbox/
-
 # Dependencies
 node_modules/
 
