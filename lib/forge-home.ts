@@ -18,8 +18,6 @@ import { packageManager } from './package-manager';
 import { join } from 'path';
 import { createHash } from 'crypto';
 
-const log = createLogger('forge-home');
-
 /**
  * Get forge home path (XDG data directory)
  */
@@ -153,8 +151,9 @@ export async function syncDependencies(
   dependencies: string[],
   mode: 'auto' | 'manual' | 'ask' = 'auto',
 ): Promise<boolean> {
-  // FIXME: we sholud not be checkign proces args or env-vars here!!!
+  // FIXME: we sholud not be checking process args or env-vars here
   const debug = process.env.FORGE_DEBUG === '1' || process.argv.includes('--debug');
+  const log = createLogger('forge-home');
   const forgeHome = getForgeHomePath();
 
   log.debug({ forgeHome, dependencies, mode }, 'Dependency sync');

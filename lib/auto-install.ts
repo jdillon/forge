@@ -32,10 +32,8 @@ export async function autoInstallDependencies(
   forgeDir: string,
   isRestarted: boolean = false,
 ): Promise<boolean> {
-  // FIXME: we sholud not be checkign proces args or env-vars here!!!
+  // FIXME: we sholud not be checking process args or env-vars here
   const debug = process.env.FORGE_DEBUG === '1' || process.argv.includes('--debug');
-
-  // FIXME: need to abstract a class or something to create a logger once w/o puttting into module scope
   const log = createLogger('auto-install');
 
   log.debug({ isRestarted, hasDependencies: !!config.dependencies }, 'Auto-install check');
