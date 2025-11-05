@@ -10,13 +10,13 @@
 
 import { Command } from 'commander';
 import { styleText } from 'node:util';
-import { join } from 'node:path';
-import { die, exit, FatalError, ExitNotification } from './helpers';
+import { resolve } from 'node:path';
+import { exit, FatalError, ExitNotification } from './helpers';
 import { exit as runtimeExit } from './runtime';
 import { initLogging, getGlobalLogger, isLoggingInitialized } from './logging';
 import { getForgePaths } from './xdg';
 import { findProjectRoot } from './project-discovery';
-import type { FilePath } from './types';
+import type { FilePath, ProjectConfig } from './types';
 import pkg from '../package.json';
 
 // ============================================================================
@@ -96,6 +96,18 @@ function bootstrap(cliArgs: string[]): BootstrapConfig {
   };
 }
 
+/**
+ * Create ProjectConfig with fully resolved paths
+ * All paths are resolved to absolute paths (no ./ or ../ segments)
+ */
+function createProjectConfig(projectRoot: FilePath, userDir: FilePath): ProjectConfig {
+  return {
+    projectRoot: resolve(projectRoot),
+    forgeDir: resolve(projectRoot, '.forge2'),
+    userDir: resolve(userDir),
+  };
+}
+
 // ============================================================================
 // Real CLI Phase
 // ============================================================================
@@ -104,7 +116,7 @@ function bootstrap(cliArgs: string[]): BootstrapConfig {
  * Build full CLI with subcommands
  * Strict parsing - Commander validates everything naturally
  */
-async function buildRealCLI(config: BootstrapConfig): Promise<Command> {
+async function buildRealCLI(bootstrapConfig: BootstrapConfig, projectConfig: ProjectConfig | null): Promise<Command> {
   const program = new Command();
 
   program
@@ -116,7 +128,7 @@ async function buildRealCLI(config: BootstrapConfig): Promise<Command> {
   addTopLevelOptions(program);
 
   // Determine if color should be enabled
-  const useColor = !process.env.NO_COLOR && config.color;
+  const useColor = !process.env.NO_COLOR && bootstrapConfig.color;
 
   // Previously suppressed Commander's error output to show our own terse errors
   // But this also suppressed help output when command groups are invoked without subcommands
@@ -155,17 +167,11 @@ async function buildRealCLI(config: BootstrapConfig): Promise<Command> {
     exit(1);  // Exit with error code (user didn't provide command)
   });
 
-  // Find project root
-  const projectRoot = await findProjectRoot({
-    rootPath: config.root,
-    startDir: config.userDir,
-  });
-
   // Load core module dynamically (after logging initialized)
   const { Forge } = await import('./core');
 
   // Create Forge instance, load config, and register commands with Commander
-  const forge = new Forge(projectRoot, config);
+  const forge = new Forge(projectConfig, bootstrapConfig);
 
   await forge.loadConfig();
   await forge.registerCommands(program);
@@ -231,26 +237,29 @@ async function run(): Promise<void> {
   log.debug(`FORGE_NODE_MODULES: ${process.env.FORGE_NODE_MODULES}`);
   log.debug(`NODE_PATH: ${process.env.NODE_PATH}`);
 
-  // Phase 1.5: Dependency sync (before loading modules)
-  // This ensures dependencies are available when modules are imported
+  // Phase 1.5: Project discovery
   const projectRoot = await findProjectRoot({
     rootPath: config.root,
     startDir: config.userDir,
   });
   log.debug(`Project root: ${projectRoot}`);
 
+  // Create ProjectConfig with fully resolved paths
+  let projectConfig: ProjectConfig | null = null;
   if (projectRoot) {
+    projectConfig = createProjectConfig(projectRoot, config.userDir);
+    log.debug(`Project config created: ${projectConfig.projectRoot}`);
+
     // Load minimal config to check dependencies
     const { loadLayeredConfig } = await import('./config-loader');
     const { config: userConfigDir } = getForgePaths();
-    const forgeConfig = await loadLayeredConfig(projectRoot, userConfigDir);
+    const forgeConfig = await loadLayeredConfig(projectConfig.projectRoot, userConfigDir);
 
     log.debug({ dependencies: forgeConfig.dependencies }, 'Config loaded');
 
     // Auto-install dependencies if needed
     const { autoInstallDependencies, RESTART_EXIT_CODE } = await import('./auto-install');
-    const forgeDir = join(projectRoot, '.forge2');
-    const needsRestart = await autoInstallDependencies(forgeConfig, forgeDir, config.isRestarted);
+    const needsRestart = await autoInstallDependencies(forgeConfig, projectConfig.forgeDir, config.isRestarted);
 
     log.debug({ needsRestart }, 'Dependency sync complete');
 
@@ -261,7 +270,7 @@ async function run(): Promise<void> {
   }
 
   // Phase 2: Build and run real CLI (strict)
-  const program = await buildRealCLI(config);
+  const program = await buildRealCLI(config, projectConfig);
 
   log.debug({ commandNames: program.commands.map(c => c.name()), cliArgs }, 'About to parse CLI args');
 

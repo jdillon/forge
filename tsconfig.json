@@ -8,5 +8,9 @@
     "paths": {
       "@forge/*": ["./lib/*"]
     }
-  }
+  },
+  "include": [
+    "lib/**/*",
+    "tests/**/*"
+  ]
 }

@@ -17,7 +17,8 @@ import type {
   ForgeConfig,
   ForgeModuleMetadata,
   ForgeProjectContext,
-  ForgeContext
+  ForgeContext,
+  ProjectConfig
 } from './types';
 
 const log = createLogger('core');
@@ -124,13 +125,17 @@ export class Forge {
   public state: StateManager;
   public globalOptions: Record<string, any>;
 
-  constructor(projectRoot: string | null, globalOptions: Record<string, any> = {}) {
-    this.projectContext = {
-      projectRoot: projectRoot || '',
-      forgeDir: projectRoot ? join(projectRoot, '.forge2') : '',
+  constructor(projectConfig: ProjectConfig | null, globalOptions: Record<string, any> = {}) {
+    this.projectContext = projectConfig ? {
+      projectRoot: projectConfig.projectRoot,
+      forgeDir: projectConfig.forgeDir,
+      cwd: projectConfig.userDir,
+    } : {
+      projectRoot: '',
+      forgeDir: '',
       cwd: process.cwd(),
     };
-    this.state = projectRoot ? new StateManager(projectRoot) : null as any;
+    this.state = projectConfig ? new StateManager(projectConfig.projectRoot) : null as any;
     this.globalOptions = globalOptions;
     this.log = createLogger('forge');
   }
