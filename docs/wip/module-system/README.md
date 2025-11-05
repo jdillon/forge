@@ -75,18 +75,28 @@ Implementing installation, upgrade, and module distribution system for Forge v2.
 
 ---
 
-### 🚧 Phase 3: Git Module Loading & tsconfig Resolution
-**Status**: In Progress
+### ✅ Phase 3: Git Module Loading & tsconfig Resolution
+**Status**: Complete (Simplified Approach)
 **Started**: 2025-11-03
+**Completed**: 2025-11-05
 **Documents**:
 - [phase3-implementation-proposal.md](phase3-implementation-proposal.md)
 - [phase3-test-framework.md](phase3-test-framework.md)
 
-**Goals:**
-- ✅ tsconfig.json infrastructure (forge-home and runtime)
-- ⏳ tsconfig paths generation for git dependencies
-- ⏳ Module loading from git packages via tsconfig paths
-- ⏳ Test with forge-standard repository
+**Resolution:**
+After exploring Deno migration and complex tsconfig solutions, implemented simpler approach using Bun's `--cwd` flag to solve config resolution issues.
+
+**Completed:**
+- ✅ Bun `--cwd` wrapper pattern (no --tsconfig-override needed)
+- ✅ FORGE_USER_DIR environment variable to track user's actual directory
+- ✅ ProjectConfig interface for structured path management
+- ✅ BootstrapConfig for early CLI initialization
+- ✅ Automatic dependency installation with exit code 42 restart
+- ✅ All 39 tests passing
+- ✅ Manual testing with examples/website verified
+
+**Approach:**
+Instead of fighting Bun's tsconfig override issues, wrapper scripts use `--cwd` to set Bun's working directory to forge-home, which naturally finds the correct configs and node_modules. User's actual directory is preserved in FORGE_USER_DIR environment variable.
 
 ---
 
@@ -116,6 +126,37 @@ Implementing installation, upgrade, and module distribution system for Forge v2.
 ## Key Decisions
 
 *(Track major decisions here as we implement)*
+
+### 2025-11-05: Phase 3 - Bun --cwd Approach
+
+**Problem:**
+Bun's `--tsconfig-override` flag was unreliable - would sometimes use wrong tsconfig.json and node_modules, causing module resolution failures.
+
+**Explored Solutions:**
+1. Deno migration - Created working prototype but added complexity
+2. Complex tsconfig path generation and overrides
+3. Shell cd + process.chdir() patterns
+
+**Final Solution:**
+Use Bun's `--cwd` flag to set working directory to forge-home:
+- `bun --cwd="$forge_home" run "$forge_cli" "$@"`
+- Bun naturally finds correct tsconfig.json and node_modules in forge-home
+- No need for `--tsconfig-override` flag
+- User's actual directory preserved in `FORGE_USER_DIR` env var
+
+**Implementation:**
+- Updated `bin/forge` and `bin/forge-dev` wrappers to use `--cwd`
+- Created `ProjectConfig` interface with fully resolved paths (projectRoot, forgeDir, userDir)
+- Created `BootstrapConfig` for early CLI initialization (includes `isRestarted` flag)
+- Added `createProjectConfig()` helper using `resolve()` to eliminate ./ and ../ segments
+- Updated Forge constructor to accept `ProjectConfig` instead of raw paths
+
+**Benefits:**
+- Simpler than Deno migration
+- No runtime changes needed (pure Bun)
+- Clear configuration demarcation points
+- All existing functionality preserved
+- 39 tests passing
 
 ### 2025-11-01: Phase 1 Completion
 
