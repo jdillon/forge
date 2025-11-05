@@ -13,6 +13,7 @@ import { styleText } from 'node:util';
 import { join, dirname } from 'path';
 import { existsSync } from 'fs';
 import { die, exit, FatalError, ExitNotification } from './helpers';
+import { exit as runtimeExit } from './runtime';
 import { initLogging, getGlobalLogger, isLoggingInitialized } from './logging';
 import { getForgePaths } from './xdg';
 import pkg from '../package.json' assert { type: 'json' };
@@ -232,7 +233,7 @@ export async function main(): Promise<void> {
   } catch (err: any) {
     // Commander help/version - clean exit
     if (err.code && (err.code === 'commander.helpDisplayed' || err.code === 'commander.version')) {
-      process.exit(err.exitCode ?? 0);
+      runtimeExit(err.exitCode ?? 0);
     }
 
     // Handle errors with logging if available, otherwise stderr
@@ -347,7 +348,7 @@ async function run(): Promise<void> {
 function handleError(err: any): never {
   // Clean exit - no error message needed
   if (err instanceof ExitNotification) {
-    process.exit(err.exitCode);
+    runtimeExit(err.exitCode);
   }
 
   // Fatal error or unexpected exception
@@ -368,7 +369,7 @@ function handleError(err: any): never {
     }
   }
 
-  process.exit(exitCode);
+  runtimeExit(exitCode);
 }
 
 // ============================================================================

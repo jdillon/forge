@@ -6,6 +6,7 @@
 
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { readJsonFile, writeJsonFile } from './runtime';
 
 const PROJECT_STATE_FILE = 'state.json';
 const USER_STATE_FILE = 'state.local.json';
@@ -30,8 +31,7 @@ export class StateManager {
       return {};
     }
     try {
-      const file = Bun.file(filepath);
-      return await file.json();
+      return await readJsonFile(filepath);
     } catch (err) {
       console.error(`WARNING: Failed to read ${filename}:`, err);
       return {};
@@ -40,7 +40,7 @@ export class StateManager {
 
   private async writeJSON(filename: string, data: Record<string, any>): Promise<void> {
     const filepath = join(this.forgeDir, filename);
-    await Bun.write(filepath, JSON.stringify(data, null, 2));
+    await writeJsonFile(filepath, data);
   }
 
   // Project state (git-tracked)

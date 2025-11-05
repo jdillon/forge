@@ -32,10 +32,10 @@ export { die, exit, error } from './helpers';
 export { getForgePaths } from './xdg';
 
 // ============================================================================
-// Bun utilities
+// Runtime utilities
 // ============================================================================
 
-export { $ } from 'bun';
+export { $ } from './runtime';
 
 // ============================================================================
 // Commander (CLI framework)

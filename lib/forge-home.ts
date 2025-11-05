@@ -14,6 +14,7 @@
 import { getForgePaths } from './xdg';
 import { getGlobalLogger } from './logging';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { packageManager } from './package-manager';
 
 const log = getGlobalLogger();
 import { join } from 'path';
@@ -114,23 +115,7 @@ function getPackageHash(): string {
  *   "github:lodash/lodash" → "github:lodash/lodash" (git URL, keep as-is)
  */
 export function parseDependencyName(dep: string): string {
-  // Git URLs (github:, git+https://, etc.) - keep as-is for now
-  if (dep.startsWith('github:') || dep.startsWith('git+')) {
-    return dep;
-  }
-
-  // Scoped package: @scope/name@version → @scope/name
-  if (dep.startsWith('@')) {
-    const parts = dep.split('@');
-    // parts = ['', 'scope/name', 'version']
-    if (parts.length >= 3) {
-      return `@${parts[1]}`;
-    }
-    return dep; // Malformed, return as-is
-  }
-
-  // Regular package: name@version → name
-  return dep.split('@')[0];
+  return packageManager.parseDependencyName(dep);
 }
 
 /**
@@ -142,27 +127,7 @@ export function parseDependencyName(dep: string): string {
  * - Package names: lodash@1.0.0, @scope/pkg - checks if key exists
  */
 export function isInstalled(dep: string): boolean {
-  const pkgPath = join(getForgeHomePath(), 'package.json');
-  if (!existsSync(pkgPath)) return false;
-
-  try {
-    const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
-    const deps = pkg.dependencies || {};
-
-    // For local file dependencies, check if the value matches (not the key)
-    // bun installs these with the package name as key, but path/URL as value
-    if (dep.startsWith('file:') || dep.startsWith('/') || dep.startsWith('.') ||
-        dep.startsWith('github:') || dep.startsWith('git+')) {
-      return Object.values(deps).includes(dep);
-    }
-
-    // For package names (lodash, @scope/pkg), check if key exists
-    const depName = parseDependencyName(dep);
-    return depName in deps;
-  } catch (err) {
-    // Corrupted package.json
-    return false;
-  }
+  return packageManager.isInstalled(dep);
 }
 
 /**
@@ -171,26 +136,7 @@ export function isInstalled(dep: string): boolean {
  */
 export async function installDependency(dep: string): Promise<boolean> {
   await ensureForgeHome();
-
-  const forgeHome = getForgeHomePath();
-  const beforeHash = getPackageHash();
-
-  // Run bun add from forge home directory
-  const proc = Bun.spawn(['bun', 'add', dep], {
-    cwd: forgeHome,
-    stdout: 'pipe',
-    stderr: 'pipe',
-  });
-
-  const exitCode = await proc.exited;
-
-  if (exitCode !== 0) {
-    const stderr = await new Response(proc.stderr).text();
-    throw new Error(`Failed to install ${dep}: ${stderr}`);
-  }
-
-  const afterHash = getPackageHash();
-  return beforeHash !== afterHash;
+  return packageManager.installDependency(dep);
 }
 
 /**
