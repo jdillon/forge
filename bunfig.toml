@@ -1,0 +1,9 @@
+# Bun configuration for Forge v2
+
+[test]
+# Only discover tests in tests/ directory (not node_modules or lib/)
+root = "tests/"
+
+[test.exclude]
+# Exclude fixture directories and build output
+patterns = ["lib/**", "fixtures/**", "build/**"]

@@ -10,18 +10,17 @@
  */
 
 import { spawn } from './runtime';
-import { getGlobalLogger } from './logging';
+import { createLogger } from './logging';
 import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import { createHash } from 'crypto';
 import { getForgeHomePath } from './forge-home';
 
-const log = getGlobalLogger();
-
 /**
  * Package Manager - handles dependency installation
  */
 export class PackageManager {
+  private readonly log = createLogger('package-manager');
   /**
    * Get current package.json content hash for change detection
    */
@@ -43,7 +42,7 @@ export class PackageManager {
    * - git+ URLs: git+https://github.com/user/repo#branch
    */
   async installDependency(dep: string): Promise<boolean> {
-    log.debug({ dep }, 'Installing dependency');
+    this.log.debug({ dep }, 'Installing dependency');
 
     const forgeHome = getForgeHomePath();
     const beforeHash = this.getPackageHash();
@@ -68,7 +67,7 @@ export class PackageManager {
     const afterHash = this.getPackageHash();
     const changed = beforeHash !== afterHash;
 
-    log.debug({ dep, changed }, 'Dependency installed');
+    this.log.debug({ dep, changed }, 'Dependency installed');
 
     return changed;
   }
@@ -133,7 +132,7 @@ export class PackageManager {
       return depName in deps;
     } catch (err) {
       // Corrupted package.json
-      log.warn({ err }, 'Failed to read package.json');
+      this.log.warn({ err }, 'Failed to read package.json');
       return false;
     }
   }
