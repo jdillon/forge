@@ -22,8 +22,7 @@ describe('CLI --log-format Validation', () => {
 
     // Should succeed
     expect(result.exitCode).toBe(0);
-    const output = await Bun.file(result.stderrLog).text();
-    // JSON format should output structured logs to stderr
+    const output = await Bun.file(result.stdoutLog).text();
     expect(output).toContain('"level"');
   });
 

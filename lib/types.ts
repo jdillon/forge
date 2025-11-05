@@ -6,7 +6,18 @@
 
 import type { Command } from 'commander';
 
+// ============================================================================
+// Path types
+// ============================================================================
+
+/**
+ * A filesystem path (file or directory) - string for documentation purposes
+ */
+export type FilePath = string;
+
+// ============================================================================
 // Forward declarations
+// ============================================================================
 export interface Forge {
   config: ForgeConfig | null;
   state: any; // StateManager

@@ -10,56 +10,14 @@
 
 import { Command } from 'commander';
 import { styleText } from 'node:util';
-import { join, dirname } from 'path';
-import { existsSync } from 'fs';
+import { join } from 'node:path';
 import { die, exit, FatalError, ExitNotification } from './helpers';
 import { exit as runtimeExit } from './runtime';
 import { initLogging, getGlobalLogger, isLoggingInitialized } from './logging';
 import { getForgePaths } from './xdg';
-import pkg from '../package.json' assert { type: 'json' };
-
-// ============================================================================
-// Project Discovery
-// ============================================================================
-
-/**
- * Walk up directory tree to find .forge2/ directory
- * Similar to how git finds .git/
- */
-async function discoverProject(startDir?: string): Promise<string | null> {
-  let dir = startDir || process.cwd();
-
-  // Walk up to root
-  while (dir !== '/' && dir !== '.') {
-    const forgeDir = join(dir, '.forge2');
-
-    if (existsSync(forgeDir)) {
-      return dir;
-    }
-
-    const parent = dirname(dir);
-    if (parent === dir) break; // Reached root
-    dir = parent;
-  }
-
-  return null;
-}
-
-/**
- * Check for FORGE_PROJECT env var override
- */
-function getProjectRoot(): string | null {
-  // Env var override
-  if (process.env.FORGE_PROJECT) {
-    const envPath = process.env.FORGE_PROJECT;
-    if (existsSync(join(envPath, '.forge2'))) {
-      return envPath;
-    }
-    die(`FORGE_PROJECT=${envPath} but .forge2/ not found`);
-  }
-
-  return null;
-}
+import { findProjectRoot } from './project-discovery';
+import type { FilePath } from './types';
+import pkg from '../package.json';
 
 // ============================================================================
 // Shared Configuration
@@ -97,7 +55,9 @@ interface BootstrapConfig {
   logLevel: string;
   logFormat: 'json' | 'pretty' | undefined;
   color: boolean;
-  root: string | undefined;
+  root: FilePath | undefined;
+  userDir: FilePath;
+  isRestarted: boolean;
 }
 
 /**
@@ -119,6 +79,9 @@ function bootstrap(cliArgs: string[]): BootstrapConfig {
   bootProgram.parseOptions(cliArgs);
   const opts = bootProgram.opts();
 
+  // Check if this is a restarted process (via env var from wrapper)
+  const isRestarted = process.env.FORGE_RESTARTED === '1';
+
   // Return extracted config - that's it!
   return {
     debug: opts.debug || false,
@@ -128,6 +91,8 @@ function bootstrap(cliArgs: string[]): BootstrapConfig {
     logFormat: opts.logFormat as 'json' | 'pretty' | undefined,
     color: opts.color !== false,
     root: opts.root,
+    userDir: process.env.FORGE_USER_DIR || process.cwd(),
+    isRestarted,
   };
 }
 
@@ -185,23 +150,23 @@ async function buildRealCLI(config: BootstrapConfig): Promise<Command> {
   // Action for main program - fires ONLY when no subcommand is provided
   program.action(() => {
     console.error('ERROR: subcommand required');
-    console.error();  // Blank line
+    console.error(); // Blank line
     program.outputHelp();
     exit(1);  // Exit with error code (user didn't provide command)
   });
 
   // Find project root
-  let projectRoot = config.root || getProjectRoot();
-
-  if (!projectRoot) {
-    projectRoot = await discoverProject();
-  }
+  const projectRoot = await findProjectRoot({
+    rootPath: config.root,
+    startDir: config.userDir,
+  });
 
   // Load core module dynamically (after logging initialized)
   const { Forge } = await import('./core');
 
   // Create Forge instance, load config, and register commands with Commander
   const forge = new Forge(projectRoot, config);
+
   await forge.loadConfig();
   await forge.registerCommands(program);
 
@@ -268,12 +233,11 @@ async function run(): Promise<void> {
 
   // Phase 1.5: Dependency sync (before loading modules)
   // This ensures dependencies are available when modules are imported
-  let projectRoot = config.root || getProjectRoot();
-  if (!projectRoot) {
-    projectRoot = await discoverProject();
-  }
-
-  log.debug({ projectRoot, NODE_PATH: process.env.NODE_PATH }, 'Bootstrap Phase 1.5');
+  const projectRoot = await findProjectRoot({
+    rootPath: config.root,
+    startDir: config.userDir,
+  });
+  log.debug(`Project root: ${projectRoot}`);
 
   if (projectRoot) {
     // Load minimal config to check dependencies
@@ -283,13 +247,10 @@ async function run(): Promise<void> {
 
     log.debug({ dependencies: forgeConfig.dependencies }, 'Config loaded');
 
-    // Check if this is a restarted process (via env var from wrapper)
-    const isRestarted = process.env.FORGE_RESTARTED === '1';
-
     // Auto-install dependencies if needed
     const { autoInstallDependencies, RESTART_EXIT_CODE } = await import('./auto-install');
     const forgeDir = join(projectRoot, '.forge2');
-    const needsRestart = await autoInstallDependencies(forgeConfig, forgeDir, isRestarted);
+    const needsRestart = await autoInstallDependencies(forgeConfig, forgeDir, config.isRestarted);
 
     log.debug({ needsRestart }, 'Dependency sync complete');
 
