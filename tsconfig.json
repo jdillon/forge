@@ -1,26 +1,12 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
-    "module": "ESNext",
+    "target": "ES2022",
+    "module": "ES2022",
     "moduleResolution": "bundler",
-    "types": ["bun-types"],
-    "lib": ["ESNext"],
     "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
+    "baseUrl": ".",
     "paths": {
-      "@forge/command": ["./lib/command.ts"],
-      "@forge/core": ["./lib/core.ts"],
       "@forge/*": ["./lib/*"]
     }
-  },
-  "include": [
-    "lib/**/*",
-    "examples/**/*",
-    "tests/**/*"
-  ],
-  "exclude": [
-    "tests/fixtures/**/*"
-  ]
+  }
 }

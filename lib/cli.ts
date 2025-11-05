@@ -260,6 +260,12 @@ async function run(): Promise<void> {
   // Now safe to use logger
   const log = getGlobalLogger();
 
+  // Log environment details for debugging
+  log.debug(`cwd: ${process.cwd()}`);
+  log.debug(`FORGE_USER_DIR: ${process.env.FORGE_USER_DIR}`);
+  log.debug(`FORGE_NODE_MODULES: ${process.env.FORGE_NODE_MODULES}`);
+  log.debug(`NODE_PATH: ${process.env.NODE_PATH}`);
+
   // Phase 1.5: Dependency sync (before loading modules)
   // This ensures dependencies are available when modules are imported
   let projectRoot = config.root || getProjectRoot();
