@@ -7,17 +7,6 @@ When complete, content is either:
 - **Archived** to `docs/archive/` (historical decisions)
 - **Deleted** (no longer relevant)
 
----
-
-## Active Projects
-
-- **[module-system/](module-system/)** - Installation, upgrade, and module distribution system
-  - **Spec**: [docs/planning/installation-and-module-system.md](../planning/installation-and-module-system.md)
-  - **Status**: Phase 1 - Basic Installation & Local Modules
-  - **Started**: 2025-10-31
-
----
-
 ## Directory Structure
 
 ```
