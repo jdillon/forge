@@ -159,7 +159,9 @@ run_forge() {
   # Use --cwd to set Bun's working directory to forge_home
   # This makes Bun find the config files (bunfig.toml, tsconfig.json) we created above
   # User's actual cwd remains unchanged in FORGE_USER_DIR
-  bun --cwd="${forge_home}" run "${cli_path}" "${@:2}"
+  # Use --preserve-symlinks to prevent Bun from resolving through symlinks
+  # This allows user commands symlinked into node_modules to resolve forge correctly
+  bun --cwd="${forge_home}" run --preserve-symlinks "${cli_path}" "${@:2}"
 }
 
 #

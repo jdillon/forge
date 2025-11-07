@@ -11,6 +11,7 @@ import { StateManager } from './state';
 import { die } from './helpers';
 import { getForgePaths } from './xdg';
 import { getLoggerConfig, createLogger } from './logging';
+import { rewriteModulePath } from './module-symlink';
 import type pino from 'pino';
 import type {
   ForgeCommand,
@@ -70,8 +71,14 @@ export async function loadModule(
 
   log.debug({ fullPath }, 'Module resolved');
 
-  const url = import.meta.resolve(fullPath, import.meta.url);
-  log.debug({ url }, 'Importing module'); 
+  // Rewrite path to go through symlink in node_modules
+  // This ensures user commands import forge from the correct instance
+  // Requires bun --preserve-symlinks
+  const symlinkPath = await rewriteModulePath(fullPath, forgeDir);
+  log.debug({ original: fullPath, symlink: symlinkPath }, 'Using symlinked path');
+
+  const url = import.meta.resolve(symlinkPath, import.meta.url);
+  log.debug({ url }, 'Importing module');
 
   const module = await import(url);
 
