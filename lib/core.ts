@@ -16,7 +16,6 @@ import type {
   ForgeCommand,
   ForgeConfig,
   ForgeModuleMetadata,
-  ForgeProjectContext,
   ForgeContext,
   ProjectConfig
 } from './types';
@@ -67,9 +66,14 @@ export async function loadModule(
   const { resolveModule } = await import('./module-resolver');
   const fullPath = await resolveModule(modulePath, forgeDir);
 
+  log.debug(`CWD: ${process.cwd()}`);
+
   log.debug({ fullPath }, 'Module resolved');
 
-  const module = await import(fullPath);
+  const url = import.meta.resolve(fullPath, import.meta.url);
+  log.debug({ url }, 'Importing module'); 
+
+  const module = await import(url);
 
   // Check for __module__ metadata export
   if (module.__module__) {
@@ -112,7 +116,7 @@ export async function loadModule(
  * Main forge runner
  */
 export class Forge {
-  private projectContext: ForgeProjectContext;
+  private projectConfig: ProjectConfig | null;
   public config: ForgeConfig | null = null;  // Public so commands can access settings
   private log: pino.Logger;
 
@@ -126,25 +130,19 @@ export class Forge {
   public globalOptions: Record<string, any>;
 
   constructor(projectConfig: ProjectConfig | null, globalOptions: Record<string, any> = {}) {
-    this.projectContext = projectConfig ? {
-      projectRoot: projectConfig.projectRoot,
-      forgeDir: projectConfig.forgeDir,
-      cwd: projectConfig.userDir,
-    } : {
-      projectRoot: '',
-      forgeDir: '',
-      cwd: process.cwd(),
-    };
+    this.log = createLogger('forge');
+    this.log.debug({ projectConfig });
+
+    this.projectConfig = projectConfig;
     this.state = projectConfig ? new StateManager(projectConfig.projectRoot) : null as any;
     this.globalOptions = globalOptions;
-    this.log = createLogger('forge');
   }
 
   async loadConfig(): Promise<void> {
     const debug = process.env.FORGE_DEBUG === '1' || process.argv.includes('--debug');
 
     // Skip loading config if no project root (for --help/--version)
-    if (!this.projectContext.projectRoot) {
+    if (!this.projectConfig?.projectRoot) {
       this.config = null;
       return;
     }
@@ -153,11 +151,11 @@ export class Forge {
     const { loadLayeredConfig } = await import('./config-loader');
     const { config: userConfigDir } = getForgePaths();
 
-    this.config = await loadLayeredConfig(this.projectContext.projectRoot, userConfigDir);
+    this.config = await loadLayeredConfig(this.projectConfig.projectRoot, userConfigDir);
 
     // Verify we got a valid config
     if (!this.config) {
-      die(`No config found in ${this.projectContext.forgeDir}`);
+      die(`No config found in ${this.projectConfig.forgeDir}`);
     }
 
     log.debug({ modules: this.config.modules }, 'Loading modules');
@@ -165,7 +163,7 @@ export class Forge {
     // Auto-discover commands from modules
     if (this.config?.modules) {
       for (const modulePath of this.config.modules) {
-        const { groupName, description, commands } = await loadModule(modulePath, this.projectContext.forgeDir);
+        const { groupName, description, commands } = await loadModule(modulePath, this.projectConfig.forgeDir);
 
         if (groupName !== false) {
           // Store commands under group
@@ -191,60 +189,6 @@ export class Forge {
     );
     log.debug({ groups, groupDetails }, 'Command groups registered');
   }
-
-  // DEAD CODE - These methods are from an older design and are not used
-  // TODO: Remove after confirming no dependencies
-  /*
-  async run(commandName: string, args: string[]): Promise<void> {
-    if (!this.config) {
-      await this.loadConfig();
-    }
-
-    // Handle no command (use default if set)
-    if (!commandName) {
-      if (this.config!.defaultCommand) {
-        commandName = this.config!.defaultCommand;
-      } else {
-        this.showUsage();
-        exit(0);
-      }
-    }
-
-    // Find command
-    const command = this.commands[commandName];
-
-    if (!command) {
-      this.showUsage();
-      die(`Unknown command: ${commandName}`);
-    }
-
-    // Execute command
-    try {
-      await command.execute(args, []);
-    } catch (err) {
-      die(`Command failed: ${commandName}\n${err}`);
-    }
-  }
-
-  private showUsage(): void {
-    console.log(`usage: forge <command> [options]\n`);
-    console.log('Available commands:\n');
-
-    const commands = Object.entries(this.commands);
-    if (commands.length === 0) return;
-
-    const maxLen = Math.max(...commands.map(([name]) => name.length));
-
-    for (const [name, cmd] of commands) {
-      const padding = ' '.repeat(maxLen - name.length + 2);
-      console.log(`  ${name}${padding}${cmd.description}`);
-    }
-  }
-
-  getContext(): ForgeContext {
-    return this.context;
-  }
-  */
 
   /**
    * Register all discovered commands with Commander program

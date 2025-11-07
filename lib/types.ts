@@ -113,13 +113,3 @@ export interface ProjectConfig {
   forgeDir: FilePath;     // Fully resolved .forge2/ directory
   userDir: FilePath;      // Fully resolved user's working directory (from FORGE_USER_DIR)
 }
-
-/**
- * Project context information passed to commands during execution
- * Contains runtime-specific context for command execution
- */
-export interface ForgeProjectContext {
-  projectRoot: string;
-  forgeDir: string;
-  cwd: string;
-}
