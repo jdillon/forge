@@ -8,6 +8,9 @@ This file provides guidance to Claude Code when working with this repository.
 
 **Copy this section to other projects - these are Jason's preferences.**
 
+### General
+- Do not make changes unless asked
+
 ### Communication
 - **Direct and technical** - No excessive praise or superlatives
 - **Present trade-offs** - Not just benefits, show costs too
