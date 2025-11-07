@@ -11,12 +11,12 @@ import { join } from 'path';
 describe('ForgeContext', () => {
   const fixtureRoot = join(TEST_DIRS.fixtures, 'test-project');
 
-  test('should include logLevel, logFormat, and color in context', async (ctx) => {
+  test('should include logLevel, logFormat, and colorMode in context', async (ctx) => {
     const logs = await setupTestLogs(ctx);
     const outputFile = join(logs.logDir, 'context-output.json');
 
     const result = await runForge({
-      args: ['--root', fixtureRoot, '--log-level', 'debug', '--log-format', 'json', '--no-color', 'test', 'context', outputFile],
+      args: ['--root', fixtureRoot, '--log-level', 'debug', '--log-format', 'json', '--color', 'never', 'test', 'context', outputFile],
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -35,10 +35,10 @@ describe('ForgeContext', () => {
     expect(contextData.groupName).toBe('test');
     expect(contextData.logLevel).toBe('debug');
     expect(contextData.logFormat).toBe('json');
-    expect(contextData.color).toBe(false); // --no-color was set
+    expect(contextData.colorMode).toBe('never'); // --color=never was set
   });
 
-  test('should have color=true by default', async (ctx) => {
+  test('should have colorMode=auto by default', async (ctx) => {
     const logs = await setupTestLogs(ctx);
     const outputFile = join(logs.logDir, 'context-output.json');
 
@@ -52,7 +52,25 @@ describe('ForgeContext', () => {
 
     // Read JSON from output file instead of stdout
     const contextData = JSON.parse((await Bun.file(outputFile).text()).trim());
-    expect(contextData.color).toBe(true); // default is colors enabled
+    expect(contextData.colorMode).toBe('auto'); // default is auto mode
+  });
+
+  test('should respect NO_COLOR env var', async (ctx) => {
+    const logs = await setupTestLogs(ctx);
+    const outputFile = join(logs.logDir, 'context-output.json');
+
+    const result = await runForge({
+      args: ['--root', fixtureRoot, '--log-format', 'json', 'test', 'context', outputFile],
+      env: { NO_COLOR: '1' },
+      logDir: logs.logDir,
+      logBaseName: logs.logBaseName,
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    // Read JSON from output file instead of stdout
+    const contextData = JSON.parse((await Bun.file(outputFile).text()).trim());
+    expect(contextData.colorMode).toBe('never'); // NO_COLOR should map to 'never'
   });
 
 });

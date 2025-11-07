@@ -16,6 +16,18 @@ import type { Command } from 'commander';
 export type FilePath = string;
 
 // ============================================================================
+// Color mode
+// ============================================================================
+
+/**
+ * Color output mode
+ * - auto: Detect based on terminal capabilities (TTY, color support, etc.)
+ * - always: Force colors on
+ * - never: Force colors off
+ */
+export type ColorMode = 'auto' | 'always' | 'never';
+
+// ============================================================================
 // Forward declarations
 // ============================================================================
 export interface Forge {
@@ -37,7 +49,7 @@ export interface ForgeContext {
   commandName: string;               // This command's name
   logLevel: string;                  // Current log level (info, debug, etc.)
   logFormat: 'json' | 'pretty';      // Log format (pretty = human-readable)
-  color: boolean;                    // Whether color output is enabled
+  colorMode: ColorMode;              // Color output mode
 }
 
 /**

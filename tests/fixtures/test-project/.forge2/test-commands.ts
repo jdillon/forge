@@ -29,7 +29,7 @@ export const context: ForgeCommand = {
       groupName: context.groupName,
       logLevel: context.logLevel,
       logFormat: context.logFormat,
-      color: context.color,
+      colorMode: context.colorMode,
       settings: context.settings,
     };
 

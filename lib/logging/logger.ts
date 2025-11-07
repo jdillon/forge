@@ -6,18 +6,33 @@
 
 import pino from 'pino';
 import pretty from 'pino-pretty';
+import type { ColorMode } from '../types';
+
+/**
+ * Resolve color mode to a boolean for use with pino-pretty
+ * Uses colorette for auto-detection when mode is 'auto'
+ */
+function resolveColorMode(mode: ColorMode): boolean {
+  if (mode === 'always') return true;
+  if (mode === 'never') return false;
+
+  // Auto-detect using colorette (same library pino-pretty uses)
+  // This handles TTY detection, terminal capabilities, CI/CD environments, etc.
+  const { isColorSupported } = require('colorette');
+  return isColorSupported;
+}
 
 // Logger configuration state
 interface LoggerConfig {
   level: string;
   format: 'json' | 'pretty';
-  color: boolean;
+  colorMode: ColorMode;
 }
 
 const config: LoggerConfig = {
   level: 'info',
   format: 'pretty',
-  color: true,
+  colorMode: 'auto',
 };
 
 /**
@@ -63,14 +78,17 @@ export function initLogging(options: Partial<LoggerConfig>): void {
   if (options.format) {
     config.format = options.format;
   }
-  if (options.color !== undefined) {
-    config.color = options.color;
+  if (options.colorMode !== undefined) {
+    config.colorMode = options.colorMode;
   }
+
+  // Resolve color mode to boolean for pino-pretty
+  const useColor = resolveColorMode(config.colorMode);
 
   // Create stream based on format
   const stream = config.format === 'pretty'
     ? pretty({
-        colorize: config.color,
+        colorize: useColor,
         translateTime: 'HH:MM:ss',
         ignore: 'hostname,pid',
         singleLine: true,

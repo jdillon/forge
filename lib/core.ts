@@ -332,7 +332,7 @@ export class Forge {
         commandName: name,
         logLevel: loggerConfig.level,
         logFormat: loggerConfig.format,
-        color: loggerConfig.color,
+        colorMode: loggerConfig.colorMode,
       };
 
       try {

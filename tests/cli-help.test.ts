@@ -57,7 +57,7 @@ describe('CLI Help Output', () => {
     expect(output).toContain('--silent');
     expect(output).toContain('--log-level');
     expect(output).toContain('--log-format');
-    expect(output).toContain('--no-color');
+    expect(output).toContain('--color');
     expect(output).toContain('--root');
   });
 

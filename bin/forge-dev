@@ -38,11 +38,13 @@ mkdir -p "${forge_home}"
 #
 
 compute_checksum() {
-  cd "${project_root}"
-  # Checksum lib/**, package.json, tsconfig.json, bunfig.toml
-  (find lib -type f -exec sha256sum {} \; && \
-   sha256sum package.json tsconfig.json bunfig.toml 2>/dev/null) | \
-   sort | sha256sum | cut -d' ' -f1
+  (
+    cd "${project_root}"
+    # Checksum lib/**, package.json, tsconfig.json, bunfig.toml
+    (find lib -type f -exec sha256sum {} \; && \
+    sha256sum package.json tsconfig.json bunfig.toml 2>/dev/null) | \
+    sort | sha256sum | cut -d' ' -f1
+  )
 }
 
 needs_rebuild() {
@@ -63,14 +65,21 @@ rebuild_and_install() {
   echo "  Rebuilding forge (source files changed)" >&2
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
 
-  echo "  → Building tarball..." >&2
-  cd "${project_root}"
-  bun pm pack --destination build/ --quiet
+  echo "  → Clearing Bun cache..." >&2
+  # Clear Bun's cache to avoid stale module issues
+  bun pm cache rm
 
-  # Find the tarball (should be planet57-forge-*.tgz)
-  local tarball=$(ls -t "${project_root}/build/planet57-forge-"*.tgz 2>/dev/null | head -1)
-  if [[ -z "$tarball" ]]; then
-    echo "ERROR: No tarball found in build/" >&2
+  echo "  → Building tarball..." >&2
+  # Clean old tarballs to avoid confusion
+  local tarball="${project_root}/build/planet57-forge-dev.tgz"
+  rm -f "${tarball}"
+  (
+    cd "${project_root}"
+    bun pm pack --filename "${tarball}"
+  )
+
+  if [[ ! -f "$tarball" ]]; then
+    echo "ERROR: Expected tarball not found: $tarball" >&2
     exit 1
   fi
 
@@ -115,7 +124,9 @@ EOF
   # Install/update @planet57/forge in dev-home
   echo "  → Installing to dev-home..." >&2
   cd "${forge_home}"
-  bun install --quiet 2>&1 | grep -v "^Saved lockfile$" || true
+  # Purge old installed package to force fresh install
+  rm -rf "${forge_home}/node_modules/@planet57/forge"
+  bun install
 
   # Save new checksum
   compute_checksum > "${forge_home}/.forge-checksum"

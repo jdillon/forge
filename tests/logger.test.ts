@@ -11,11 +11,11 @@ import { initLogging, getLoggerConfig, createLogger } from '../lib/logging';
 describe('Logger Configuration', () => {
   // Initialize logging once for all tests
   test('should initialize logging', () => {
-    initLogging({ level: 'info', format: 'pretty', color: true });
+    initLogging({ level: 'info', format: 'pretty', colorMode: 'always' });
     const config = getLoggerConfig();
     expect(config.level).toBe('info');
     expect(config.format).toBe('pretty');
-    expect(config.color).toBe(true);
+    expect(config.colorMode).toBe('always');
   });
 
   test('should create logger instance after initialization', () => {

@@ -11,12 +11,12 @@ import { join } from 'path';
 describe('CLI Color Detection', () => {
   const projectRoot = join(TEST_DIRS.fixtures, 'test-project');
 
-  test('should use colors by default', async (ctx) => {
+  test('should use auto mode by default', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
     const result = await runForge({
       args: ['--root', projectRoot, '--help'],
-      env: { NO_COLOR: '' }, // Explicitly enable colors for this test
+      env: { NO_COLOR: '' }, // Clear NO_COLOR for this test
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
@@ -25,17 +25,31 @@ describe('CLI Color Detection', () => {
     expect(result.exitCode).toBe(0);
   });
 
-  test('should disable colors with --no-color flag', async (ctx) => {
+  test('should disable colors with --color=never', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
     const result = await runForge({
-      args: ['--root', projectRoot, '--no-color', '--help'],
+      args: ['--root', projectRoot, '--color', 'never', '--help'],
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
 
     expect(result.exitCode).toBe(0);
     // Help should still work - check stdout
+    const output = await Bun.file(result.stdoutLog).text();
+    expect(output).toContain('Modern CLI framework');
+  });
+
+  test('should enable colors with --color=always', async (ctx) => {
+    const logs = await setupTestLogs(ctx);
+
+    const result = await runForge({
+      args: ['--root', projectRoot, '--color', 'always', '--help'],
+      logDir: logs.logDir,
+      logBaseName: logs.logBaseName,
+    });
+
+    expect(result.exitCode).toBe(0);
     const output = await Bun.file(result.stdoutLog).text();
     expect(output).toContain('Modern CLI framework');
   });
@@ -55,11 +69,12 @@ describe('CLI Color Detection', () => {
     expect(output).toContain('Modern CLI framework');
   });
 
-  test('should prioritize --no-color flag over env', async (ctx) => {
+  test('should prioritize NO_COLOR env over --color flag', async (ctx) => {
     const logs = await setupTestLogs(ctx);
 
     const result = await runForge({
-      args: ['--root', projectRoot, '--no-color', '--help'],
+      args: ['--root', projectRoot, '--color', 'always', '--help'],
+      env: { NO_COLOR: '1' }, // Should override --color=always
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });
