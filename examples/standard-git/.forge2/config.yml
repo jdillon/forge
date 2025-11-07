@@ -1,0 +1,13 @@
+# Example: Using forge-standard library from git
+#
+# This demonstrates loading modules from a git repository
+# installed to forge home (~/.local/share/forge/node_modules/)
+
+dependencies:
+  # Use git+ssh:// for SSH authentication (works with private repos)
+  - git+ssh://git@github.com/jdillon/forge-standard.git#module-system
+
+modules:
+  # Load the hello module from forge-standard
+  # Package name comes from forge-standard/package.json: "@planet57/forge-standard"
+  - "@planet57/forge-standard/hello"

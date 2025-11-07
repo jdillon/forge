@@ -1,0 +1,178 @@
+#!/usr/bin/env bash
+# bin/forge-dev - Development mode bootstrap
+#
+# Uses packaged tarball with isolated dev-home for development.
+# Smart rebuild: only packs/installs when source files change.
+# Avoids recursive directory hell by using tarball instead of directory reference.
+#
+# Usage:
+#   ./bin/forge-dev [command] [args...]
+#   FORGE_REBUILD=1 ./bin/forge-dev [command]  # Force rebuild
+#
+set -euo pipefail
+
+# Resolve script location (follows symlinks)
+script_path="${BASH_SOURCE[0]}"
+while [ -L "$script_path" ]; do
+  script_dir="$(cd -P "$(dirname "$script_path")" && pwd)"
+  script_path="$(readlink "$script_path")"
+  [[ $script_path != /* ]] && script_path="$script_dir/$script_path"
+done
+script_dir="$(cd -P "$(dirname "$script_path")" && pwd)"
+project_root="$(cd -P "${script_dir}/.." && pwd)"
+
+# Capture user's current working directory (fully resolved)
+export FORGE_USER_DIR="$(pwd -P)"
+
+# Dev mode: use packaged tarball with isolated dev-home
+export XDG_DATA_HOME="${project_root}/dev-home"
+forge_home="${XDG_DATA_HOME}/forge"
+export FORGE_NODE_MODULES="${forge_home}/node_modules"
+export NODE_PATH="${FORGE_NODE_MODULES}"
+
+# Ensure dev-home forge structure exists
+mkdir -p "${forge_home}"
+
+#
+# Checksum-based change detection
+#
+
+compute_checksum() {
+  cd "${project_root}"
+  # Checksum lib/**, package.json, tsconfig.json, bunfig.toml
+  (find lib -type f -exec sha256sum {} \; && \
+   sha256sum package.json tsconfig.json bunfig.toml 2>/dev/null) | \
+   sort | sha256sum | cut -d' ' -f1
+}
+
+needs_rebuild() {
+  local checksum_file="${forge_home}/.forge-checksum"
+  local current=$(compute_checksum)
+  local previous=$(cat "$checksum_file" 2>/dev/null || echo "")
+
+  [[ "$current" != "$previous" ]]
+}
+
+#
+# Rebuild and install
+#
+
+rebuild_and_install() {
+  echo "" >&2
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+  echo "  Rebuilding forge (source files changed)" >&2
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+
+  echo "  → Building tarball..." >&2
+  cd "${project_root}"
+  bun pm pack --destination build/ --quiet
+
+  # Find the tarball (should be planet57-forge-*.tgz)
+  local tarball=$(ls -t "${project_root}/build/planet57-forge-"*.tgz 2>/dev/null | head -1)
+  if [[ -z "$tarball" ]]; then
+    echo "ERROR: No tarball found in build/" >&2
+    exit 1
+  fi
+
+  # Create package.json with tarball reference
+  cat > "${forge_home}/package.json" << EOF
+{
+  "name": "forge-dev-home",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@planet57/forge": "file:${tarball}"
+  }
+}
+EOF
+
+  # Create tsconfig.json (simulates what install.sh does) - only if it doesn't exist
+  if [[ ! -f "${forge_home}/tsconfig.json" ]]; then
+    cat > "${forge_home}/tsconfig.json" << 'EOF'
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@forge/*": ["./node_modules/@planet57/forge/lib/*"]
+    }
+  }
+}
+EOF
+  fi
+
+  # Create bunfig.toml (simulates what install.sh does) - only if it doesn't exist
+  if [[ ! -f "${forge_home}/bunfig.toml" ]]; then
+    cat > "${forge_home}/bunfig.toml" << 'EOF'
+[install]
+exact = true
+dev = false
+peer = true
+optional = false
+auto = "disable"
+EOF
+  fi
+
+  # Install/update @planet57/forge in dev-home
+  echo "  → Installing to dev-home..." >&2
+  cd "${forge_home}"
+  bun install --quiet 2>&1 | grep -v "^Saved lockfile$" || true
+
+  # Save new checksum
+  compute_checksum > "${forge_home}/.forge-checksum"
+
+  echo "  ✓ Rebuild complete" >&2
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+  echo "" >&2
+}
+
+#
+# Run forge with restart handling
+#
+
+run_forge() {
+  local restarted="${1:-}"
+
+  # Set restart flag if provided
+  if [[ -n "$restarted" ]]; then
+    export FORGE_RESTARTED=1
+  fi
+
+  # Find the CLI entry point in installed package
+  local cli_path="${FORGE_NODE_MODULES}/@planet57/forge/lib/cli.ts"
+
+  if [[ ! -f "$cli_path" ]]; then
+    echo "ERROR: CLI not found at $cli_path" >&2
+    exit 1
+  fi
+
+  # Use --cwd to set Bun's working directory to forge_home
+  # This makes Bun find the config files (bunfig.toml, tsconfig.json) we created above
+  # User's actual cwd remains unchanged in FORGE_USER_DIR
+  bun --cwd="${forge_home}" run "${cli_path}" "${@:2}"
+}
+
+#
+# Main
+#
+
+# Check if rebuild needed (or forced via FORGE_REBUILD=1)
+if [[ "${FORGE_REBUILD:-}" == "1" ]] || needs_rebuild; then
+  rebuild_and_install
+fi
+
+# Run forge and capture exit code
+set +e  # Don't exit on non-zero
+run_forge "" "$@"
+EXIT_CODE=$?
+set -e
+
+# Exit code 42 = restart needed (dependencies installed)
+# "I checked it very thoroughly, and that quite definitely is the answer."
+if [[ $EXIT_CODE -eq 42 ]]; then
+  # Re-run with FORGE_RESTARTED=1 to prevent infinite loops
+  run_forge "restarted" "$@"
+  exit $?
+fi
+
+# Normal exit
+exit $EXIT_CODE

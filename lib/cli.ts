@@ -353,5 +353,17 @@ function handleError(err: any): never {
 // ============================================================================
 
 if (import.meta.main) {
-  await main();
+  try {
+    await main();
+  } catch (err: any) {
+    // Unhandled error during module loading or main execution
+    // This catches errors that happen before main()'s try/catch
+    console.error('FATAL:', err.message);
+    if (err.stack) {
+      console.error('\nStack trace:');
+      console.error(err.stack);
+    }
+    runtimeExit(1);
+  }
 }
+
