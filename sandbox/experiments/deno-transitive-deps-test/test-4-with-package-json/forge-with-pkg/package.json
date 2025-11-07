@@ -1,0 +1,10 @@
+{
+  "name": "@forge/with-pkg",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": "./mod.ts",
+  "dependencies": {
+    "commander": "^12.0.0",
+    "yaml": "^2.3.0"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "@forge/with-pkg": "../forge-with-pkg/mod.ts"
+  }
+}

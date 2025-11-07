@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "@forge/mock": "../forge-mock/mod.ts"
+  }
+}
