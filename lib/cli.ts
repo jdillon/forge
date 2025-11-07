@@ -330,6 +330,11 @@ async function run(): Promise<void> {
     projectConfig = createProjectConfig(projectRoot, config.userDir);
     log.debug(`Project config created: ${projectConfig.projectRoot}`);
 
+    // Create symlink for .forge2 directory in node_modules
+    // This allows user commands to import forge with correct module instance
+    const { symlinkForgeDir } = await import("./module-symlink");
+    await symlinkForgeDir(projectConfig.forgeDir);
+
     // Load minimal config to check dependencies
     const { loadLayeredConfig } = await import("./config-loader");
     const { config: userConfigDir } = getForgePaths();
