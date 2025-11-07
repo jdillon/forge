@@ -11,6 +11,7 @@
 import { Command } from "commander";
 import { styleText } from "node:util";
 import { resolve } from "node:path";
+import { isColorSupported } from "colorette";
 import { exit, FatalError, ExitNotification } from "./helpers";
 import { exit as runtimeExit } from "./runtime";
 import { initLogging, getGlobalLogger, isLoggingInitialized } from "./logging";
@@ -18,7 +19,6 @@ import { getForgePaths } from "./xdg";
 import { findProjectRoot } from "./project-discovery";
 import type { FilePath, ProjectConfig, ColorMode } from "./types";
 import pkg from "../package.json";
-import { SourceTextModule } from "node:vm";
 
 // ============================================================================
 // Shared Configuration
@@ -34,7 +34,6 @@ function resolveColorMode(mode: ColorMode): boolean {
 
   // Auto-detect using colorette (same library pino-pretty uses)
   // This handles TTY detection, terminal capabilities, CI/CD environments, etc.
-  const { isColorSupported } = require("colorette");
   return isColorSupported;
 }
 
@@ -216,8 +215,7 @@ async function buildRealCLI(
   if (useColor) {
     helpConfig.styleTitle = (str: string) => styleText("bold", str);
     helpConfig.styleCommandText = (str: string) => styleText("cyan", str);
-    helpConfig.styleCommandDescription = (str: string) =>
-      styleText("gray", str);
+    helpConfig.styleCommandDescription = (str: string) => styleText("gray", str);
     helpConfig.styleDescriptionText = (str: string) => styleText("italic", str);
     helpConfig.styleOptionText = (str: string) => styleText("green", str);
     helpConfig.styleArgumentText = (str: string) => styleText("yellow", str);
@@ -294,6 +292,11 @@ async function run(): Promise<void> {
 
   // Phase 1: Bootstrap - extract config (permissive)
   const config = bootstrap(cliArgs);
+
+  // FIXME: sort out where we change dirs
+  // if (config.userDir !== process.cwd()) {
+  //   process.chdir(config.userDir);
+  // }
 
   // Initialize logger before loading modules (modules create loggers at import time)
   const logLevel =

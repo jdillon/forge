@@ -6,6 +6,7 @@
 
 import pino from 'pino';
 import pretty from 'pino-pretty';
+import { isColorSupported } from 'colorette';
 import type { ColorMode } from '../types';
 
 /**
@@ -18,7 +19,6 @@ function resolveColorMode(mode: ColorMode): boolean {
 
   // Auto-detect using colorette (same library pino-pretty uses)
   // This handles TTY detection, terminal capabilities, CI/CD environments, etc.
-  const { isColorSupported } = require('colorette');
   return isColorSupported;
 }
 
