@@ -6,7 +6,7 @@
  * 1. Environment variables (FORGE_*)
  * 2. Local project config (.forge2/config.local.*) - gitignored
  * 3. Project config (.forge2/config.*)
- * 4. User config (~/.config/forge2/config.*)
+ * 4. User config (~/.forge/config/config.*)
  * 5. Defaults
  *
  * Supports multiple formats via cosmiconfig:
@@ -20,6 +20,7 @@
 import { cosmiconfig } from "cosmiconfig";
 import { join } from "path";
 import type { ForgeConfig } from "./types";
+import { getForgeHomePath } from "./forge-home";
 
 /**
  * TypeScript loader for cosmiconfig using Bun's native TS support
@@ -71,10 +72,11 @@ function deepMerge<T extends Record<string, any>>(
 
 /**
  * Load and merge configs from all layers
+ * Note: userConfigDir parameter is deprecated, now uses FORGE_HOME/config
  */
 export async function loadLayeredConfig(
   projectRoot: string,
-  userConfigDir: string,
+  userConfigDir?: string, // Deprecated, kept for compatibility
 ): Promise<LayeredForgeConfig> {
   // 1. Defaults
   const defaults: LayeredForgeConfig = {
@@ -97,10 +99,11 @@ export async function loadLayeredConfig(
     },
   });
 
-  // 2. User config (~/.config/forge2/)
+  // 2. User config (~/.forge/config/)
   let userConfig: LayeredForgeConfig | null = null;
   try {
-    const result = await explorer.search(join(userConfigDir, "forge2"));
+    const forgeConfigDir = join(getForgeHomePath(), "config");
+    const result = await explorer.search(forgeConfigDir);
     userConfig = result?.config || null;
   } catch (err) {
     // User config is optional

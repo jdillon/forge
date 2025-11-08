@@ -15,7 +15,6 @@ import { isColorSupported } from "colorette";
 import { exit, FatalError, ExitNotification } from "./helpers";
 import { exit as runtimeExit } from "./runtime";
 import { initLogging, getGlobalLogger, isLoggingInitialized } from "./logging";
-import { getForgePaths } from "./xdg";
 import { findProjectRoot } from "./project-discovery";
 import type { FilePath, ProjectConfig, ColorMode } from "./types";
 import pkg from "../package.json";
@@ -337,10 +336,8 @@ async function run(): Promise<void> {
 
     // Load minimal config to check dependencies
     const { loadLayeredConfig } = await import("./config-loader");
-    const { config: userConfigDir } = getForgePaths();
     const forgeConfig = await loadLayeredConfig(
       projectConfig.projectRoot,
-      userConfigDir,
     );
 
     log.debug({ dependencies: forgeConfig.dependencies }, "Config loaded");

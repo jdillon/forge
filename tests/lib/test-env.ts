@@ -32,7 +32,7 @@ let isInstalled = false;
  * Test environment configuration
  */
 export interface TestEnvironment {
-  /** Path to test forge home (for XDG_DATA_HOME) */
+  /** Path to test forge home */
   forgeHome: string;
   /** Path to installed forge command */
   forgeCmd: string;

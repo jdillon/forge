@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Forge v2 Installation Script
-# Installs forge to ~/.local/share/forge and creates wrapper at ~/.local/bin/forge
+# Installs forge to ~/.forge and creates wrapper at ~/.local/bin/forge
 
 # Color output (only if terminal supports it)
 if [[ -t 1 ]] && command -v tput &>/dev/null && tput colors &>/dev/null && [[ $(tput colors) -ge 8 ]]; then
@@ -83,10 +83,7 @@ check_command bun "Install Bun from https://bun.sh"
 check_command git "Install Git from https://git-scm.com"
 
 # Determine installation locations
-FORGE_DATA="${XDG_DATA_HOME:-$HOME/.local/share}/forge"
-FORGE_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/forge"
-FORGE_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/forge"
-FORGE_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/forge"
+FORGE_HOME="${FORGE_HOME:-$HOME/.forge}"
 FORGE_BIN="${HOME}/.local/bin"
 FORGE_CMD="${FORGE_BIN}/forge"
 
@@ -122,7 +119,7 @@ echo
 echo "${BOLD}Forge Installation${RESET}"
 echo
 echo "The following will be installed/created:"
-echo "  - Meta-project: ${FORGE_DATA}"
+echo "  - Forge home: ${FORGE_HOME}"
 echo "  - Command: ${FORGE_CMD}"
 echo
 echo "Installation source:"
@@ -145,10 +142,10 @@ if [[ "$AUTO_CONFIRM" != "true" ]]; then
   echo
 fi
 
-# Create meta project directory
-info "Creating meta project..."
-mkdir -p "${FORGE_DATA}"
-cd "${FORGE_DATA}"
+# Create forge home directory with subdirectories
+info "Creating forge home..."
+mkdir -p "${FORGE_HOME}"/{config,state,cache,logs}
+cd "${FORGE_HOME}"
 
 # Create or update package.json for meta project
 cat > package.json << 'EOF'
@@ -196,7 +193,7 @@ if ! bun add "${PACKAGE_SPEC}"; then
 fi
 
 # Verify installation - check for the package
-FORGE_PKG_DIR="${FORGE_DATA}/node_modules/@planet57/forge"
+FORGE_PKG_DIR="${FORGE_HOME}/node_modules/@planet57/forge"
 if [[ ! -d "${FORGE_PKG_DIR}" ]]; then
   die "Installation verification failed: package not found at ${FORGE_PKG_DIR}"
 fi
@@ -204,8 +201,8 @@ fi
 # Find the CLI entry point
 if [[ -f "${FORGE_PKG_DIR}/bin/forge" ]]; then
   FORGE_CLI="${FORGE_PKG_DIR}/bin/forge"
-elif [[ -f "${FORGE_DATA}/node_modules/.bin/forge" ]]; then
-  FORGE_CLI="${FORGE_DATA}/node_modules/.bin/forge"
+elif [[ -f "${FORGE_HOME}/node_modules/.bin/forge" ]]; then
+  FORGE_CLI="${FORGE_HOME}/node_modules/.bin/forge"
 else
   die "Installation verification failed: could not find forge CLI binary"
 fi

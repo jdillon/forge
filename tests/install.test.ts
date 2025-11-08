@@ -92,6 +92,8 @@ async function runInstall(ctx: TestContext, testHome: string) {
       FORGE_REPO: `file://${testTarballPath}`,
       FORGE_BRANCH: "",
       BUN_INSTALL_CACHE_DIR: bunCacheDir,
+      // Clear FORGE_HOME so install.sh uses HOME-based default
+      FORGE_HOME: "",
     },
     logDir: logs.logDir,
     logBaseName: "install",
@@ -133,6 +135,8 @@ async function runUninstall(ctx: TestContext, testHome: string, purge = false) {
     env: {
       ...process.env,
       HOME: testHome,
+      // Clear FORGE_HOME so uninstall.sh uses HOME-based default
+      FORGE_HOME: "",
     },
     logDir: logs.logDir,
     logBaseName: "uninstall",
@@ -166,16 +170,16 @@ describe('Installation and Uninstallation', () => {
     expect(result.exitCode).toBe(0);
 
     // Check that directories were created
-    const shareDir = join(testHome, ".local/share/forge");
+    const forgeHome = join(testHome, ".forge");
     const binDir = join(testHome, ".local/bin");
     const forgeSymlink = join(binDir, "forge");
     const bootstrap = join(
-      shareDir,
+      forgeHome,
       "node_modules/@planet57/forge/bin/forge",
     );
 
     // Use stat() to check directories exist
-    const shareDirExists = await stat(shareDir)
+    const forgeHomeExists = await stat(forgeHome)
       .then((s) => s.isDirectory())
       .catch(() => false);
     const binDirExists = await stat(binDir)
@@ -192,7 +196,7 @@ describe('Installation and Uninstallation', () => {
       .then((s) => s.isSymbolicLink())
       .catch(() => false);
 
-    expect(shareDirExists).toBe(true);
+    expect(forgeHomeExists).toBe(true);
     expect(binDirExists).toBe(true);
     expect(bootstrapExists).toBe(true);
     expect(forgeIsSymlink).toBe(true);
@@ -274,10 +278,10 @@ describe('Installation and Uninstallation', () => {
     expect(installResult.exitCode).toBe(0);
 
     // Verify things exist
-    const dataDir = join(testHome, ".local/share/forge");
+    const forgeHome = join(testHome, ".forge");
     const forgeCmd = join(testHome, ".local/bin/forge");
 
-    expect(await stat(dataDir).then((s) => s.isDirectory()).catch(() => false)).toBe(true);
+    expect(await stat(forgeHome).then((s) => s.isDirectory()).catch(() => false)).toBe(true);
     expect(await lstat(forgeCmd).then((s) => s.isSymbolicLink()).catch(() => false)).toBe(true);
 
     // Uninstall
@@ -285,7 +289,7 @@ describe('Installation and Uninstallation', () => {
     expect(uninstallResult.exitCode).toBe(0);
 
     // Verify things are removed
-    expect(await stat(dataDir).then(() => true).catch(() => false)).toBe(false);
+    expect(await stat(forgeHome).then(() => true).catch(() => false)).toBe(false);
     expect(await stat(forgeCmd).then(() => true).catch(() => false)).toBe(false);
   }, 60000);
 
@@ -296,7 +300,8 @@ describe('Installation and Uninstallation', () => {
     await runInstall(ctx, testHome);
 
     // Create fake config directory
-    const configDir = join(testHome, ".config/forge");
+    const forgeHome = join(testHome, ".forge");
+    const configDir = join(forgeHome, "config");
     await mkdir(configDir, { recursive: true });
     await Bun.write(join(configDir, "config.yml"), "test: true\n");
 
@@ -316,7 +321,8 @@ describe('Installation and Uninstallation', () => {
     await runInstall(ctx, testHome);
 
     // Create fake config directory
-    const configDir = join(testHome, ".config/forge");
+    const forgeHome = join(testHome, ".forge");
+    const configDir = join(forgeHome, "config");
     await mkdir(configDir, { recursive: true });
     await Bun.write(join(configDir, "config.yml"), "test: true\n");
 
@@ -324,8 +330,8 @@ describe('Installation and Uninstallation', () => {
     const result = await runUninstall(ctx, testHome, true);
     expect(result.exitCode).toBe(0);
 
-    // Config should be removed
-    expect(await stat(configDir).then(() => true).catch(() => false)).toBe(false);
+    // Config should be removed (entire FORGE_HOME removed with --purge)
+    expect(await stat(forgeHome).then(() => true).catch(() => false)).toBe(false);
   }, 60000);
 
 });

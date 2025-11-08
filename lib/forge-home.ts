@@ -1,28 +1,33 @@
 /**
  * Forge Home Management
  *
- * Manages the forge home directory (XDG data directory) where shared
- * dependencies are installed.
+ * Manages the forge home directory where shared dependencies and configuration live.
  *
- * Location: ~/.local/share/forge2/ (or $XDG_DATA_HOME/forge2/)
+ * Location: ~/.forge/ (or $FORGE_HOME)
  * Structure:
  *   - package.json (managed by bun)
  *   - bun.lockb (managed by bun)
  *   - node_modules/ (installed dependencies)
+ *   - config/ (user-level configuration)
+ *   - state/ (user-level state)
+ *   - cache/ (cache data)
+ *   - logs/ (global logs)
  */
 
-import { getForgePaths } from './xdg';
+import { join } from 'path';
+import { homedir } from 'os';
 import { createLogger } from './logging';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { packageManager } from './package-manager';
-import { join } from 'path';
 import { createHash } from 'crypto';
 
 /**
- * Get forge home path (XDG data directory)
+ * Get forge home path
+ * Default: ~/.forge
+ * Override with FORGE_HOME environment variable
  */
 export function getForgeHomePath(): string {
-  return getForgePaths().data;
+  return process.env.FORGE_HOME || join(homedir(), '.forge');
 }
 
 /**

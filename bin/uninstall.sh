@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Forge v2 Uninstallation Script
-# Removes forge installation from ~/.local/share/forge and ~/.local/bin/forge
+# Removes forge installation from ~/.forge and ~/.local/bin/forge
 
 # Color output (only if terminal supports it)
 if [[ -t 1 ]] && command -v tput &>/dev/null && tput colors &>/dev/null && [[ $(tput colors) -ge 8 ]]; then
@@ -67,11 +67,9 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# Determine installation locations (all potential XDG directories)
-FORGE_DATA="${XDG_DATA_HOME:-$HOME/.local/share}/forge"
-FORGE_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/forge"
-FORGE_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/forge"
-FORGE_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/forge"
+# Determine installation locations
+FORGE_HOME="${FORGE_HOME:-$HOME/.forge}"
+FORGE_CONFIG="${FORGE_HOME}/config"
 FORGE_BIN="${HOME}/.local/bin"
 FORGE_CMD="${FORGE_BIN}/forge"
 
@@ -79,21 +77,21 @@ FORGE_CMD="${FORGE_BIN}/forge"
 ITEMS_TO_REMOVE=()
 CONFIG_EXISTS=false
 
-if [[ -d "${FORGE_DATA}" ]]; then
-  ITEMS_TO_REMOVE+=("  - ${FORGE_DATA}")
-fi
-if [[ -d "${FORGE_CONFIG}" ]]; then
-  CONFIG_EXISTS=true
+if [[ -d "${FORGE_HOME}" ]]; then
+  # Check if config subdirectory exists
+  if [[ -d "${FORGE_CONFIG}" ]]; then
+    CONFIG_EXISTS=true
+  fi
+
   if [[ "$PURGE_CONFIG" == "true" ]]; then
-    ITEMS_TO_REMOVE+=("  - ${FORGE_CONFIG}")
+    # Remove entire FORGE_HOME including config
+    ITEMS_TO_REMOVE+=("  - ${FORGE_HOME}")
+  else
+    # Remove everything except config subdirectory
+    ITEMS_TO_REMOVE+=("  - ${FORGE_HOME} (preserving config/)")
   fi
 fi
-if [[ -d "${FORGE_CACHE}" ]]; then
-  ITEMS_TO_REMOVE+=("  - ${FORGE_CACHE}")
-fi
-if [[ -d "${FORGE_STATE}" ]]; then
-  ITEMS_TO_REMOVE+=("  - ${FORGE_STATE}")
-fi
+
 if [[ -L "${FORGE_CMD}" ]] || [[ -f "${FORGE_CMD}" ]]; then
   ITEMS_TO_REMOVE+=("  - ${FORGE_CMD}")
 fi
@@ -116,7 +114,7 @@ echo
 
 # Show notes about what's preserved
 if [[ "$CONFIG_EXISTS" == "true" && "$PURGE_CONFIG" != "true" ]]; then
-  echo "${YELLOW}Note:${RESET} Configuration will be preserved at ${FORGE_CONFIG}"
+  echo "${YELLOW}Note:${RESET} Configuration will be preserved in ${FORGE_CONFIG}"
   echo "      Use --purge to also remove configuration"
   echo
 fi
@@ -133,25 +131,27 @@ if [[ "$AUTO_CONFIRM" != "true" ]]; then
   fi
 fi
 
-# Remove installation (all XDG directories)
-if [[ -d "${FORGE_DATA}" ]]; then
-  info "Removing ${FORGE_DATA}..."
-  rm -rf "${FORGE_DATA}"
-fi
+# Remove installation
+if [[ -d "${FORGE_HOME}" ]]; then
+  if [[ "$PURGE_CONFIG" == "true" ]]; then
+    # Remove everything including config
+    info "Removing ${FORGE_HOME}..."
+    rm -rf "${FORGE_HOME}"
+  else
+    # Remove everything except config subdirectory
+    info "Removing ${FORGE_HOME} (preserving config/)..."
 
-if [[ -d "${FORGE_CONFIG}" && "$PURGE_CONFIG" == "true" ]]; then
-  info "Removing ${FORGE_CONFIG}..."
-  rm -rf "${FORGE_CONFIG}"
-fi
+    # Remove all files and directories except config/
+    find "${FORGE_HOME}" -mindepth 1 -maxdepth 1 ! -name 'config' -exec rm -rf {} +
 
-if [[ -d "${FORGE_CACHE}" ]]; then
-  info "Removing ${FORGE_CACHE}..."
-  rm -rf "${FORGE_CACHE}"
-fi
-
-if [[ -d "${FORGE_STATE}" ]]; then
-  info "Removing ${FORGE_STATE}..."
-  rm -rf "${FORGE_STATE}"
+    # If FORGE_HOME is now empty except for config/, and config/ is empty, remove it all
+    if [[ ! -d "${FORGE_CONFIG}" ]] || [[ -z "$(ls -A "${FORGE_CONFIG}" 2>/dev/null)" ]]; then
+      if [[ $(find "${FORGE_HOME}" -mindepth 1 | wc -l) -eq 0 ]] || \
+         [[ $(find "${FORGE_HOME}" -mindepth 1 -maxdepth 1 | wc -l) -eq 1 && -d "${FORGE_CONFIG}" && -z "$(ls -A "${FORGE_CONFIG}")" ]]; then
+        rm -rf "${FORGE_HOME}"
+      fi
+    fi
+  fi
 fi
 
 if [[ -L "${FORGE_CMD}" ]] || [[ -f "${FORGE_CMD}" ]]; then

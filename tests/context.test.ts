@@ -44,6 +44,7 @@ describe('ForgeContext', () => {
 
     const result = await runForge({
       args: ['--root', fixtureRoot, '--log-format', 'json', 'test', 'context', outputFile],
+      env: { NO_COLOR: '' }, // Unset NO_COLOR to test actual auto-detection
       logDir: logs.logDir,
       logBaseName: logs.logBaseName,
     });

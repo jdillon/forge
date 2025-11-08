@@ -29,7 +29,7 @@ export type {
 
 export { createLogger } from './logging/logger';
 export { die, exit, error } from './helpers';
-export { getForgePaths } from './xdg';
+export { getForgeHomePath } from './forge-home';
 
 // ============================================================================
 // Runtime utilities

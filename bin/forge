@@ -17,16 +17,17 @@ script_dir="$(cd "$(dirname "${script_path}")" && pwd)"
 # Capture user's current working directory (fully resolved)
 export FORGE_USER_DIR="$(pwd -P)"
 
-# Set FORGE_NODE_MODULES if not already set (e.g., by tests)
+# Set FORGE_HOME and FORGE_NODE_MODULES if not already set (e.g., by tests)
+if [[ -z "${FORGE_HOME:-}" ]]; then
+  export FORGE_HOME="${HOME}/.forge"
+fi
+
 if [[ -z "${FORGE_NODE_MODULES:-}" ]]; then
-  forge_home="${XDG_DATA_HOME:-$HOME/.local/share}/forge"
-  forge_node_modules="${forge_home}/node_modules"
-  export FORGE_NODE_MODULES="${forge_node_modules}"
+  export FORGE_NODE_MODULES="${FORGE_HOME}/node_modules"
 fi
 
 # Installed mode - use forge-home
-forge_home="${XDG_DATA_HOME:-$HOME/.local/share}/forge"
-forge_cli="${forge_home}/node_modules/@planet57/forge/lib/cli.ts"
+forge_cli="${FORGE_HOME}/node_modules/@planet57/forge/lib/cli.ts"
 
 if [[ ! -f "${forge_cli}" ]]; then
   echo "ERROR: Forge not found at ${forge_cli}" >&2
@@ -46,10 +47,12 @@ run_forge() {
     export FORGE_RESTARTED=1
   fi
 
-  # Use --cwd to set Bun's working directory to forge_home
-  # This makes Bun find the config files (bunfig.toml, tsconfig.json) in forge_home
+  # Use --cwd to set Bun's working directory to FORGE_HOME
+  # This makes Bun find the config files (bunfig.toml, tsconfig.json) in FORGE_HOME
   # User's actual cwd remains unchanged in FORGE_USER_DIR
-  bun --cwd="${forge_home}" run "${forge_cli}" "${@:2}"
+  # Use --preserve-symlinks to prevent Bun from resolving through symlinks
+  # This allows user commands symlinked into node_modules to resolve forge correctly
+  bun --cwd="${FORGE_HOME}" run --preserve-symlinks "${forge_cli}" "${@:2}"
 }
 
 # Run forge and capture exit code

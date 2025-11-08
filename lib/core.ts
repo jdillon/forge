@@ -9,7 +9,6 @@ import { existsSync } from 'fs';
 import { Command } from 'commander';
 import { StateManager } from './state';
 import { die } from './helpers';
-import { getForgePaths } from './xdg';
 import { getLoggerConfig, createLogger } from './logging';
 import { rewriteModulePath } from './module-symlink';
 import type pino from 'pino';
@@ -156,9 +155,8 @@ export class Forge {
 
     // Load layered config (user + project + local)
     const { loadLayeredConfig } = await import('./config-loader');
-    const { config: userConfigDir } = getForgePaths();
 
-    this.config = await loadLayeredConfig(this.projectConfig.projectRoot, userConfigDir);
+    this.config = await loadLayeredConfig(this.projectConfig.projectRoot);
 
     // Verify we got a valid config
     if (!this.config) {
