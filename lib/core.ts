@@ -48,38 +48,24 @@ function deriveGroupName(modulePath: string): string {
 }
 
 /**
- * Auto-discover ForgeCommands from a module's exports
- * Returns: { groupName, description, commands }
+ * Discover ForgeCommands from a module's exports
+ *
+ * Extracts command definitions from:
+ * - Named exports (e.g., export const myCmd: ForgeCommand)
+ * - Default export (if it's an object containing commands)
+ * - __module__ metadata for group name and description
+ *
+ * @param module - The imported module object
+ * @param defaultGroupName - Default group name if not specified in __module__
+ * @returns Object with groupName, description, and discovered commands
  */
-export async function loadModule(
-  modulePath: string,
-  forgeDir: string
-): Promise<{ groupName: string | false; description?: string; commands: Record<string, ForgeCommand> }> {
-  const debug = process.env.FORGE_DEBUG === '1' || process.argv.includes('--debug');
+export function discoverCommands(
+  module: any,
+  defaultGroupName?: string | false
+): { groupName: string | false; description?: string; commands: Record<string, ForgeCommand> } {
   const commands: Record<string, ForgeCommand> = {};
-  let groupName: string | false = deriveGroupName(modulePath);
+  let groupName: string | false = defaultGroupName ?? false;
   let description: string | undefined;
-
-  log.debug({ modulePath, groupName }, 'Loading module');
-
-  // Resolve module path with priority: local → shared
-  const { resolveModule } = await import('./module-resolver');
-  const fullPath = await resolveModule(modulePath, forgeDir);
-
-  log.debug(`CWD: ${process.cwd()}`);
-
-  log.debug({ fullPath }, 'Module resolved');
-
-  // Rewrite path to go through symlink in node_modules
-  // This ensures user commands import forge from the correct instance
-  // Requires bun --preserve-symlinks
-  const symlinkPath = await rewriteModulePath(fullPath, forgeDir);
-  log.debug({ original: fullPath, symlink: symlinkPath }, 'Using symlinked path');
-
-  const url = import.meta.resolve(symlinkPath, import.meta.url);
-  log.debug({ url }, 'Importing module');
-
-  const module = await import(url);
 
   // Check for __module__ metadata export
   if (module.__module__) {
@@ -109,9 +95,50 @@ export async function loadModule(
     }
   }
 
-  log.debug({ commands: Object.keys(commands) }, 'Commands discovered');
+  log.debug({ groupName, commands: Object.keys(commands) }, 'Commands discovered');
 
   return { groupName, description, commands };
+}
+
+/**
+ * Load a module from a path and discover its commands
+ *
+ * Handles:
+ * - Module resolution (local .forge2/ or npm package)
+ * - Symlink rewriting for correct forge instance
+ * - Command discovery via discoverCommands()
+ *
+ * @param modulePath - Module path (relative, absolute, or package name)
+ * @param forgeDir - Forge directory for resolution
+ * @returns Object with groupName, description, and discovered commands
+ */
+export async function loadModule(
+  modulePath: string,
+  forgeDir: string
+): Promise<{ groupName: string | false; description?: string; commands: Record<string, ForgeCommand> }> {
+  const defaultGroupName = deriveGroupName(modulePath);
+
+  log.debug({ modulePath, defaultGroupName }, 'Loading module');
+
+  // Resolve module path with priority: local → shared
+  const { resolveModule } = await import('./module-resolver');
+  const fullPath = await resolveModule(modulePath, forgeDir);
+
+  log.debug({ fullPath }, 'Module resolved');
+
+  // Rewrite path to go through symlink in node_modules
+  // This ensures user commands import forge from the correct instance
+  // Requires bun --preserve-symlinks
+  const symlinkPath = await rewriteModulePath(fullPath, forgeDir);
+  log.debug({ original: fullPath, symlink: symlinkPath }, 'Using symlinked path');
+
+  const url = import.meta.resolve(symlinkPath, import.meta.url);
+  log.debug({ url }, 'Importing module');
+
+  const module = await import(url);
+
+  // Discover commands from module exports
+  return discoverCommands(module, defaultGroupName);
 }
 
 // ============================================================================
@@ -125,6 +152,9 @@ export class Forge {
   private projectConfig: ProjectConfig | null;
   public config: ForgeConfig | null = null;  // Public so commands can access settings
   private log: pino.Logger;
+
+  // Top-level commands (no group)
+  public topLevelCommands: Record<string, ForgeCommand> = {};
 
   // Command groups (subcommands)
   public commandGroups: Record<string, {
@@ -144,9 +174,51 @@ export class Forge {
     this.globalOptions = globalOptions;
   }
 
-  async loadConfig(): Promise<void> {
-    const debug = process.env.FORGE_DEBUG === '1' || process.argv.includes('--debug');
+  /**
+   * Register commands from a module into the appropriate location
+   * - groupName === false → top-level commands
+   * - groupName === string → command group
+   *
+   * @param groupName - Group name or false for top-level
+   * @param description - Optional group description
+   * @param commands - Commands to register
+   */
+  private registerCommandGroup(
+    groupName: string | false,
+    description: string | undefined,
+    commands: Record<string, ForgeCommand>
+  ): void {
+    if (groupName === false) {
+      // Top-level commands
+      Object.assign(this.topLevelCommands, commands);
+      log.debug({ commands: Object.keys(commands) }, 'Registered top-level commands');
+    } else {
+      // Command group
+      if (!this.commandGroups[groupName]) {
+        this.commandGroups[groupName] = { commands: {} };
+      }
 
+      if (description) {
+        this.commandGroups[groupName].description = description;
+      }
+
+      Object.assign(this.commandGroups[groupName].commands, commands);
+      log.debug({ groupName, commands: Object.keys(commands) }, 'Registered command group');
+    }
+  }
+
+  /**
+   * Load built-in commands from framework
+   * These are always available, even outside projects
+   */
+  async loadBuiltins(): Promise<void> {
+    log.debug('Loading builtins');
+    const builtins = await import('./builtins');
+    const { groupName, description, commands } = discoverCommands(builtins, false);
+    this.registerCommandGroup(groupName, description, commands);
+  }
+
+  async loadConfig(): Promise<void> {
     // Skip loading config if no project root (for --help/--version)
     if (!this.projectConfig?.projectRoot) {
       this.config = null;
@@ -163,36 +235,22 @@ export class Forge {
       die(`No config found in ${this.projectConfig.forgeDir}`);
     }
 
-    log.debug({ modules: this.config.modules }, 'Loading modules');
+    log.debug({ modules: this.config.modules }, 'Loading user modules');
 
-    // Auto-discover commands from modules
+    // Auto-discover commands from user modules
     if (this.config?.modules) {
       for (const modulePath of this.config.modules) {
         const { groupName, description, commands } = await loadModule(modulePath, this.projectConfig.forgeDir);
-
-        if (groupName !== false) {
-          // Store commands under group
-          if (!this.commandGroups[groupName]) {
-            this.commandGroups[groupName] = { commands: {} };
-          }
-
-          // Set description if provided
-          if (description) {
-            this.commandGroups[groupName].description = description;
-          }
-
-          // Merge discovered commands (last wins)
-          Object.assign(this.commandGroups[groupName].commands, commands);
-        }
-        // else: groupName === false means top-level, skip for now
+        this.registerCommandGroup(groupName, description, commands);
       }
     }
 
+    const topLevel = Object.keys(this.topLevelCommands);
     const groups = Object.keys(this.commandGroups);
     const groupDetails = Object.fromEntries(
       Object.entries(this.commandGroups).map(([group, data]) => [group, Object.keys(data.commands)])
     );
-    log.debug({ groups, groupDetails }, 'Command groups registered');
+    log.debug({ topLevel, groups, groupDetails }, 'Commands registered');
   }
 
   /**
@@ -200,7 +258,18 @@ export class Forge {
    * This is the bridge between Forge and Commander
    */
   async registerCommands(program: Command): Promise<void> {
-    log.debug({ groupCount: Object.keys(this.commandGroups).length }, 'Registering command groups with Commander');
+    log.debug(
+      { topLevelCount: Object.keys(this.topLevelCommands).length, groupCount: Object.keys(this.commandGroups).length },
+      'Registering commands with Commander'
+    );
+
+    // Register top-level commands first
+    for (const [cmdName, forgeCmd] of Object.entries(this.topLevelCommands)) {
+      const cmd = this.buildCommanderCommand(cmdName, forgeCmd);
+      cmd.copyInheritedSettings(program);  // Copy inherited settings from program
+      program.addCommand(cmd);
+      log.debug({ cmdName }, 'Registered top-level command');
+    }
 
     // Register command groups as subcommands
     for (const [groupName, group] of Object.entries(this.commandGroups)) {

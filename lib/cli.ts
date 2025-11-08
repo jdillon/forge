@@ -238,10 +238,11 @@ async function buildRealCLI(
   // Load core module dynamically (after logging initialized)
   const { Forge } = await import("./core");
 
-  // Create Forge instance, load config, and register commands with Commander
+  // Create Forge instance, load builtins, load user config, and register commands
   const forge = new Forge(projectConfig, bootstrapConfig);
 
-  await forge.loadConfig();
+  await forge.loadBuiltins();      // Always available (even outside projects)
+  await forge.loadConfig();        // User modules (skipped if no project)
   await forge.registerCommands(program);
 
   return program;
