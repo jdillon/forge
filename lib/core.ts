@@ -4,11 +4,9 @@
  * Pure Bun/TypeScript implementation
  */
 
-import { join, dirname, resolve } from 'path';
-import { existsSync } from 'fs';
 import { Command } from 'commander';
 import { StateManager } from './state';
-import { die } from './helpers';
+import { die, ExitNotification } from './helpers';
 import { getLoggerConfig, createLogger } from './logging';
 import { rewriteModulePath } from './module-symlink';
 import type pino from 'pino';
@@ -17,8 +15,8 @@ import type {
   ForgeConfig,
   ForgeModuleMetadata,
   ForgeContext,
-  ProjectConfig
 } from './types';
+import type { ResolvedConfig } from './config-resolver';
 
 const log = createLogger('core');
 
@@ -149,7 +147,7 @@ export async function loadModule(
  * Main forge runner
  */
 export class Forge {
-  private projectConfig: ProjectConfig | null;
+  private resolvedConfig: ResolvedConfig;
   public config: ForgeConfig | null = null;  // Public so commands can access settings
   private log: pino.Logger;
 
@@ -165,13 +163,26 @@ export class Forge {
   public state: StateManager;
   public globalOptions: Record<string, any>;
 
-  constructor(projectConfig: ProjectConfig | null, globalOptions: Record<string, any> = {}) {
+  constructor(config: ResolvedConfig) {
     this.log = createLogger('forge');
-    this.log.debug({ projectConfig });
+    this.log.debug({ config });
 
-    this.projectConfig = projectConfig;
-    this.state = projectConfig ? new StateManager(projectConfig.projectRoot) : null as any;
-    this.globalOptions = globalOptions;
+    this.resolvedConfig = config;
+
+    // Create state manager if project present
+    this.state = config.projectPresent && config.projectRoot
+      ? new StateManager(config.projectRoot)
+      : null as any;
+
+    // Store bootstrap options as global options
+    this.globalOptions = {
+      debug: config.debug,
+      quiet: config.quiet,
+      silent: config.silent,
+      logLevel: config.logLevel,
+      logFormat: config.logFormat,
+      colorMode: config.colorMode,
+    };
   }
 
   /**
@@ -208,39 +219,71 @@ export class Forge {
   }
 
   /**
-   * Load built-in commands from framework
-   * These are always available, even outside projects
+   * Initialize Forge instance
+   *
+   * Handles:
+   * - Loading builtin commands (always)
+   * - Symlink setup (if project present)
+   * - Loading config and user modules (if project present)
+   * - Dependency installation (if project present)
+   *
+   * @throws ExitNotification if restart needed after dependency installation
    */
-  async loadBuiltins(): Promise<void> {
+  async initialize(): Promise<void> {
+    // 1. Always load builtins (available everywhere)
     log.debug('Loading builtins');
     const builtins = await import('./builtins');
     const { groupName, description, commands } = discoverCommands(builtins, false);
     this.registerCommandGroup(groupName, description, commands);
-  }
 
-  async loadConfig(): Promise<void> {
-    // Skip loading config if no project root (for --help/--version)
-    if (!this.projectConfig?.projectRoot) {
+    // TODO: Implement project-context filtering for builtins
+    // Some builtins should only be available in project context
+    // Need per-command flag: { requiresProject: boolean }
+
+    // 2. If no project, we're done
+    if (!this.resolvedConfig.projectPresent || !this.resolvedConfig.projectRoot || !this.resolvedConfig.forgeDir) {
+      log.debug('No project present, skipping module/dependency loading');
       this.config = null;
       return;
     }
 
-    // Load layered config (user + project + local)
-    const { loadLayeredConfig } = await import('./config-loader');
+    // 3. Setup symlink for .forge2 directory
+    const { symlinkForgeDir } = await import('./module-symlink');
+    await symlinkForgeDir(this.resolvedConfig.forgeDir);
 
-    this.config = await loadLayeredConfig(this.projectConfig.projectRoot);
-
-    // Verify we got a valid config
-    if (!this.config) {
-      die(`No config found in ${this.projectConfig.forgeDir}`);
-    }
+    // 4. Build ForgeConfig from ResolvedConfig
+    this.config = {
+      modules: this.resolvedConfig.modules || [],
+      dependencies: this.resolvedConfig.dependencies,
+      settings: this.resolvedConfig.settings,
+      installMode: this.resolvedConfig.installMode,
+      offline: this.resolvedConfig.offline,
+    };
 
     log.debug({ modules: this.config.modules }, 'Loading user modules');
 
-    // Auto-discover commands from user modules
-    if (this.config?.modules) {
+    // 5. Auto-install dependencies if needed
+    if (this.config.dependencies && this.config.dependencies.length > 0) {
+      const { autoInstallDependencies, RESTART_EXIT_CODE } = await import('./auto-install');
+      const needsRestart = await autoInstallDependencies(
+        this.config,
+        this.resolvedConfig.forgeDir,
+        this.resolvedConfig.isRestarted,
+      );
+
+      if (needsRestart) {
+        // Signal restart via ExitNotification
+        throw new ExitNotification(RESTART_EXIT_CODE);
+      }
+    }
+
+    // 6. Load user modules
+    if (this.config.modules && this.config.modules.length > 0) {
       for (const modulePath of this.config.modules) {
-        const { groupName, description, commands } = await loadModule(modulePath, this.projectConfig.forgeDir);
+        const { groupName, description, commands } = await loadModule(
+          modulePath,
+          this.resolvedConfig.forgeDir
+        );
         this.registerCommandGroup(groupName, description, commands);
       }
     }

@@ -10,13 +10,13 @@
 
 import { Command } from "commander";
 import { styleText } from "node:util";
-import { resolve } from "node:path";
 import { isColorSupported } from "colorette";
 import { exit, FatalError, ExitNotification } from "./helpers";
 import { exit as runtimeExit } from "./runtime";
 import { initLogging, getGlobalLogger, isLoggingInitialized } from "./logging";
-import { findProjectRoot } from "./project-discovery";
-import type { FilePath, ProjectConfig, ColorMode } from "./types";
+import { resolveConfig } from "./config-resolver";
+import type { ResolvedConfig } from "./config-resolver";
+import type { FilePath, ColorMode } from "./types";
 import pkg from "../package.json";
 
 // ============================================================================
@@ -158,20 +158,6 @@ function bootstrap(cliArgs: string[]): BootstrapConfig {
   };
 }
 
-/**
- * Create ProjectConfig with fully resolved paths
- * All paths are resolved to absolute paths (no ./ or ../ segments)
- */
-function createProjectConfig(
-  projectRoot: FilePath,
-  userDir: FilePath,
-): ProjectConfig {
-  return {
-    projectRoot: resolve(projectRoot),
-    forgeDir: resolve(projectRoot, ".forge2"),
-    userDir: resolve(userDir),
-  };
-}
 
 // ============================================================================
 // Real CLI Phase
@@ -181,10 +167,7 @@ function createProjectConfig(
  * Build full CLI with subcommands
  * Strict parsing - Commander validates everything naturally
  */
-async function buildRealCLI(
-  bootstrapConfig: BootstrapConfig,
-  projectConfig: ProjectConfig | null,
-): Promise<Command> {
+async function buildRealCLI(config: ResolvedConfig): Promise<Command> {
   const program = new Command();
 
   program
@@ -196,15 +179,9 @@ async function buildRealCLI(
   addTopLevelOptions(program);
 
   // Determine if color should be enabled using colorette detection
-  const useColor = resolveColorMode(bootstrapConfig.colorMode);
+  const useColor = resolveColorMode(config.colorMode);
 
-  // Previously suppressed Commander's error output to show our own terse errors
-  // But this also suppressed help output when command groups are invoked without subcommands
-  // Commented out for now - may need selective suppression in the future
-  // program.configureOutput({
-  //   writeErr: () => {}, // Suppress
-  // });
-
+  // Configure help formatting
   const helpConfig: any = {
     sortSubcommands: true,
     sortOptions: true,
@@ -222,9 +199,6 @@ async function buildRealCLI(
   }
 
   program.configureHelp(helpConfig);
-
-  // NO .allowUnknownOption() - let Commander validate naturally
-  // NO .allowExcessArguments() - let Commander validate naturally
   program.exitOverride(); // Don't exit, throw instead
 
   // Action for main program - fires ONLY when no subcommand is provided
@@ -232,17 +206,19 @@ async function buildRealCLI(
     console.error("ERROR: subcommand required");
     console.error(); // Blank line
     program.outputHelp();
-    exit(1); // Exit with error code (user didn't provide command)
+    exit(1);
   });
 
   // Load core module dynamically (after logging initialized)
   const { Forge } = await import("./core");
 
-  // Create Forge instance, load builtins, load user config, and register commands
-  const forge = new Forge(projectConfig, bootstrapConfig);
+  // Create Forge instance and initialize
+  // Forge handles: builtin loading, module loading, dependency installation
+  // Throws ExitNotification if restart needed
+  const forge = new Forge(config);
+  await forge.initialize();
 
-  await forge.loadBuiltins();      // Always available (even outside projects)
-  await forge.loadConfig();        // User modules (skipped if no project)
+  // Register commands with Commander
   await forge.registerCommands(program);
 
   return program;
@@ -290,15 +266,13 @@ async function run(): Promise<void> {
   // Example: ['bun', 'cli.ts', 'website', 'ping'] → ['website', 'ping']
   const cliArgs = process.argv.slice(2);
 
-  // Phase 1: Bootstrap - extract config (permissive)
-  const config = bootstrap(cliArgs);
+  // Phase 1: Bootstrap - extract CLI options (permissive)
+  const bootstrapConfig = bootstrap(cliArgs);
 
-  // FIXME: sort out where we change dirs
-  // if (config.userDir !== process.cwd()) {
-  //   process.chdir(config.userDir);
-  // }
+  // Phase 2: Config Resolution - discover project, load config
+  const config = await resolveConfig(bootstrapConfig);
 
-  // Initialize logger before loading modules (modules create loggers at import time)
+  // Phase 3: Initialize Logging
   const logLevel =
     config.logLevel ||
     (config.debug ? "debug" : config.quiet ? "warn" : "info");
@@ -313,80 +287,26 @@ async function run(): Promise<void> {
 
   // Log environment details for debugging
   log.debug(`cwd: ${process.cwd()}`);
+  log.debug(`projectPresent: ${config.projectPresent}`);
+  log.debug(`projectRoot: ${config.projectRoot || "(none)"}`);
   log.debug(`FORGE_USER_DIR: ${process.env.FORGE_USER_DIR}`);
-  log.debug(`FORGE_NODE_MODULES: ${process.env.FORGE_NODE_MODULES}`);
-  log.debug(`NODE_PATH: ${process.env.NODE_PATH}`);
 
-  // Phase 1.5: Project discovery
-  const projectRoot = await findProjectRoot({
-    rootPath: config.root,
-    startDir: config.userDir,
-  });
-  log.debug(`Project root: ${projectRoot}`);
-
-  // Create ProjectConfig with fully resolved paths
-  let projectConfig: ProjectConfig | null = null;
-  if (projectRoot) {
-    projectConfig = createProjectConfig(projectRoot, config.userDir);
-    log.debug(`Project config created: ${projectConfig.projectRoot}`);
-
-    // Create symlink for .forge2 directory in node_modules
-    // This allows user commands to import forge with correct module instance
-    const { symlinkForgeDir } = await import("./module-symlink");
-    await symlinkForgeDir(projectConfig.forgeDir);
-
-    // Load minimal config to check dependencies
-    const { loadLayeredConfig } = await import("./config-loader");
-    const forgeConfig = await loadLayeredConfig(
-      projectConfig.projectRoot,
-    );
-
-    log.debug({ dependencies: forgeConfig.dependencies }, "Config loaded");
-
-    // Auto-install dependencies if needed
-    const { autoInstallDependencies, RESTART_EXIT_CODE } = await import(
-      "./auto-install"
-    );
-    const needsRestart = await autoInstallDependencies(
-      forgeConfig,
-      projectConfig.forgeDir,
-      config.isRestarted,
-    );
-
-    log.debug({ needsRestart }, "Dependency sync complete");
-
-    if (needsRestart) {
-      // Exit with magic code - wrapper will restart us
-      exit(RESTART_EXIT_CODE);
-    }
-  }
-
-  // Phase 2: Build and run real CLI (strict)
-  const program = await buildRealCLI(config, projectConfig);
-
-  log.debug(
-    { commandNames: program.commands.map((c) => c.name()), cliArgs },
-    "About to parse CLI args",
-  );
-
+  // Phase 4: Build and execute CLI
+  // Forge handles initialization, dependencies, restart signaling
   try {
+    const program = await buildRealCLI(config);
+
+    log.debug(
+      { commandNames: program.commands.map((c) => c.name()), cliArgs },
+      "About to parse CLI args",
+    );
+
     await program.parseAsync(cliArgs, { from: "user" });
   } catch (err: any) {
     // Handle Commander errors
-    log.debug(
-      { errorCode: err.code, errorMessage: err.message },
-      "Commander error caught",
-    );
-
-    // All help/version requests are successful exits (code 0)
-    // - commander.helpDisplayed = explicit --help flag
-    // - commander.help = implicit help (e.g., command group without subcommand)
-    // - commander.version = --version flag
-    if (
-      err.code === "commander.help" ||
-      err.code === "commander.helpDisplayed" ||
-      err.code === "commander.version"
-    ) {
+    if (err.code === "commander.help" ||
+        err.code === "commander.helpDisplayed" ||
+        err.code === "commander.version") {
       exit(0);
     }
     if (err.code === "commander.missingArgument") {
@@ -396,12 +316,11 @@ async function run(): Promise<void> {
       showError(err.message);
     }
     if (err.code === "commander.excessArguments") {
-      // Unknown command - extract from program.args (which has unparsed args)
-      // program.args still contains the excess arguments that caused the error
+      // Unknown command - extract from error
+      const program = err.parent || { args: [] };
       const excessArgs = program.args || [];
-      // Find first arg that doesn't start with '-' and isn't a known option value
       const unknownCmd = excessArgs.find(
-        (arg) =>
+        (arg: string) =>
           !arg.startsWith("-") &&
           arg !== process.argv[0] &&
           arg !== process.argv[1],
@@ -409,13 +328,11 @@ async function run(): Promise<void> {
       if (unknownCmd) {
         showError(`unknown command '${unknownCmd}'`);
       } else {
-        showError(
-          "unknown command. Run 'forge --help' to see available commands",
-        );
+        showError("unknown command. Run 'forge --help' to see available commands");
       }
     }
 
-    // Other Commander errors - rethrow
+    // Other errors - rethrow
     throw err;
   }
 }
