@@ -13,38 +13,6 @@ import { cosmiconfig } from "cosmiconfig";
 import { findProjectRoot } from "./project-discovery";
 import type { FilePath, ColorMode, ForgeConfig } from "./types";
 
-// ============================================================================
-// Types
-// ============================================================================
-
-/**
- * Resolved configuration containing all data needed to initialize Forge
- * Combines bootstrap options, project discovery, and loaded config
- */
-export interface ResolvedConfig {
-  // Project information
-  projectPresent: boolean;
-  projectRoot?: FilePath;
-  forgeDir?: FilePath;
-  userDir: FilePath;
-
-  // Bootstrap options (from CLI args)
-  debug: boolean;
-  quiet: boolean;
-  silent: boolean;
-  logLevel: string;
-  logFormat: "json" | "pretty";
-  colorMode: ColorMode;
-  isRestarted: boolean;
-
-  // From .forge/config.yml (if project present)
-  modules?: string[];
-  dependencies?: string[];
-  settings?: Record<string, Record<string, any>>;
-  installMode?: "auto" | "manual" | "ask";
-  offline?: boolean;
-}
-
 /**
  * Bootstrap configuration from CLI argument parsing
  * This is what cli.ts passes to us
@@ -105,15 +73,15 @@ async function bunTypescriptLoader(filepath: string): Promise<any> {
  * 2. Load .forge/config.yml if project exists
  * 3. DEFERRED: Merge with user config (~/.forge/config) and defaults
  * 4. DEFERRED: Apply ENV var overrides beyond existing FORGE_* vars
- * 5. Return ResolvedConfig
+ * 5. Return ForgeConfig
  *
  * @param bootstrapConfig - Bootstrap options from CLI args
- * @returns ResolvedConfig with all data needed for Forge initialization
+ * @returns ForgeConfig with all data needed for Forge initialization
  * @throws Error on critical failures (e.g., YAML parse error)
  */
 export async function resolveConfig(
   bootstrapConfig: BootstrapConfig,
-): Promise<ResolvedConfig> {
+): Promise<ForgeConfig> {
   log.debug("Starting config resolution");
   log.debug(`userDir: ${bootstrapConfig.userDir}`);
   log.debug(`root: ${bootstrapConfig.root}`);
@@ -180,8 +148,8 @@ export async function resolveConfig(
   //   - etc.
   // Current: Only FORGE_PROJECT, FORGE_HOME supported
 
-  // 5. Build ResolvedConfig
-  const resolved: ResolvedConfig = {
+  // 5. Build ForgeConfig
+  const config: ForgeConfig = {
     // Project info
     projectPresent: !!projectRoot,
     projectRoot: projectRoot ? resolve(projectRoot) : undefined,
@@ -205,7 +173,7 @@ export async function resolveConfig(
     offline: forgeConfig.offline,
   };
 
-  log.debug(`Config resolved: ${JSON.stringify(resolved, null, 2)}`);
+  log.debug(`Config resolved: ${JSON.stringify(config, null, 2)}`);
 
-  return resolved;
+  return config;
 }

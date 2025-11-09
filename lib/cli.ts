@@ -15,8 +15,7 @@ import { exit, FatalError, ExitNotification } from "./helpers";
 import { exit as runtimeExit } from "./runtime";
 import { initLogging, getGlobalLogger, isLoggingInitialized } from "./logging";
 import { resolveConfig } from "./config-resolver";
-import type { ResolvedConfig } from "./config-resolver";
-import type { FilePath, ColorMode } from "./types";
+import type { FilePath, ColorMode, ForgeConfig } from "./types";
 import pkg from "../package.json";
 
 // ============================================================================
@@ -117,7 +116,7 @@ function bootstrap(cliArgs: string[]): BootstrapConfig {
  * Initialize logging system with resolved config
  * Determines log level from config options and sets up logger
  */
-function initializeLogging(config: ResolvedConfig): void {
+function initializeLogging(config: ForgeConfig): void {
   const logLevel =
     config.logLevel ||
     (config.debug ? "debug" : config.quiet ? "warn" : "info");
@@ -143,7 +142,7 @@ function initializeLogging(config: ResolvedConfig): void {
  * Build full CLI with subcommands
  * Strict parsing - Commander validates everything
  */
-async function buildCLI(config: ResolvedConfig): Promise<Command> {
+async function buildCLI(config: ForgeConfig): Promise<Command> {
   const program = new Command();
 
   program

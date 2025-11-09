@@ -31,7 +31,7 @@ export type ColorMode = 'auto' | 'always' | 'never';
 // Forward declarations
 // ============================================================================
 export interface Forge {
-  config: ForgeConfig | null;
+  config: ForgeConfig;
   state: any; // StateManager
   globalOptions: Record<string, any>;
 }
@@ -80,27 +80,32 @@ export interface ForgeModuleMetadata {
 }
 
 /**
- * Forge configuration structure (.forge2/config.ts)
+ * Forge configuration
+ * Contains all runtime configuration: bootstrap options, project info, and config file contents
  */
 export interface ForgeConfig {
-  // Module paths to auto-discover commands from
-  modules: string[];
+  // Project information
+  projectPresent: boolean;
+  projectRoot?: FilePath;
+  forgeDir?: FilePath;
+  userDir: FilePath;
 
-  // Optional default command when none specified
-  defaultCommand?: string;
+  // Bootstrap options (from CLI args)
+  debug: boolean;
+  quiet: boolean;
+  silent: boolean;
+  logLevel: string;
+  logFormat: "json" | "pretty";
+  colorMode: ColorMode;
+  isRestarted: boolean;
 
-  // Command-specific settings (layered config)
-  // Example: { 'basic.greet': { defaultName: 'World' } }
+  // From .forge2/config.yml (if project present)
+  modules?: string[];
+  dependencies?: string[];
   settings?: Record<string, Record<string, any>>;
-
-  // Phase 2: Dependencies to install to forge home
-  dependencies?: string[];  // e.g., ["@aws-sdk/client-s3@^3.0.0", "lodash@^4.0.0"]
-
-  // Phase 2: Dependency installation mode
-  installMode?: 'auto' | 'manual' | 'ask';  // Default: 'auto'
-
-  // Phase 2: Offline mode
-  offline?: boolean;  // Default: false
+  installMode?: "auto" | "manual" | "ask";
+  offline?: boolean;
+  defaultCommand?: string;
 }
 
 /**
