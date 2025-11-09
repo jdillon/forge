@@ -4,6 +4,7 @@
  * Commands that are always available, no config required
  */
 
+import process from 'node:process';
 import { getForgeHomePath } from './forge-home';
 import type { ForgeCommand, ForgeModuleMetadata } from './types';
 

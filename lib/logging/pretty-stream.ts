@@ -2,6 +2,7 @@
  * Pretty stream formatter for Pino logs
  */
 
+import process from 'node:process';
 import chalk from 'chalk';
 import { Writable } from 'stream';
 

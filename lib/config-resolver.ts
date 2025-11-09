@@ -8,6 +8,7 @@
  * Future: Extended ENV var support beyond current FORGE_* vars
  */
 
+import process from "node:process";
 import { resolve, join, dirname } from "node:path";
 import { existsSync } from "node:fs";
 import { cosmiconfig } from "cosmiconfig";

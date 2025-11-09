@@ -12,3 +12,5 @@ export {
   getLoggerConfig,
   shutdownLogging,
 } from './logger';
+
+export type { Logger } from './logger';

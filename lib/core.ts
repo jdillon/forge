@@ -12,7 +12,7 @@ import { rewriteModulePath, symlinkForgeDir } from './module-symlink';
 import { resolveModule } from './module-resolver';
 import { autoInstallDependencies, RESTART_EXIT_CODE } from './auto-install';
 import * as builtins from './builtins';
-import type pino from 'pino';
+import type { Logger } from './logging';
 import type {
   ForgeCommand,
   ForgeConfig,
@@ -149,7 +149,7 @@ export async function loadModule(
  */
 export class Forge {
   public config: ForgeConfig;  // Public so commands can access
-  private log: pino.Logger;
+  private log: Logger;
 
   // Top-level commands (no group)
   public topLevelCommands: Record<string, ForgeCommand> = {};

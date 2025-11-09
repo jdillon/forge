@@ -4,10 +4,16 @@
  * Uses Pino for structured logging with pretty mode in development
  */
 
+import process from 'node:process';
 import pino from 'pino';
 import pretty from 'pino-pretty';
 import { isColorSupported } from 'colorette';
 import type { ColorMode } from '../types';
+
+/**
+ * Logger type - re-exported to avoid direct pino dependency
+ */
+export type Logger = pino.Logger;
 
 /**
  * Resolve color mode to a boolean for use with pino-pretty

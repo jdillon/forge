@@ -8,6 +8,7 @@
  * 4. CLI Build & Execute: Create Forge, build Commander program, execute
  */
 
+import process from "node:process";
 import { Command } from "commander";
 import { styleText } from "node:util";
 import { isColorSupported } from "colorette";

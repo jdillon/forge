@@ -14,6 +14,7 @@
  *   - logs/ (global logs)
  */
 
+import process from 'node:process';
 import { join } from 'path';
 import { homedir } from 'os';
 import { createLogger } from './logging';

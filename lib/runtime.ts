@@ -10,6 +10,8 @@
  * Future: Switch to Deno by changing imports in this file only
  */
 
+import process from 'node:process';
+
 // ============================================================================
 // Shell Execution
 // ============================================================================
