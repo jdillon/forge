@@ -44,14 +44,21 @@ export function getNodeModulesPath(): string {
  * Ensure forge home exists with package.json and bunfig.toml initialized
  */
 export async function ensureForgeHome(): Promise<void> {
+  const log = createLogger('forge-home');
   const forgeHome = getForgeHomePath();
 
+  log.debug({ forgeHome }, 'Ensuring forge home exists');
+
   if (!existsSync(forgeHome)) {
+    log.debug({ forgeHome }, 'Creating forge home directory');
     mkdirSync(forgeHome, { recursive: true });
+  } else {
+    log.debug({ forgeHome }, 'Forge home already exists');
   }
 
   const pkgPath = join(forgeHome, 'package.json');
   if (!existsSync(pkgPath)) {
+    log.debug({ pkgPath }, 'Initializing package.json');
     // Initialize minimal package.json
     const initialPkg = {
       name: 'forge-home',
@@ -60,6 +67,9 @@ export async function ensureForgeHome(): Promise<void> {
       dependencies: {},
     };
     writeFileSync(pkgPath, JSON.stringify(initialPkg, null, 2) + '\n');
+    log.debug({ pkgPath }, 'Package.json created');
+  } else {
+    log.debug({ pkgPath }, 'Package.json already exists');
   }
 
   // Ensure bunfig.toml exists for bun runtime config
@@ -70,13 +80,17 @@ export async function ensureForgeHome(): Promise<void> {
  * Ensure forge-home has bunfig.toml for bun runtime configuration
  */
 export function ensureBunConfig(): void {
+  const log = createLogger('forge-home');
   const forgeHome = getForgeHomePath();
   const bunfigPath = join(forgeHome, 'bunfig.toml');
 
   // Don't overwrite if exists (user may have customized)
   if (existsSync(bunfigPath)) {
+    log.debug({ bunfigPath }, 'Bunfig already exists, skipping');
     return;
   }
+
+  log.debug({ bunfigPath }, 'Creating bunfig.toml');
 
   const bunfig = `[install]
 exact = true
@@ -87,6 +101,7 @@ auto = "disable"
 `;
 
   writeFileSync(bunfigPath, bunfig);
+  log.debug({ bunfigPath }, 'Bunfig created');
 }
 
 /**
@@ -138,21 +153,38 @@ export async function syncDependencies(
   const log = createLogger('forge-home');
   const forgeHome = getForgeHomePath();
 
-  log.debug({ forgeHome, dependencies, mode }, 'Dependency sync');
+  log.debug({
+    forgeHome,
+    count: dependencies.length,
+    mode
+  }, 'Starting dependency sync');
+  log.debug({ dependencies }, 'Declared dependencies');
 
   await ensureForgeHome();
 
   // Find missing dependencies
-  const missing = dependencies.filter((dep) => !isInstalled(dep));
+  const checkStart = Date.now();
+  const missing = dependencies.filter((dep) => {
+    const installed = isInstalled(dep);
+    log.debug({ dep, installed }, 'Dependency check');
+    return !installed;
+  });
+  const checkDuration = Date.now() - checkStart;
 
-  log.debug({ missing }, 'Missing dependencies check');
+  log.debug({
+    durationMs: checkDuration,
+    total: dependencies.length,
+    missing: missing.length
+  }, 'Dependency check complete');
 
   if (missing.length === 0) {
+    log.debug('All dependencies already installed');
     return false; // Nothing to install
   }
 
   // Handle based on mode
   if (mode === 'manual') {
+    log.debug({ mode, missing }, 'Manual mode, not auto-installing');
     throw new Error(
       `Missing dependencies: ${missing.join(', ')}\n` +
         `Run: forge module install`,
@@ -162,24 +194,39 @@ export async function syncDependencies(
   if (mode === 'ask') {
     // TODO: Implement prompt (Phase 2.4+)
     // For now, fall through to auto mode
-    log.warn('Ask mode not yet implemented, using auto mode');
+    log.warn({ fallback: 'auto' }, 'Ask mode not implemented, using auto');
   }
 
   // Auto mode: Install all missing
-  log.info({ count: missing.length, dependencies: missing }, 'Installing dependencies');
+  log.info({ count: missing.length, dependencies: missing }, 'Installing missing dependencies');
 
+  const installStart = Date.now();
   let anyChanged = false;
+
   for (const dep of missing) {
+    const depStart = Date.now();
     const changed = await installDependency(dep);
-    log.debug({ dep, changed }, 'Dependency install result');
+    const depDuration = Date.now() - depStart;
+
+    log.debug({
+      dep,
+      changed,
+      durationMs: depDuration
+    }, 'Dependency install result');
+
     if (changed) anyChanged = true;
   }
 
-  if (anyChanged) {
-    log.info('Dependencies installed');
-  }
+  const installDuration = Date.now() - installStart;
 
-  log.debug({ anyChanged }, 'Dependency sync result');
+  log.debug({
+    durationMs: installDuration,
+    packagesChanged: anyChanged
+  }, 'Install phase complete');
+
+  if (anyChanged) {
+    log.info('Dependencies installed successfully');
+  }
 
   return anyChanged;
 }

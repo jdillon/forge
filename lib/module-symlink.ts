@@ -21,6 +21,8 @@ const log = createLogger('module-symlink');
  * Returns the path to import through the symlink
  */
 export async function symlinkForgeDir(forgeDir: string): Promise<string> {
+  log.debug({ forgeDir }, 'Creating symlink for forge directory');
+
   // Generate hash from absolute forge dir path (16 chars = 64 bits)
   const hash = createHash('sha256').update(forgeDir).digest('hex').slice(0, 16);
 
@@ -28,39 +30,53 @@ export async function symlinkForgeDir(forgeDir: string): Promise<string> {
   const bucket = hash.slice(0, 2);
   const hashSuffix = hash.slice(2);
 
+  log.debug({ forgeDir, hash, bucket, hashSuffix }, 'Computed symlink hash');
+
   // Symlink location in forge-home node_modules
   const nodeModules = getNodeModulesPath();
   const symlinkDir = join(nodeModules, '.forge-project', bucket);
   const symlinkPath = join(symlinkDir, hashSuffix);
 
+  log.debug({ symlinkPath }, 'Computed symlink path');
+
   // Create .forge-project directory if it doesn't exist
   if (!existsSync(symlinkDir)) {
+    log.debug({ symlinkDir }, 'Creating .forge-project bucket directory');
     await mkdir(symlinkDir, { recursive: true });
-    log.debug({ symlinkDir }, 'Created .forge-project directory');
+    log.debug({ symlinkDir }, 'Bucket directory created');
+  } else {
+    log.debug({ symlinkDir }, 'Bucket directory already exists');
   }
 
   // Check if symlink already exists and points to the right place
   if (existsSync(symlinkPath)) {
     try {
       const target = await readlink(symlinkPath);
+      log.debug({ symlinkPath, target }, 'Symlink exists, checking target');
+
       if (target === forgeDir) {
-        log.debug({ symlinkPath, target }, 'Symlink already exists');
+        log.debug({ symlinkPath, target }, 'Symlink already correct');
         return symlinkPath;
       } else {
-        log.warn({ symlinkPath, target, expected: forgeDir }, 'Symlink exists but points to wrong location');
+        log.warn({
+          symlinkPath,
+          currentTarget: target,
+          expectedTarget: forgeDir
+        }, 'Symlink points to wrong target');
         // Could delete and recreate, but for now just use it
       }
     } catch (e) {
       // Readlink failed, probably not a symlink
-      log.warn({ symlinkPath, error: e }, 'Path exists but is not a symlink');
+      log.warn({ symlinkPath, error: e }, 'Path exists but readlink failed');
     }
   } else {
     // Create the symlink
+    log.debug({ symlinkPath }, 'Symlink does not exist, creating');
     try {
       await symlink(forgeDir, symlinkPath, 'dir');
-      log.debug({ forgeDir, symlinkPath }, 'Created symlink');
+      log.debug({ forgeDir, symlinkPath }, 'Symlink created successfully');
     } catch (e: any) {
-      log.error({ forgeDir, symlinkPath, error: e.message }, 'Failed to create symlink');
+      log.debug({ forgeDir, symlinkPath, error: e.message }, 'Symlink creation failed');
       throw e;
     }
   }
@@ -79,10 +95,19 @@ export async function symlinkForgeDir(forgeDir: string): Promise<string> {
  * Note: The symlink should already exist (created during project setup in cli.ts)
  */
 export async function rewriteModulePath(fullPath: string, forgeDir: string): Promise<string> {
+  log.debug({ fullPath, forgeDir }, 'Checking if path needs rewrite');
+
   // Only rewrite paths that are actually in the .forge2 directory
   if (!fullPath.startsWith(forgeDir)) {
+    log.debug({
+      fullPath,
+      forgeDir,
+      reason: 'path outside forgeDir'
+    }, 'Skipping rewrite');
     return fullPath;
   }
+
+  log.debug({ fullPath }, 'Rewriting path through symlink');
 
   // Symlink should already exist, just compute the path (16 chars = 64 bits)
   const hash = createHash('sha256').update(forgeDir).digest('hex').slice(0, 16);
@@ -98,7 +123,11 @@ export async function rewriteModulePath(fullPath: string, forgeDir: string): Pro
   const relativePath = fullPath.substring(forgeDir.length);
   const rewrittenPath = join(symlinkPath, relativePath);
 
-  log.debug({ original: fullPath, rewritten: rewrittenPath }, 'Rewrote module path');
+  log.debug({
+    original: fullPath,
+    rewritten: rewrittenPath,
+    relativePath
+  }, 'Path rewritten');
 
   return rewrittenPath;
 }

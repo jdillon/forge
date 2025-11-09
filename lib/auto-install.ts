@@ -34,26 +34,39 @@ export async function autoInstallDependencies(
 ): Promise<boolean> {
   const log = createLogger('auto-install');
 
-  log.debug({ isRestarted, hasDependencies: !!config.dependencies }, 'Auto-install check');
+  log.debug({
+    isRestarted,
+    hasDeps: !!config.dependencies,
+    depCount: config.dependencies?.length || 0
+  }, 'Starting auto-install check');
 
   // No dependencies declared
   if (!config.dependencies || config.dependencies.length === 0) {
-    log.debug('No dependencies declared');
+    log.debug('No dependencies declared, skipping');
     return false;
   }
 
   const mode = config.installMode || 'auto';
   const offline = config.offline || false;
 
-  log.debug({ mode, offline }, 'Install settings');
+  log.debug({ mode, offline, isRestarted, depCount: config.dependencies.length }, 'Auto-install settings');
 
   // Offline mode check
   if (offline && mode === 'auto') {
-    // In offline mode with auto install, we can't install
-    // Just check if dependencies are available, fail if not
-    const missing = config.dependencies.filter((dep) => !isInstalled(dep));
+    log.debug({ mode: 'auto', offline: true }, 'Checking dependencies in offline mode');
+
+    const checkStart = Date.now();
+    const missing = config.dependencies.filter((dep) => {
+      const installed = !isInstalled(dep);
+      log.debug({ dep, missing: installed }, 'Offline dependency check');
+      return installed;
+    });
+    const checkDuration = Date.now() - checkStart;
+
+    log.debug({ durationMs: checkDuration, missing: missing.length, total: config.dependencies.length }, 'Offline check complete');
 
     if (missing.length > 0) {
+      log.debug({ missing }, 'Dependencies missing in offline mode');
       throw new Error(
         `Offline mode is enabled but ${missing.length === 1 ? 'dependency is' : 'dependencies are'} missing\n\n` +
           `Missing: ${missing.join(', ')}\n\n` +
@@ -64,15 +77,22 @@ export async function autoInstallDependencies(
       );
     }
 
+    log.debug('All dependencies available in offline mode');
     return false;
   }
 
   try {
+    log.debug('Calling syncDependencies');
+    const syncStart = Date.now();
     const needsRestart = await syncDependencies(config.dependencies, mode);
+    const syncDuration = Date.now() - syncStart;
+
+    log.debug({ durationMs: syncDuration, needsRestart }, 'Dependency sync complete');
 
     if (needsRestart) {
       // If this is already a restarted process, something went wrong
       if (isRestarted) {
+        log.debug({ isRestarted: true, needsRestart: true }, 'ERROR: Dependencies still missing after restart');
         throw new Error(
           `Dependencies were installed but still missing after restart\n\n` +
             `This should not happen. Please report this as a bug.\n\n` +
@@ -84,20 +104,25 @@ export async function autoInstallDependencies(
       }
 
       // First run - signal restart needed
-      log.info('Restarting to pick up dependency changes');
+      log.info('Dependencies changed, restart required');
       return true;
     }
 
+    log.debug('No restart needed');
     return false;
   } catch (err) {
+    log.debug({ mode, error: err }, 'Dependency sync error');
+
     // Handle errors based on mode
     if (mode === 'manual') {
+      log.debug('Manual mode error, rethrowing');
       // Manual mode error - already has good message from syncDependencies
       throw err;
     }
 
     // Auto/ask mode: Show error and suggest manual install
     if (err instanceof Error) {
+      log.debug({ originalMessage: err.message }, 'Wrapping auto-install error');
       throw new Error(
         `Failed to install dependencies: ${err.message}\n\n` +
           `Try running: forge module install`,

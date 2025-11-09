@@ -67,35 +67,57 @@ export function discoverCommands(
   let groupName: string | false = defaultGroupName ?? false;
   let description: string | undefined;
 
+  log.debug({ defaultGroupName }, 'Starting command discovery');
+
   // Check for __module__ metadata export
   if (module.__module__) {
     const metadata = module.__module__ as ForgeModuleMetadata;
+    log.debug({ metadata }, 'Found __module__ metadata');
+
     if (metadata.group !== undefined) {
       groupName = metadata.group;
+      log.debug({ override: groupName }, 'Group name overridden by metadata');
     }
     description = metadata.description;
   }
 
   // First: Check default export (could be object of commands)
   if (module.default && typeof module.default === 'object') {
+    const defaultExportCount = Object.keys(module.default).length;
+    log.debug({ exportCount: defaultExportCount }, 'Scanning default export');
+
     for (const [name, value] of Object.entries(module.default)) {
       if (isForgeCommand(value)) {
         commands[name] = value as ForgeCommand;
+        log.debug({ name, source: 'default export' }, 'Command discovered');
+      } else {
+        log.debug({ name, type: typeof value }, 'Default export entry is not a command');
       }
     }
   }
 
   // Second: Check all named exports
+  const namedExports = Object.keys(module).length;
+  log.debug({ namedExports }, 'Scanning named exports');
+
   for (const [name, value] of Object.entries(module)) {
-    if (name === 'default' || name === '__module__') continue;  // Skip metadata
+    if (name === 'default' || name === '__module__') {
+      log.debug({ name }, 'Skipping metadata export');
+      continue;
+    }
 
     if (isForgeCommand(value)) {
       // Named export becomes command name
       commands[name] = value as ForgeCommand;
+      log.debug({ name, source: 'named export' }, 'Command discovered');
     }
   }
 
-  log.debug({ groupName, commands: Object.keys(commands) }, 'Commands discovered');
+  log.debug({
+    groupName,
+    commandCount: Object.keys(commands).length,
+    commands: Object.keys(commands)
+  }, 'Command discovery complete');
 
   return { groupName, description, commands };
 }
@@ -118,23 +140,36 @@ export async function loadModule(
 ): Promise<{ groupName: string | false; description?: string; commands: Record<string, ForgeCommand> }> {
   const defaultGroupName = deriveGroupName(modulePath);
 
-  log.debug({ modulePath, defaultGroupName }, 'Loading module');
+  log.debug({ modulePath, defaultGroupName, forgeDir }, 'Starting module load');
 
   // Resolve module path with priority: local → shared
+  const resolveStart = Date.now();
   const fullPath = await resolveModule(modulePath, forgeDir);
+  const resolveDuration = Date.now() - resolveStart;
 
-  log.debug({ fullPath }, 'Module resolved');
+  log.debug({ durationMs: resolveDuration, fullPath }, 'Module path resolved');
 
   // Rewrite path to go through symlink in node_modules
   // This ensures user commands import forge from the correct instance
   // Requires bun --preserve-symlinks
+  const symlinkStart = Date.now();
   const symlinkPath = await rewriteModulePath(fullPath, forgeDir);
-  log.debug({ original: fullPath, symlink: symlinkPath }, 'Using symlinked path');
+  const symlinkDuration = Date.now() - symlinkStart;
+
+  log.debug({
+    durationMs: symlinkDuration,
+    original: fullPath,
+    symlinked: symlinkPath
+  }, 'Path rewritten through symlink');
 
   const url = import.meta.resolve(symlinkPath, import.meta.url);
-  log.debug({ url }, 'Importing module');
+  log.debug({ url }, 'Import URL computed');
 
+  const importStart = Date.now();
   const module = await import(url);
+  const importDuration = Date.now() - importStart;
+
+  log.debug({ durationMs: importDuration }, 'Module imported');
 
   // Discover commands from module exports
   return discoverCommands(module, defaultGroupName);
@@ -230,10 +265,19 @@ export class Forge {
    * @throws ExitNotification if restart needed after dependency installation
    */
   async initialize(): Promise<void> {
+    log.debug('Starting Forge initialization');
+
     // 1. Always load builtins (available everywhere)
-    log.debug('Loading builtins');
+    log.debug('Phase 1: Loading builtins');
+    const builtinStart = Date.now();
     const { groupName, description, commands } = discoverCommands(builtins, false);
     this.registerCommandGroup(groupName, description, commands);
+    const builtinDuration = Date.now() - builtinStart;
+
+    log.debug({
+      durationMs: builtinDuration,
+      commandCount: Object.keys(commands).length
+    }, 'Builtins loaded');
 
     // TODO: Implement project-context filtering for builtins
     // Some builtins should only be available in project context
@@ -241,47 +285,84 @@ export class Forge {
 
     // 2. If no project, we're done
     if (!this.config.projectPresent || !this.config.projectRoot || !this.config.forgeDir) {
-      log.debug('No project present, skipping module/dependency loading');
+      log.debug({
+        projectPresent: this.config.projectPresent,
+        projectRoot: this.config.projectRoot
+      }, 'No project context, skipping module loading');
       return;
     }
 
-    // 3. Setup symlink for .forge2 directory
-    await symlinkForgeDir(this.config.forgeDir);
+    log.debug({
+      projectRoot: this.config.projectRoot,
+      forgeDir: this.config.forgeDir
+    }, 'Project context available');
 
-    log.debug({ modules: this.config.modules }, 'Loading user modules');
+    // 3. Setup symlink for .forge2 directory
+    log.debug('Phase 2: Setting up .forge2 symlink');
+    const symlinkStart = Date.now();
+    await symlinkForgeDir(this.config.forgeDir);
+    const symlinkDuration = Date.now() - symlinkStart;
+
+    log.debug({ durationMs: symlinkDuration }, 'Symlink setup complete');
 
     // 4. Auto-install dependencies if needed
     if (this.config.dependencies && this.config.dependencies.length > 0) {
+      log.debug({ count: this.config.dependencies.length }, 'Phase 3: Checking dependencies');
+      const depsStart = Date.now();
+
       const needsRestart = await autoInstallDependencies(
         this.config,
         this.config.forgeDir,
         this.config.isRestarted,
       );
 
+      const depsDuration = Date.now() - depsStart;
+      log.debug({ durationMs: depsDuration, needsRestart }, 'Dependency check complete');
+
       if (needsRestart) {
-        log.debug('Dependencies installed, signaling restart');
+        log.debug('Dependencies installed, requesting restart');
         // Signal restart via ExitNotification
         throw new ExitNotification(RESTART_EXIT_CODE);
       }
+    } else {
+      log.debug('No dependencies declared, skipping');
     }
 
     // 5. Load user modules
     if (this.config.modules && this.config.modules.length > 0) {
+      log.debug({ count: this.config.modules.length }, 'Phase 4: Loading user modules');
+      const modulesStart = Date.now();
+
       for (const modulePath of this.config.modules) {
+        const moduleStart = Date.now();
         const { groupName, description, commands } = await loadModule(
           modulePath,
           this.config.forgeDir
         );
+        const moduleDuration = Date.now() - moduleStart;
+
+        log.debug({
+          modulePath,
+          durationMs: moduleDuration,
+          commandCount: Object.keys(commands).length
+        }, 'Module loaded');
+
         this.registerCommandGroup(groupName, description, commands);
       }
+
+      const modulesDuration = Date.now() - modulesStart;
+      log.debug({ durationMs: modulesDuration }, 'All modules loaded');
+    } else {
+      log.debug('No user modules declared, skipping');
     }
 
+    // Final summary
     const topLevel = Object.keys(this.topLevelCommands);
     const groups = Object.keys(this.commandGroups);
     const groupDetails = Object.fromEntries(
       Object.entries(this.commandGroups).map(([group, data]) => [group, Object.keys(data.commands)])
     );
-    log.debug({ topLevel, groups, groupDetails }, 'Commands registered');
+    log.debug({ topLevel, groups, groupDetails }, 'Forge initialization complete');
   }
 
   /**

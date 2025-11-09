@@ -66,11 +66,15 @@ async function discoverProject(startDir?: FilePath): Promise<FilePath | null> {
   // Start from explicit dir, or fall back to cwd
   let dir = startDir || process.cwd();
 
+  log.debug(`Starting project discovery from: ${dir}`);
+
   // Walk up to root
   while (dir !== '/' && dir !== '.') {
     const forgeDir = join(dir, '.forge2');
+    log.debug(`Checking directory: ${dir}`);
 
     if (existsSync(forgeDir)) {
+      log.debug(`Project discovered at: ${dir}`);
       return dir;
     }
 
@@ -79,6 +83,7 @@ async function discoverProject(startDir?: FilePath): Promise<FilePath | null> {
     dir = parent;
   }
 
+  log.debug(`Reached filesystem root, no project found`);
   return null;
 }
 
@@ -96,18 +101,25 @@ async function discoverProject(startDir?: FilePath): Promise<FilePath | null> {
 function getExplicitProjectRoot(rootPath?: FilePath): FilePath | null {
   // CLI flag takes precedence
   if (rootPath) {
+    log.debug(`Using explicit project root from --root flag: ${rootPath}`);
     return rootPath;
   }
 
   // Env var override
   if (process.env.FORGE_PROJECT) {
     const envPath = process.env.FORGE_PROJECT;
+    log.debug(`Checking FORGE_PROJECT env var: ${envPath}`);
+
     if (existsSync(join(envPath, '.forge2'))) {
+      log.debug(`Using project root from FORGE_PROJECT env var: ${envPath}`);
       return envPath;
     }
+
+    log.debug(`FORGE_PROJECT env var points to invalid directory (no .forge2/): ${envPath}`);
     throw new Error(`FORGE_PROJECT=${envPath} but .forge2/ not found`);
   }
 
+  log.debug('No explicit project root provided');
   return null;
 }
 
@@ -174,14 +186,18 @@ export async function resolveConfig(
   if (projectRoot) {
     try {
       // Configure cosmiconfig to search for config files
+      const searchPlaces = [
+        "config.yml",
+        "config.yaml",
+        "config.json",
+        "config.js",
+        "config.ts",
+      ];
+
+      log.debug(`Configuring cosmiconfig to search for: ${searchPlaces.join(', ')}`);
+
       const explorer = cosmiconfig("forge2", {
-        searchPlaces: [
-          "config.yml",
-          "config.yaml",
-          "config.json",
-          "config.js",
-          "config.ts",
-        ],
+        searchPlaces,
         loaders: {
           ".ts": bunTypescriptLoader,
         },
@@ -189,16 +205,24 @@ export async function resolveConfig(
 
       // Search in .forge2 directory
       const forgeDir = resolve(projectRoot, ".forge2");
+      log.debug(`Searching for config in: ${forgeDir}`);
+
+      const configLoadStart = Date.now();
       const result = await explorer.search(forgeDir);
+      const configLoadDuration = Date.now() - configLoadStart;
+
+      log.debug(`Config search completed in ${configLoadDuration}ms`);
 
       if (result?.config) {
         forgeConfig = result.config;
-        log.debug(`Loaded config from ${result.filepath}`);
+        const configKeys = Object.keys(forgeConfig);
+        log.debug(`Loaded config from ${result.filepath} (${configKeys.length} keys: ${configKeys.join(', ')})`);
       } else {
-        log.warn("No config file found in .forge2 directory");
+        log.debug(`No config file found in ${forgeDir} (using defaults)`);
       }
     } catch (err: any) {
       // Config parse error - throw to let CLI error handler deal with it
+      log.debug(`Config load failed: ${err.message}`);
       throw new Error(
         `Failed to load .forge2/config: ${err.message}`,
         { cause: err },
