@@ -12,6 +12,7 @@ import { resolve, join, dirname } from "node:path";
 import { existsSync } from "node:fs";
 import { cosmiconfig } from "cosmiconfig";
 import type { FilePath, ColorMode, ForgeConfig } from "./types";
+import { log } from "./logging/bootstrap-logger";
 
 /**
  * Bootstrap configuration from CLI argument parsing
@@ -32,22 +33,6 @@ export interface BootstrapConfig {
 // ============================================================================
 // Private Logging
 // ============================================================================
-
-/**
- * Private log function for pre-logger-init tracing
- * Simple console wrapper - will be replaced with bootstrap logger in future
- */
-const log = {
-  debug: (message: string, ...args: any[]) => {
-    // Only log if DEBUG env var is set (before --debug flag is processed)
-    if (process.env.DEBUG || process.env.FORGE_DEBUG) {
-      console.log(`[config-resolver] ${message}`, ...args);
-    }
-  },
-  warn: (message: string, ...args: any[]) => {
-    console.warn(`[config-resolver] ${message}`, ...args);
-  },
-};
 
 // ============================================================================
 // TypeScript Loader

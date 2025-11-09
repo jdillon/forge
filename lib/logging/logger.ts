@@ -91,7 +91,7 @@ export function initLogging(options: Partial<LoggerConfig>): void {
         colorize: useColor,
         translateTime: 'HH:MM:ss',
         ignore: 'hostname,pid',
-        singleLine: true,
+        // singleLine: true,
         sync: true,
       })
     : process.stdout;

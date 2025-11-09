@@ -33,20 +33,10 @@ export function getForgeHomePath(): string {
  * Get the node_modules directory for Forge
  * This is where Forge looks for installed modules
  *
- * REQUIRES: FORGE_NODE_MODULES environment variable must be set by bootstrap script
- * @throws {Error} if FORGE_NODE_MODULES not set
+ * Derived from FORGE_HOME/node_modules
  */
 export function getNodeModulesPath(): string {
-  const path = process.env.FORGE_NODE_MODULES;
-
-  if (!path) {
-    throw new Error(
-      'FORGE_NODE_MODULES environment variable not set. ' +
-        'This should be set by the forge bootstrap script.',
-    );
-  }
-
-  return path;
+  return join(getForgeHomePath(), 'node_modules');
 }
 
 /**

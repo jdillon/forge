@@ -17,6 +17,7 @@ import { initLogging, getGlobalLogger, isLoggingInitialized } from "./logging";
 import { resolveConfig } from "./config-resolver";
 import type { FilePath, ColorMode, ForgeConfig } from "./types";
 import pkg from "../package.json";
+import { log } from "./logging/bootstrap-logger";
 
 // ============================================================================
 // Main Entry Point
@@ -28,22 +29,26 @@ import pkg from "../package.json";
  */
 export async function main(): Promise<void> {
   const cliArgs = process.argv.slice(2);
+  log.debug("Args: %o", cliArgs);
 
   try {
     // Phase 1: Bootstrap - extract CLI options (permissive)
     const bootstrapConfig = bootstrap(cliArgs);
+    log.debug("Bootstrap config: %o", bootstrapConfig);
 
     // Phase 2: Config Resolution - discover project, load config
     const config = await resolveConfig(bootstrapConfig);
+    log.debug("Resolved config: %o", config);
 
     // Phase 3: Initialize Logging
     initializeLogging(config);
 
     // Phase 4: Build and execute CLI
     const program = await buildCLI(config);
-    await program.parseAsync(cliArgs, { from: "user" });
-
+    log.debug("Args: %o", cliArgs);
+    await program.parseAsync(cliArgs); // , { from: "user" });
   } catch (err: any) {
+    log.debug("Error caught in main():\n----8<----\n%o---->8-----", err);
     handleError(err);
   }
 }
@@ -121,6 +126,8 @@ function initializeLogging(config: ForgeConfig): void {
     config.logLevel ||
     (config.debug ? "debug" : config.quiet ? "warn" : "info");
 
+  log.debug(`Initializing logging: level=${logLevel}, format=${config.logFormat}, colorMode=${config.colorMode}`);
+
   initLogging({
     level: logLevel,
     format: config.logFormat,
@@ -128,10 +135,16 @@ function initializeLogging(config: ForgeConfig): void {
   });
 
   // Log environment details for debugging
-  const log = getGlobalLogger();
-  log.debug(`cwd: ${process.cwd()}`);
-  log.debug(`projectPresent: ${config.projectPresent}`);
-  log.debug(`projectRoot: ${config.projectRoot || "(none)"}`);
+  const logger = getGlobalLogger();
+  logger.debug(
+    {
+      nodeVersion: process.version,
+      platform: process.platform,
+      cwd: process.cwd(),
+      isRestarted: config.isRestarted,
+    },
+    "Environment details",
+  );
 }
 
 // ============================================================================

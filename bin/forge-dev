@@ -23,8 +23,7 @@ project_root="$(cd -P "${script_dir}/.." && pwd)"
 
 # Dev mode: use packaged tarball with isolated dev-home
 export FORGE_HOME="${project_root}/dev-home/forge"
-export FORGE_NODE_MODULES="${FORGE_HOME}/node_modules"
-export NODE_PATH="${FORGE_NODE_MODULES}"
+export NODE_PATH="${FORGE_HOME}/node_modules"
 
 # Ensure dev-home forge structure exists
 mkdir -p "${FORGE_HOME}"
@@ -145,7 +144,9 @@ run_forge() {
   fi
 
   # Find the CLI entry point in installed package
-  local cli_path="${FORGE_NODE_MODULES}/@planet57/forge/lib/cli.ts"
+  local node_modules="${FORGE_HOME}/node_modules"
+  local cli_path="${node_modules}/@planet57/forge/lib/cli.ts"
+  # export NODE_PATH="${node_modules}"
 
   if [[ ! -f "$cli_path" ]]; then
     echo "ERROR: CLI not found at $cli_path" >&2

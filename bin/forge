@@ -14,17 +14,13 @@ done
 # Installed mode only - forge-dev handles dev mode
 script_dir="$(cd "$(dirname "${script_path}")" && pwd)"
 
-# Set FORGE_HOME and FORGE_NODE_MODULES if not already set (e.g., by tests)
+# Set FORGE_HOME if not already set (e.g., by tests)
 if [[ -z "${FORGE_HOME:-}" ]]; then
   export FORGE_HOME="${HOME}/.forge"
 fi
 
-if [[ -z "${FORGE_NODE_MODULES:-}" ]]; then
-  export FORGE_NODE_MODULES="${FORGE_HOME}/node_modules"
-fi
-
-# Installed mode - use forge-home
-forge_cli="${FORGE_HOME}/node_modules/@planet57/forge/lib/cli.ts"
+node_modules="${FORGE_HOME}/node_modules"
+forge_cli="${node_modules}/@planet57/forge/lib/cli.ts"
 
 if [[ ! -f "${forge_cli}" ]]; then
   echo "ERROR: Forge not found at ${forge_cli}" >&2
@@ -33,7 +29,7 @@ if [[ ! -f "${forge_cli}" ]]; then
 fi
 
 # Set NODE_PATH for Bun's runtime module resolution
-export NODE_PATH="${FORGE_NODE_MODULES}"
+export NODE_PATH="${node_modules}"
 
 # Run forge with proper configuration
 run_forge() {
