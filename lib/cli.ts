@@ -18,7 +18,9 @@ import { initLogging, getGlobalLogger, isLoggingInitialized } from "./logging";
 import { resolveConfig } from "./config-resolver";
 import type { FilePath, ColorMode, ForgeConfig } from "./types";
 import pkg from "../package.json";
-import { log } from "./logging/bootstrap-logger";
+import { createBootstrapLogger } from "./logging/bootstrap";
+
+const log = createBootstrapLogger("cli");
 
 // ============================================================================
 // Main Entry Point
@@ -49,7 +51,6 @@ export async function main(): Promise<void> {
     log.debug("Args: %o", cliArgs);
     await program.parseAsync(cliArgs, { from: "user" });
   } catch (err: any) {
-    log.debug("Error caught in main():\n----8<----\n%o---->8-----", err);
     handleError(err);
   }
 }
@@ -194,6 +195,8 @@ async function buildCLI(config: ForgeConfig): Promise<Command> {
  * Handles: Commander errors, ExitNotification, FatalError, general exceptions
  */
 function handleError(err: any): never {
+  log.debug("Handle error:\n----8<----\n%o---->8-----", err);
+
   // 1. Commander help/version - clean exit (no error)
   if (
     err.code === "commander.help" ||

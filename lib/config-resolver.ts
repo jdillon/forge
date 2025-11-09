@@ -13,7 +13,9 @@ import { resolve, join, dirname } from "node:path";
 import { existsSync } from "node:fs";
 import { cosmiconfig } from "cosmiconfig";
 import type { FilePath, ColorMode, ForgeConfig } from "./types";
-import { log } from "./logging/bootstrap-logger";
+import { createBootstrapLogger } from "./logging/bootstrap";
+
+const log = createBootstrapLogger("config-resolver");
 
 /**
  * Bootstrap configuration from CLI argument parsing
