@@ -46,7 +46,7 @@ export async function main(): Promise<void> {
     // Phase 4: Build and execute CLI
     const program = await buildCLI(config);
     log.debug("Args: %o", cliArgs);
-    await program.parseAsync(cliArgs); // , { from: "user" });
+    await program.parseAsync(cliArgs, { from: "user" });
   } catch (err: any) {
     log.debug("Error caught in main():\n----8<----\n%o---->8-----", err);
     handleError(err);

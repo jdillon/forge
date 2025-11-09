@@ -29,7 +29,7 @@ if [[ ! -f "${forge_cli}" ]]; then
 fi
 
 # Set NODE_PATH for Bun's runtime module resolution
-export NODE_PATH="${node_modules}"
+# export NODE_PATH="${node_modules}"
 
 # Run forge with proper configuration
 run_forge() {

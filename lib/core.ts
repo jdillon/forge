@@ -259,6 +259,7 @@ export class Forge {
       );
 
       if (needsRestart) {
+        log.debug('Dependencies installed, signaling restart');
         // Signal restart via ExitNotification
         throw new ExitNotification(RESTART_EXIT_CODE);
       }
