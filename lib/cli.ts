@@ -1,11 +1,11 @@
 /**
  * Forge v2 - CLI Implementation
  *
- * Implements the CLI option handling specification in docs/planning/cli-option-handling.md
- *
- * Two-pass approach:
- * 1. Bootstrap: Parse ONLY to extract top-level config (permissive)
- * 2. Real CLI: Parse with full validation (strict, Commander handles it)
+ * Execution flow:
+ * 1. Bootstrap: Parse CLI args to extract forge options (permissive)
+ * 2. Config Resolution: Discover project, load config
+ * 3. Logging Init: Initialize logger with resolved config
+ * 4. CLI Build & Execute: Create Forge, build Commander program, execute
  */
 
 import { Command } from "commander";
@@ -20,49 +20,242 @@ import type { FilePath, ColorMode } from "./types";
 import pkg from "../package.json";
 
 // ============================================================================
-// Shared Configuration
+// Main Entry Point
 // ============================================================================
 
 /**
- * Resolve color mode to a boolean for use with libraries
- * Uses colorette for auto-detection when mode is 'auto'
+ * Main CLI execution
+ * Orchestrates all phases and handles all errors in one place
  */
-function resolveColorMode(mode: ColorMode): boolean {
-  if (mode === "always") return true;
-  if (mode === "never") return false;
+export async function main(): Promise<void> {
+  const cliArgs = process.argv.slice(2);
 
-  // Auto-detect using colorette (same library pino-pretty uses)
-  // This handles TTY detection, terminal capabilities, CI/CD environments, etc.
-  return isColorSupported;
-}
+  try {
+    // Phase 1: Bootstrap - extract CLI options (permissive)
+    const bootstrapConfig = bootstrap(cliArgs);
 
-/**
- * Normalize user-provided color value to internal ColorMode
- * Accepts aliases: on, off, true, false, disable, etc.
- */
-function normalizeColorMode(value: string | undefined): ColorMode {
-  if (!value) return "auto";
+    // Phase 2: Config Resolution - discover project, load config
+    const config = await resolveConfig(bootstrapConfig);
 
-  const normalized = value.toLowerCase();
-  switch (normalized) {
-    case "on":
-    case "true":
-    case "always":
-      return "always";
-    case "off":
-    case "false":
-    case "never":
-    case "disable":
-      return "never";
-    case "auto":
-    default:
-      return "auto";
+    // Phase 3: Initialize Logging
+    initializeLogging(config);
+
+    // Phase 4: Build and execute CLI
+    const program = await buildCLI(config);
+    await program.parseAsync(cliArgs, { from: "user" });
+
+  } catch (err: any) {
+    handleError(err);
   }
 }
 
+// ============================================================================
+// Phase 1: Bootstrap
+// ============================================================================
+
+interface BootstrapConfig {
+  debug: boolean;
+  quiet: boolean;
+  silent: boolean;
+  logLevel: string;
+  logFormat: "json" | "pretty" | undefined;
+  colorMode: ColorMode;
+  root: FilePath | undefined;
+  userDir: FilePath;
+  isRestarted: boolean;
+}
+
 /**
- * Add top-level options to a Commander program
- * Used by both bootstrap and real program to ensure consistency
+ * Bootstrap: Extract top-level config only
+ * Permissive parsing - don't validate, just extract options
+ */
+function bootstrap(cliArgs: string[]): BootstrapConfig {
+  const bootProgram = new Command();
+
+  bootProgram.name("forge");
+  addTopLevelOptions(bootProgram)
+    .allowUnknownOption(true)
+    .allowExcessArguments(true)
+    .exitOverride();
+
+  bootProgram.parseOptions(cliArgs);
+  const opts = bootProgram.opts();
+
+  // Check if this is a restarted process
+  const isRestarted = process.env.FORGE_RESTARTED === "1";
+
+  // Determine color mode: NO_COLOR env > --color option > 'auto'
+  let colorMode: ColorMode = normalizeColorMode(opts.color);
+  if (process.env.NO_COLOR) {
+    colorMode = "never";
+  }
+
+  return {
+    debug: opts.debug || false,
+    quiet: opts.quiet || false,
+    silent: opts.silent || false,
+    logLevel: opts.logLevel,
+    logFormat: opts.logFormat as "json" | "pretty" | undefined,
+    colorMode,
+    root: opts.root,
+    userDir: process.env.FORGE_USER_DIR || process.cwd(),
+    isRestarted,
+  };
+}
+
+// ============================================================================
+// Phase 2: Config Resolution
+// ============================================================================
+// Handled by config-resolver.ts: resolveConfig(bootstrapConfig)
+// See lib/config-resolver.ts for implementation
+
+// ============================================================================
+// Phase 3: Logging Initialization
+// ============================================================================
+
+/**
+ * Initialize logging system with resolved config
+ * Determines log level from config options and sets up logger
+ */
+function initializeLogging(config: ResolvedConfig): void {
+  const logLevel =
+    config.logLevel ||
+    (config.debug ? "debug" : config.quiet ? "warn" : "info");
+
+  initLogging({
+    level: logLevel,
+    format: config.logFormat,
+    colorMode: config.colorMode,
+  });
+
+  // Log environment details for debugging
+  const log = getGlobalLogger();
+  log.debug(`cwd: ${process.cwd()}`);
+  log.debug(`projectPresent: ${config.projectPresent}`);
+  log.debug(`projectRoot: ${config.projectRoot || "(none)"}`);
+  log.debug(`FORGE_USER_DIR: ${process.env.FORGE_USER_DIR}`);
+}
+
+// ============================================================================
+// Phase 4: CLI Build & Execute
+// ============================================================================
+
+/**
+ * Build full CLI with subcommands
+ * Strict parsing - Commander validates everything
+ */
+async function buildCLI(config: ResolvedConfig): Promise<Command> {
+  const program = new Command();
+
+  program
+    .name("forge")
+    .description("Modern CLI framework for deployments")
+    .version(pkg.version);
+
+  addTopLevelOptions(program);
+  configureHelp(program, config.colorMode);
+  program.exitOverride();
+
+  // Action for main program - fires when no subcommand provided
+  program.action(() => {
+    console.error("ERROR: subcommand required");
+    console.error();
+    program.outputHelp();
+    exit(1);
+  });
+
+  // Initialize Forge and register commands
+  const { Forge } = await import("./core");
+  const forge = new Forge(config);
+  await forge.initialize(); // Throws ExitNotification if restart needed
+  await forge.registerCommands(program);
+
+  return program;
+}
+
+// ============================================================================
+// Error Handling (Single Location)
+// ============================================================================
+
+/**
+ * Unified error handler for all error types
+ * Handles: Commander errors, ExitNotification, FatalError, general exceptions
+ */
+function handleError(err: any): never {
+  // 1. Commander help/version - clean exit (no error)
+  if (
+    err.code === "commander.help" ||
+    err.code === "commander.helpDisplayed" ||
+    err.code === "commander.version"
+  ) {
+    runtimeExit(err.exitCode ?? 0);
+  }
+
+  // 2. Commander validation errors - show terse message
+  if (err.code === "commander.missingArgument") {
+    showCommanderError(err.message);
+  }
+  if (err.code === "commander.unknownOption") {
+    showCommanderError(err.message);
+  }
+  if (err.code === "commander.excessArguments") {
+    const program = err.parent || { args: [] };
+    const excessArgs = program.args || [];
+    const unknownCmd = excessArgs.find(
+      (arg: string) =>
+        !arg.startsWith("-") &&
+        arg !== process.argv[0] &&
+        arg !== process.argv[1],
+    );
+    if (unknownCmd) {
+      showCommanderError(`unknown command '${unknownCmd}'`);
+    } else {
+      showCommanderError("unknown command. Run 'forge --help' to see available commands");
+    }
+  }
+
+  // 3. ExitNotification - clean exit with specific code (e.g., restart)
+  if (err instanceof ExitNotification) {
+    runtimeExit(err.exitCode);
+  }
+
+  // 4. FatalError or general exception - show error with details
+  const isFatal = err instanceof FatalError;
+  const message = err.message || String(err);
+  const exitCode = isFatal ? err.exitCode : 1;
+
+  if (isLoggingInitialized()) {
+    const log = getGlobalLogger();
+    log.error({ error: err }, message);
+  } else {
+    // Logging not initialized - use console
+    console.error("ERROR:", message);
+    if (err.stack) {
+      console.error("\nStack trace:");
+      console.error(err.stack);
+    }
+  }
+
+  runtimeExit(exitCode);
+}
+
+/**
+ * Show terse error for Commander validation errors
+ */
+function showCommanderError(message: string): never {
+  const cleanMessage = message.replace(/^error:\s*/i, "");
+  console.error(`ERROR: ${cleanMessage}`);
+  console.error(`Try 'forge --help' for more information.`);
+  exit(1);
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Add top-level options to Commander program
+ * Used by both bootstrap and real program for consistency
  */
 function addTopLevelOptions(program: Command): Command {
   return program
@@ -85,10 +278,7 @@ function addTopLevelOptions(program: Command): Command {
     )
     .addOption(
       program
-        .createOption(
-          "--log-format <format>",
-          "Set log format",
-        )
+        .createOption("--log-format <format>", "Set log format")
         .choices(["json", "pretty"])
         .default("pretty"),
     )
@@ -98,96 +288,17 @@ function addTopLevelOptions(program: Command): Command {
     );
 }
 
-// ============================================================================
-// Bootstrap Phase
-// ============================================================================
-
-interface BootstrapConfig {
-  debug: boolean;
-  quiet: boolean;
-  silent: boolean;
-  logLevel: string;
-  logFormat: "json" | "pretty" | undefined;
-  colorMode: ColorMode;
-  root: FilePath | undefined;
-  userDir: FilePath;
-  isRestarted: boolean;
-}
-
 /**
- * Bootstrap: Extract top-level config only
- * Permissive parsing - don't care about validation
+ * Configure help formatting with colors
  */
-function bootstrap(cliArgs: string[]): BootstrapConfig {
-  const bootProgram = new Command();
+function configureHelp(program: Command, colorMode: ColorMode): void {
+  const useColor = resolveColorMode(colorMode);
 
-  bootProgram.name("forge");
-  // Note: Don't call .version() - we'll let real CLI handle --version
-
-  addTopLevelOptions(bootProgram)
-    .allowUnknownOption(true) // Don't care about unknown options
-    .allowExcessArguments(true) // Don't care about extra args
-    .exitOverride(); // Don't exit, throw instead
-
-  // Parse just to extract options - ignore everything else
-  bootProgram.parseOptions(cliArgs);
-  const opts = bootProgram.opts();
-
-  // Check if this is a restarted process (via env var from wrapper)
-  const isRestarted = process.env.FORGE_RESTARTED === "1";
-
-  // Determine color mode with priority: NO_COLOR env > --color option > 'auto'
-  // Normalize user input (accepts: auto, always, never, on, off, true, false, disable)
-  let colorMode: ColorMode = normalizeColorMode(opts.color);
-  if (process.env.NO_COLOR) {
-    // NO_COLOR env var is set - force never
-    colorMode = "never";
-  }
-
-  // Return extracted config - that's it!
-  return {
-    debug: opts.debug || false,
-    quiet: opts.quiet || false,
-    silent: opts.silent || false,
-    logLevel: opts.logLevel,
-    logFormat: opts.logFormat as "json" | "pretty" | undefined,
-    colorMode,
-    root: opts.root,
-    userDir: process.env.FORGE_USER_DIR || process.cwd(),
-    isRestarted,
-  };
-}
-
-
-// ============================================================================
-// Real CLI Phase
-// ============================================================================
-
-/**
- * Build full CLI with subcommands
- * Strict parsing - Commander validates everything naturally
- */
-async function buildRealCLI(config: ResolvedConfig): Promise<Command> {
-  const program = new Command();
-
-  program
-    .name("forge")
-    .description("Modern CLI framework for deployments")
-    .version(pkg.version);
-
-  // Add top-level options (same as bootstrap)
-  addTopLevelOptions(program);
-
-  // Determine if color should be enabled using colorette detection
-  const useColor = resolveColorMode(config.colorMode);
-
-  // Configure help formatting
   const helpConfig: any = {
     sortSubcommands: true,
     sortOptions: true,
   };
 
-  // Only add style functions if colors are enabled
   if (useColor) {
     helpConfig.styleTitle = (str: string) => styleText("bold", str);
     helpConfig.styleCommandText = (str: string) => styleText("cyan", str);
@@ -199,190 +310,46 @@ async function buildRealCLI(config: ResolvedConfig): Promise<Command> {
   }
 
   program.configureHelp(helpConfig);
-  program.exitOverride(); // Don't exit, throw instead
-
-  // Action for main program - fires ONLY when no subcommand is provided
-  program.action(() => {
-    console.error("ERROR: subcommand required");
-    console.error(); // Blank line
-    program.outputHelp();
-    exit(1);
-  });
-
-  // Load core module dynamically (after logging initialized)
-  const { Forge } = await import("./core");
-
-  // Create Forge instance and initialize
-  // Forge handles: builtin loading, module loading, dependency installation
-  // Throws ExitNotification if restart needed
-  const forge = new Forge(config);
-  await forge.initialize();
-
-  // Register commands with Commander
-  await forge.registerCommands(program);
-
-  return program;
-}
-
-// ============================================================================
-// Error Handling
-// ============================================================================
-
-/**
- * Show terse error message with hint
- */
-function showError(message: string): never {
-  // Strip "error: " prefix from Commander messages
-  const cleanMessage = message.replace(/^error:\s*/i, "");
-  console.error(`ERROR: ${cleanMessage}`);
-  console.error(`Try 'forge --help' for more information.`);
-  exit(1);
-}
-
-// ============================================================================
-// Main Entry Point
-// ============================================================================
-
-export async function main(): Promise<void> {
-  try {
-    await run();
-  } catch (err: any) {
-    // Commander help/version - clean exit
-    if (
-      err.code &&
-      (err.code === "commander.helpDisplayed" ||
-        err.code === "commander.version")
-    ) {
-      runtimeExit(err.exitCode ?? 0);
-    }
-
-    // Handle errors with logging if available, otherwise stderr
-    handleError(err);
-  }
-}
-
-async function run(): Promise<void> {
-  // Extract CLI arguments (slice off runtime executable and script path)
-  // Example: ['bun', 'cli.ts', 'website', 'ping'] → ['website', 'ping']
-  const cliArgs = process.argv.slice(2);
-
-  // Phase 1: Bootstrap - extract CLI options (permissive)
-  const bootstrapConfig = bootstrap(cliArgs);
-
-  // Phase 2: Config Resolution - discover project, load config
-  const config = await resolveConfig(bootstrapConfig);
-
-  // Phase 3: Initialize Logging
-  const logLevel =
-    config.logLevel ||
-    (config.debug ? "debug" : config.quiet ? "warn" : "info");
-  initLogging({
-    level: logLevel,
-    format: config.logFormat,
-    colorMode: config.colorMode,
-  });
-
-  // Now safe to use logger
-  const log = getGlobalLogger();
-
-  // Log environment details for debugging
-  log.debug(`cwd: ${process.cwd()}`);
-  log.debug(`projectPresent: ${config.projectPresent}`);
-  log.debug(`projectRoot: ${config.projectRoot || "(none)"}`);
-  log.debug(`FORGE_USER_DIR: ${process.env.FORGE_USER_DIR}`);
-
-  // Phase 4: Build and execute CLI
-  // Forge handles initialization, dependencies, restart signaling
-  try {
-    const program = await buildRealCLI(config);
-
-    log.debug(
-      { commandNames: program.commands.map((c) => c.name()), cliArgs },
-      "About to parse CLI args",
-    );
-
-    await program.parseAsync(cliArgs, { from: "user" });
-  } catch (err: any) {
-    // Handle Commander errors
-    if (err.code === "commander.help" ||
-        err.code === "commander.helpDisplayed" ||
-        err.code === "commander.version") {
-      exit(0);
-    }
-    if (err.code === "commander.missingArgument") {
-      showError(err.message);
-    }
-    if (err.code === "commander.unknownOption") {
-      showError(err.message);
-    }
-    if (err.code === "commander.excessArguments") {
-      // Unknown command - extract from error
-      const program = err.parent || { args: [] };
-      const excessArgs = program.args || [];
-      const unknownCmd = excessArgs.find(
-        (arg: string) =>
-          !arg.startsWith("-") &&
-          arg !== process.argv[0] &&
-          arg !== process.argv[1],
-      );
-      if (unknownCmd) {
-        showError(`unknown command '${unknownCmd}'`);
-      } else {
-        showError("unknown command. Run 'forge --help' to see available commands");
-      }
-    }
-
-    // Other errors - rethrow
-    throw err;
-  }
 }
 
 /**
- * Handle errors at top level
- * Uses logger if initialized, otherwise stderr
+ * Resolve color mode to boolean
+ * Uses colorette for auto-detection
  */
-function handleError(err: any): never {
-  // Clean exit - no error message needed
-  if (err instanceof ExitNotification) {
-    runtimeExit(err.exitCode);
+function resolveColorMode(mode: ColorMode): boolean {
+  if (mode === "always") return true;
+  if (mode === "never") return false;
+  return isColorSupported; // Auto-detect
+}
+
+/**
+ * Normalize user-provided color value to ColorMode
+ * Accepts aliases: on, off, true, false, disable, etc.
+ */
+function normalizeColorMode(value: string | undefined): ColorMode {
+  if (!value) return "auto";
+
+  const normalized = value.toLowerCase();
+  switch (normalized) {
+    case "on":
+    case "true":
+    case "always":
+      return "always";
+    case "off":
+    case "false":
+    case "never":
+    case "disable":
+      return "never";
+    case "auto":
+    default:
+      return "auto";
   }
-
-  // Fatal error or unexpected exception
-  const isFatal = err instanceof FatalError;
-  const message = err.message || String(err);
-  const exitCode = isFatal ? err.exitCode : 1;
-
-  // Try to use logger if initialized, otherwise fall back to stderr
-  if (isLoggingInitialized()) {
-    const log = getGlobalLogger();
-    log.error({ error: err }, message);
-  } else {
-    // Logging not initialized - use primordial error handling
-    console.error("ERROR:", message);
-    if (err.stack) {
-      console.error("\nStack trace:");
-      console.error(err.stack);
-    }
-  }
-
-  runtimeExit(exitCode);
 }
 
 // ============================================================================
-// MAIN
+// Script Entry Point
 // ============================================================================
 
 if (import.meta.main) {
-  try {
-    await main();
-  } catch (err: any) {
-    // Unhandled error during module loading or main execution
-    // This catches errors that happen before main()'s try/catch
-    console.error("FATAL:", err.message);
-    if (err.stack) {
-      console.error("\nStack trace:");
-      console.error(err.stack);
-    }
-    runtimeExit(1);
-  }
+  await main();
 }
