@@ -282,7 +282,7 @@ function showCommanderError(message: string): never {
  */
 function addTopLevelOptions(program: Command): Command {
   return program
-    .option("-r, --root <path>", "Project root directory")
+    .option("-r, --root <path>", "Project directory (containing .forge/)")
     .option("-d, --debug", "Debug output")
     .option("-q, --quiet", "Quiet mode")
     .option("-s, --silent", "Silent mode")
