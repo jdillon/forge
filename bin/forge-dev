@@ -11,22 +11,39 @@
 #
 set -euo pipefail
 
-# Resolve script location (follows symlinks)
-script_path="${BASH_SOURCE[0]}"
-while [ -L "$script_path" ]; do
-  script_dir="$(cd -P "$(dirname "$script_path")" && pwd)"
-  script_path="$(readlink "$script_path")"
-  [[ $script_path != /* ]] && script_path="$script_dir/$script_path"
-done
-script_dir="$(cd -P "$(dirname "$script_path")" && pwd)"
-project_root="$(cd -P "${script_dir}/.." && pwd)"
+#
+# Globals
+#
 
-# Dev mode: use packaged tarball with isolated dev-home
-export FORGE_HOME="${project_root}/dev-home/forge"
-export NODE_PATH="${FORGE_HOME}/node_modules"
+PROJECT_ROOT=""
+FORGE_HOME=""
 
-# Ensure dev-home forge structure exists
-mkdir -p "${FORGE_HOME}"
+#
+# Path resolution
+#
+
+resolve_paths() {
+  # Resolve script location (follows symlinks)
+  local script_path="${BASH_SOURCE[0]}"
+  while [ -L "$script_path" ]; do
+    local script_dir="$(cd -P "$(dirname "$script_path")" && pwd)"
+    script_path="$(readlink "$script_path")"
+    [[ $script_path != /* ]] && script_path="$script_dir/$script_path"
+  done
+  local script_dir="$(cd -P "$(dirname "$script_path")" && pwd)"
+
+  PROJECT_ROOT="$(cd -P "${script_dir}/.." && pwd)"
+  FORGE_HOME="${PROJECT_ROOT}/dev-home/forge"
+}
+
+setup_environment() {
+  # Dev mode: use packaged tarball with isolated dev-home
+  export FORGE_HOME
+  export NODE_PATH="${FORGE_HOME}/node_modules"
+
+  # Ensure dev-home forge structure exists
+  mkdir -p "${FORGE_HOME}"
+}
 
 #
 # Checksum-based change detection
@@ -34,7 +51,7 @@ mkdir -p "${FORGE_HOME}"
 
 compute_checksum() {
   (
-    cd "${project_root}"
+    cd "${PROJECT_ROOT}"
     # Checksum lib/**, package.json, tsconfig.json, bunfig.toml
     (find lib -type f -exec sha256sum {} \; && \
     sha256sum package.json tsconfig.json bunfig.toml 2>/dev/null) | \
@@ -50,33 +67,42 @@ needs_rebuild() {
   [[ "$current" != "$previous" ]]
 }
 
+save_checksum() {
+  compute_checksum > "${FORGE_HOME}/.forge-checksum"
+}
+
 #
-# Rebuild and install
+# Build steps
 #
 
-rebuild_and_install() {
-  echo "" >&2
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-  echo "  Rebuilding forge (source files changed)" >&2
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
-
+clear_bun_cache() {
   echo "  → Clearing Bun cache..." >&2
-  # Clear Bun's cache to avoid stale module issues
-  bun pm cache rm
+  bun pm cache rm >&2
+}
 
+build_tarball() {
   echo "  → Building tarball..." >&2
+  local tarball="${PROJECT_ROOT}/build/planet57-forge-dev.tgz"
+
   # Clean old tarballs to avoid confusion
-  local tarball="${project_root}/build/planet57-forge-dev.tgz"
   rm -f "${tarball}"
+
   (
-    cd "${project_root}"
-    bun pm pack --filename "${tarball}"
+    cd "${PROJECT_ROOT}"
+    bun pm pack --filename "${tarball}" >&2
   )
 
   if [[ ! -f "$tarball" ]]; then
     echo "ERROR: Expected tarball not found: $tarball" >&2
     exit 1
   fi
+
+  # Return tarball path to caller (stdout only, all other output to stderr)
+  echo "$tarball"
+}
+
+create_config_files() {
+  local tarball="$1"
 
   # Create package.json with tarball reference
   cat > "${FORGE_HOME}/package.json" << EOF
@@ -115,29 +141,33 @@ optional = false
 auto = "disable"
 EOF
   fi
+}
 
-  # Install/update @planet57/forge in dev-home
+install_package() {
   echo "  → Installing to dev-home..." >&2
 
   # Purge old installed package to force fresh install
   rm -rf "${FORGE_HOME}/node_modules/@planet57/forge"
+
   (
     cd "${FORGE_HOME}"
     bun install
   )
+}
 
-  # Generate version.json (similar to install.sh)
+generate_version_info() {
   echo "  → Generating version info..." >&2
+
   local pkg_dir="${FORGE_HOME}/node_modules/@planet57/forge"
   local version=$(node -p "require('${pkg_dir}/package.json').version" 2>/dev/null || echo "dev")
 
   # Get git info from project root (not the installed package)
-  local hash=$(cd "${project_root}" && git rev-parse --short HEAD 2>/dev/null || echo "dev")
-  local hash_full=$(cd "${project_root}" && git rev-parse HEAD 2>/dev/null || echo "dev")
-  local timestamp=$(cd "${project_root}" && git log -1 --format=%cI HEAD 2>/dev/null || date -u +"%Y-%m-%dT%H:%M:%SZ")
-  local timestamp_unix=$(cd "${project_root}" && git log -1 --format=%ct HEAD 2>/dev/null || date +%s)
-  local branch=$(cd "${project_root}" && git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "dev")
-  local dirty=$(cd "${project_root}" && git diff-index --quiet HEAD 2>/dev/null && echo "false" || echo "true")
+  local hash=$(cd "${PROJECT_ROOT}" && git rev-parse --short HEAD 2>/dev/null || echo "dev")
+  local hash_full=$(cd "${PROJECT_ROOT}" && git rev-parse HEAD 2>/dev/null || echo "dev")
+  local timestamp=$(cd "${PROJECT_ROOT}" && git log -1 --format=%cI HEAD 2>/dev/null || date -u +"%Y-%m-%dT%H:%M:%SZ")
+  local timestamp_unix=$(cd "${PROJECT_ROOT}" && git log -1 --format=%ct HEAD 2>/dev/null || date +%s)
+  local branch=$(cd "${PROJECT_ROOT}" && git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "dev")
+  local dirty=$(cd "${PROJECT_ROOT}" && git diff-index --quiet HEAD 2>/dev/null && echo "false" || echo "true")
 
   # Extract date and time components (YYYYMMDD.HHMM) from timestamp
   # Timestamp format: 2025-11-09T21:28:47Z or 2025-11-09T12:49:29-08:00
@@ -161,9 +191,20 @@ EOF
   "semver": "$semver"
 }
 EOF
+}
 
-  # Save new checksum
-  compute_checksum > "${FORGE_HOME}/.forge-checksum"
+rebuild_and_install() {
+  echo "" >&2
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+  echo "  Rebuilding forge (source files changed)" >&2
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
+
+  clear_bun_cache
+  local tarball=$(build_tarball)
+  create_config_files "$tarball"
+  install_package
+  generate_version_info
+  save_checksum
 
   echo "  ✓ Rebuild complete" >&2
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >&2
@@ -171,21 +212,20 @@ EOF
 }
 
 #
-# Run forge with restart handling
+# Forge execution
 #
 
 run_forge() {
-  local restarted="${1:-}"
+  local is_restarted="$1"
+  shift
 
-  # Set restart flag if provided
-  if [[ -n "$restarted" ]]; then
+  # Set restart flag if this is a restart
+  if [[ "$is_restarted" == "true" ]]; then
     export FORGE_RESTARTED=1
   fi
 
   # Find the CLI entry point in installed package
-  local node_modules="${FORGE_HOME}/node_modules"
-  local cli_path="${node_modules}/@planet57/forge/lib/cli.ts"
-  # export NODE_PATH="${node_modules}"
+  local cli_path="${FORGE_HOME}/node_modules/@planet57/forge/lib/cli.ts"
 
   if [[ ! -f "$cli_path" ]]; then
     echo "ERROR: CLI not found at $cli_path" >&2
@@ -194,31 +234,46 @@ run_forge() {
 
   # Use --preserve-symlinks to prevent Bun from resolving through symlinks
   # This allows user commands symlinked into node_modules to resolve forge correctly
-  bun run --preserve-symlinks "${cli_path}" "${@:2}"
+  bun run --preserve-symlinks "${cli_path}" "$@"
+}
+
+handle_restart() {
+  local exit_code="$1"
+  shift
+
+  # Exit code 42 = restart needed (dependencies installed)
+  # "I checked it very thoroughly, and that quite definitely is the answer."
+  if [[ $exit_code -eq 42 ]]; then
+    # Re-run with FORGE_RESTARTED=1 to prevent infinite loops
+    run_forge "true" "$@"
+    return $?
+  fi
+
+  return "$exit_code"
 }
 
 #
 # Main
 #
 
-# Check if rebuild needed (or forced via FORGE_REBUILD=1)
-if [[ "${FORGE_REBUILD:-}" == "1" ]] || needs_rebuild; then
-  rebuild_and_install
-fi
+main() {
+  # Initialize paths and environment
+  resolve_paths
+  setup_environment
 
-# Run forge and capture exit code
-set +e  # Don't exit on non-zero
-run_forge "" "$@"
-EXIT_CODE=$?
-set -e
+  # Check if rebuild needed (or forced via FORGE_REBUILD=1)
+  if [[ "${FORGE_REBUILD:-}" == "1" ]] || needs_rebuild; then
+    rebuild_and_install
+  fi
 
-# Exit code 42 = restart needed (dependencies installed)
-# "I checked it very thoroughly, and that quite definitely is the answer."
-if [[ $EXIT_CODE -eq 42 ]]; then
-  # Re-run with FORGE_RESTARTED=1 to prevent infinite loops
-  run_forge "restarted" "$@"
-  exit $?
-fi
+  # Run forge and handle restart if needed
+  set +e  # Don't exit on non-zero
+  run_forge "false" "$@"
+  local exit_code=$?
+  set -e
 
-# Normal exit
-exit $EXIT_CODE
+  handle_restart "$exit_code" "$@"
+}
+
+# Execute main with all arguments
+main "$@"

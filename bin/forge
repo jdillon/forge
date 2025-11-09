@@ -2,62 +2,106 @@
 # IMPORANT: retain compatibility with bash v3 (macOS)
 set -euo pipefail
 
-# Resolve symlinks to get actual script location
-script_path="${BASH_SOURCE[0]}"
-while [[ -L "${script_path}" ]]; do
-  script_dir="$(cd "$(dirname "${script_path}")" && pwd)"
-  script_path="$(readlink "${script_path}")"
-  # Handle relative symlinks
-  [[ "${script_path}" != /* ]] && script_path="${script_dir}/${script_path}"
-done
+#
+# Globals
+#
 
-# Installed mode only - forge-dev handles dev mode
-script_dir="$(cd "$(dirname "${script_path}")" && pwd)"
+SCRIPT_DIR=""
+FORGE_HOME=""
+FORGE_CLI=""
 
-# Set FORGE_HOME if not already set (e.g., by tests)
-if [[ -z "${FORGE_HOME:-}" ]]; then
-  export FORGE_HOME="${HOME}/.forge"
-fi
+#
+# Path resolution
+#
 
-node_modules="${FORGE_HOME}/node_modules"
-forge_cli="${node_modules}/@planet57/forge/lib/cli.ts"
+resolve_paths() {
+  # Resolve symlinks to get actual script location
+  local script_path="${BASH_SOURCE[0]}"
+  while [[ -L "${script_path}" ]]; do
+    local script_dir="$(cd "$(dirname "${script_path}")" && pwd)"
+    script_path="$(readlink "${script_path}")"
+    # Handle relative symlinks
+    [[ "${script_path}" != /* ]] && script_path="${script_dir}/${script_path}"
+  done
 
-if [[ ! -f "${forge_cli}" ]]; then
-  echo "ERROR: Forge not found at ${forge_cli}" >&2
-  echo "Run install.sh to reinstall forge" >&2
-  exit 1
-fi
+  # Installed mode only - forge-dev handles dev mode
+  SCRIPT_DIR="$(cd "$(dirname "${script_path}")" && pwd)"
+}
 
-# Set NODE_PATH for Bun's runtime module resolution
-# export NODE_PATH="${node_modules}"
+setup_environment() {
+  # Set FORGE_HOME if not already set (e.g., by tests)
+  if [[ -z "${FORGE_HOME:-}" ]]; then
+    FORGE_HOME="${HOME}/.forge"
+  fi
+  export FORGE_HOME
 
-# Run forge with proper configuration
+  # Set up paths
+  local node_modules="${FORGE_HOME}/node_modules"
+  FORGE_CLI="${node_modules}/@planet57/forge/lib/cli.ts"
+
+  # Set NODE_PATH for Bun's runtime module resolution
+  # export NODE_PATH="${node_modules}"
+}
+
+validate_installation() {
+  if [[ ! -f "${FORGE_CLI}" ]]; then
+    echo "ERROR: Forge not found at ${FORGE_CLI}" >&2
+    echo "Run install.sh to reinstall forge" >&2
+    exit 1
+  fi
+}
+
+#
+# Forge execution
+#
+
 run_forge() {
-  local restarted="${1:-}"
+  local is_restarted="$1"
+  shift
 
-  # Set restart flag if provided
-  if [[ -n "$restarted" ]]; then
+  # Set restart flag if this is a restart
+  if [[ "$is_restarted" == "true" ]]; then
     export FORGE_RESTARTED=1
   fi
 
   # Use --preserve-symlinks to prevent Bun from resolving through symlinks
   # This allows user commands symlinked into node_modules to resolve forge correctly
-  bun run --preserve-symlinks "${forge_cli}" "${@:2}"
+  bun run --preserve-symlinks "${FORGE_CLI}" "$@"
 }
 
-# Run forge and capture exit code
-set +e  # Don't exit on non-zero
-run_forge "" "$@"
-EXIT_CODE=$?
-set -e
+handle_restart() {
+  local exit_code="$1"
+  shift
 
-# Exit code 42 = restart needed (dependencies installed)
-# "I checked it very thoroughly, and that quite definitely is the answer."
-if [[ $EXIT_CODE -eq 42 ]]; then
-  # Re-run with FORGE_RESTARTED=1 to prevent infinite loops
-  run_forge "restarted" "$@"
-  exit $?
-fi
+  # Exit code 42 = restart needed (dependencies installed)
+  # "I checked it very thoroughly, and that quite definitely is the answer."
+  if [[ $exit_code -eq 42 ]]; then
+    # Re-run with FORGE_RESTARTED=1 to prevent infinite loops
+    run_forge "true" "$@"
+    return $?
+  fi
 
-# Normal exit
-exit $EXIT_CODE
+  return "$exit_code"
+}
+
+#
+# Main
+#
+
+main() {
+  # Initialize paths and environment
+  resolve_paths
+  setup_environment
+  validate_installation
+
+  # Run forge and handle restart if needed
+  set +e  # Don't exit on non-zero
+  run_forge "false" "$@"
+  local exit_code=$?
+  set -e
+
+  handle_restart "$exit_code" "$@"
+}
+
+# Execute main with all arguments
+main "$@"
