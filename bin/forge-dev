@@ -118,10 +118,13 @@ EOF
 
   # Install/update @planet57/forge in dev-home
   echo "  → Installing to dev-home..." >&2
-  cd "${FORGE_HOME}"
+
   # Purge old installed package to force fresh install
   rm -rf "${FORGE_HOME}/node_modules/@planet57/forge"
-  bun install
+  (
+    cd "${FORGE_HOME}"
+    bun install
+  )
 
   # Save new checksum
   compute_checksum > "${FORGE_HOME}/.forge-checksum"
@@ -146,7 +149,7 @@ run_forge() {
   # Find the CLI entry point in installed package
   local node_modules="${FORGE_HOME}/node_modules"
   local cli_path="${node_modules}/@planet57/forge/lib/cli.ts"
-  # export NODE_PATH="${node_modules}"
+  export NODE_PATH="${node_modules}"
 
   if [[ ! -f "$cli_path" ]]; then
     echo "ERROR: CLI not found at $cli_path" >&2
