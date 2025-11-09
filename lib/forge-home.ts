@@ -144,8 +144,6 @@ export async function syncDependencies(
   dependencies: string[],
   mode: 'auto' | 'manual' | 'ask' = 'auto',
 ): Promise<boolean> {
-  // FIXME: we sholud not be checking process args or env-vars here
-  const debug = process.env.FORGE_DEBUG === '1' || process.argv.includes('--debug');
   const log = createLogger('forge-home');
   const forgeHome = getForgeHomePath();
 

@@ -8,7 +8,10 @@ import { Command } from 'commander';
 import { StateManager } from './state';
 import { die, ExitNotification } from './helpers';
 import { getLoggerConfig, createLogger } from './logging';
-import { rewriteModulePath } from './module-symlink';
+import { rewriteModulePath, symlinkForgeDir } from './module-symlink';
+import { resolveModule } from './module-resolver';
+import { autoInstallDependencies, RESTART_EXIT_CODE } from './auto-install';
+import * as builtins from './builtins';
 import type pino from 'pino';
 import type {
   ForgeCommand,
@@ -118,7 +121,6 @@ export async function loadModule(
   log.debug({ modulePath, defaultGroupName }, 'Loading module');
 
   // Resolve module path with priority: local → shared
-  const { resolveModule } = await import('./module-resolver');
   const fullPath = await resolveModule(modulePath, forgeDir);
 
   log.debug({ fullPath }, 'Module resolved');
@@ -230,7 +232,6 @@ export class Forge {
   async initialize(): Promise<void> {
     // 1. Always load builtins (available everywhere)
     log.debug('Loading builtins');
-    const builtins = await import('./builtins');
     const { groupName, description, commands } = discoverCommands(builtins, false);
     this.registerCommandGroup(groupName, description, commands);
 
@@ -245,14 +246,12 @@ export class Forge {
     }
 
     // 3. Setup symlink for .forge2 directory
-    const { symlinkForgeDir } = await import('./module-symlink');
     await symlinkForgeDir(this.config.forgeDir);
 
     log.debug({ modules: this.config.modules }, 'Loading user modules');
 
     // 4. Auto-install dependencies if needed
     if (this.config.dependencies && this.config.dependencies.length > 0) {
-      const { autoInstallDependencies, RESTART_EXIT_CODE } = await import('./auto-install');
       const needsRestart = await autoInstallDependencies(
         this.config,
         this.config.forgeDir,

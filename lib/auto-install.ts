@@ -9,7 +9,7 @@
  * 3. Second run: If deps still missing → FAIL (not exit 42)
  */
 
-import { syncDependencies } from './forge-home';
+import { syncDependencies, isInstalled } from './forge-home';
 import { createLogger } from './logging';
 import type { ForgeConfig } from './types';
 
@@ -32,8 +32,6 @@ export async function autoInstallDependencies(
   forgeDir: string,
   isRestarted: boolean = false,
 ): Promise<boolean> {
-  // FIXME: we sholud not be checking process args or env-vars here
-  const debug = process.env.FORGE_DEBUG === '1' || process.argv.includes('--debug');
   const log = createLogger('auto-install');
 
   log.debug({ isRestarted, hasDependencies: !!config.dependencies }, 'Auto-install check');
@@ -53,7 +51,6 @@ export async function autoInstallDependencies(
   if (offline && mode === 'auto') {
     // In offline mode with auto install, we can't install
     // Just check if dependencies are available, fail if not
-    const { isInstalled } = await import('./forge-home');
     const missing = config.dependencies.filter((dep) => !isInstalled(dep));
 
     if (missing.length > 0) {
