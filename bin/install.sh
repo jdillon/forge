@@ -233,14 +233,17 @@ else
   DIRTY="false"
 fi
 
-# Extract date component (YYYYMMDD) from timestamp
-DATE=$(echo "$TIMESTAMP" | cut -d'T' -f1 | tr -d '-')
+# Extract date and time components (YYYYMMDD.HHMM) from timestamp
+# Timestamp format: 2025-11-09T21:28:47Z or 2025-11-09T12:49:29-08:00
+DATE_PART=$(echo "$TIMESTAMP" | cut -d'T' -f1 | tr -d '-')  # 20251109
+TIME_PART=$(echo "$TIMESTAMP" | cut -d'T' -f2 | cut -d':' -f1,2 | tr -d ':')  # 2128
+DATE_TIME="${DATE_PART}.${TIME_PART}"
 
 # Build semver string
 if [[ "$HASH" != "unknown" ]]; then
-  SEMVER="${VERSION}+${DATE}.${HASH}"
+  SEMVER="${VERSION}+${DATE_TIME}.${HASH}"
 else
-  SEMVER="${VERSION}+${DATE}"
+  SEMVER="${VERSION}+${DATE_TIME}"
 fi
 
 # Write version.json to forge home

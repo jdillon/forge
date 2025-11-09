@@ -139,11 +139,14 @@ EOF
   local branch=$(cd "${project_root}" && git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "dev")
   local dirty=$(cd "${project_root}" && git diff-index --quiet HEAD 2>/dev/null && echo "false" || echo "true")
 
-  # Extract date component (YYYYMMDD)
-  local date_part=$(echo "$timestamp" | cut -d'T' -f1 | tr -d '-')
+  # Extract date and time components (YYYYMMDD.HHMM) from timestamp
+  # Timestamp format: 2025-11-09T21:28:47Z or 2025-11-09T12:49:29-08:00
+  local date_part=$(echo "$timestamp" | cut -d'T' -f1 | tr -d '-')  # 20251109
+  local time_part=$(echo "$timestamp" | cut -d'T' -f2 | cut -d':' -f1,2 | tr -d ':')  # 2128
+  local date_time="${date_part}.${time_part}"
 
   # Build semver
-  local semver="${version}+${date_part}.${hash}"
+  local semver="${version}+${date_time}.${hash}"
 
   # Write version.json to forge home
   cat > "${FORGE_HOME}/version.json" <<EOF
