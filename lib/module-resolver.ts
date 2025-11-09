@@ -14,7 +14,7 @@
 import { resolve, join } from 'path';
 import { existsSync } from 'fs';
 import { getNodeModulesPath } from './forge-home';
-import { createLogger, getGlobalLogger } from './logging';
+import { createLogger } from './logging';
 
 /**
  * Resolve module path with priority: local → shared

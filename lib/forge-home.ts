@@ -19,7 +19,6 @@ import { homedir } from 'os';
 import { createLogger } from './logging';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { packageManager } from './package-manager';
-import { createHash } from 'crypto';
 
 /**
  * Get forge home path
@@ -97,17 +96,6 @@ auto = "disable"
 `;
 
   writeFileSync(bunfigPath, bunfig);
-}
-
-/**
- * Get current package.json content hash for change detection
- */
-function getPackageHash(): string {
-  const pkgPath = join(getForgeHomePath(), 'package.json');
-  if (!existsSync(pkgPath)) return '';
-
-  const content = readFileSync(pkgPath, 'utf8');
-  return createHash('sha256').update(content).digest('hex');
 }
 
 /**
