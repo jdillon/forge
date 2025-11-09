@@ -7,8 +7,8 @@ set -euo pipefail
 #
 
 SCRIPT_DIR=""
-FORGE_HOME=""
 FORGE_CLI=""
+# FORGE_HOME is set via environment or defaulted in setup_environment()
 
 #
 # Path resolution

@@ -16,7 +16,7 @@ set -euo pipefail
 #
 
 PROJECT_ROOT=""
-FORGE_HOME=""
+# FORGE_HOME set in setup_environment() to dev-home/forge
 
 #
 # Path resolution
@@ -212,44 +212,13 @@ rebuild_and_install() {
 }
 
 #
-# Forge execution
+# Delegate to bin/forge
 #
 
 run_forge() {
-  local is_restarted="$1"
-  shift
-
-  # Set restart flag if this is a restart
-  if [[ "$is_restarted" == "true" ]]; then
-    export FORGE_RESTARTED=1
-  fi
-
-  # Find the CLI entry point in installed package
-  local cli_path="${FORGE_HOME}/node_modules/@planet57/forge/lib/cli.ts"
-
-  if [[ ! -f "$cli_path" ]]; then
-    echo "ERROR: CLI not found at $cli_path" >&2
-    exit 1
-  fi
-
-  # Use --preserve-symlinks to prevent Bun from resolving through symlinks
-  # This allows user commands symlinked into node_modules to resolve forge correctly
-  bun run --preserve-symlinks "${cli_path}" "$@"
-}
-
-handle_restart() {
-  local exit_code="$1"
-  shift
-
-  # Exit code 42 = restart needed (dependencies installed)
-  # "I checked it very thoroughly, and that quite definitely is the answer."
-  if [[ $exit_code -eq 42 ]]; then
-    # Re-run with FORGE_RESTARTED=1 to prevent infinite loops
-    run_forge "true" "$@"
-    return $?
-  fi
-
-  return "$exit_code"
+  # Delegate to bin/forge script (installed mode bootstrap)
+  # It will use our FORGE_HOME environment variable
+  exec "${PROJECT_ROOT}/bin/forge" "$@"
 }
 
 #
@@ -266,13 +235,9 @@ main() {
     rebuild_and_install
   fi
 
-  # Run forge and handle restart if needed
-  set +e  # Don't exit on non-zero
-  run_forge "false" "$@"
-  local exit_code=$?
-  set -e
-
-  handle_restart "$exit_code" "$@"
+  # Delegate to bin/forge (will exec, replacing this process)
+  # bin/forge handles restart logic (exit code 42)
+  run_forge "$@"
 }
 
 # Execute main with all arguments
