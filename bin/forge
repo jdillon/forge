@@ -14,9 +14,6 @@ done
 # Installed mode only - forge-dev handles dev mode
 script_dir="$(cd "$(dirname "${script_path}")" && pwd)"
 
-# Capture user's current working directory (fully resolved)
-export FORGE_USER_DIR="$(pwd -P)"
-
 # Set FORGE_HOME and FORGE_NODE_MODULES if not already set (e.g., by tests)
 if [[ -z "${FORGE_HOME:-}" ]]; then
   export FORGE_HOME="${HOME}/.forge"
@@ -47,12 +44,9 @@ run_forge() {
     export FORGE_RESTARTED=1
   fi
 
-  # Use --cwd to set Bun's working directory to FORGE_HOME
-  # This makes Bun find the config files (bunfig.toml, tsconfig.json) in FORGE_HOME
-  # User's actual cwd remains unchanged in FORGE_USER_DIR
   # Use --preserve-symlinks to prevent Bun from resolving through symlinks
   # This allows user commands symlinked into node_modules to resolve forge correctly
-  bun --cwd="${FORGE_HOME}" run --preserve-symlinks "${forge_cli}" "${@:2}"
+  bun run --preserve-symlinks "${forge_cli}" "${@:2}"
 }
 
 # Run forge and capture exit code

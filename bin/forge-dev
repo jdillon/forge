@@ -21,9 +21,6 @@ done
 script_dir="$(cd -P "$(dirname "$script_path")" && pwd)"
 project_root="$(cd -P "${script_dir}/.." && pwd)"
 
-# Capture user's current working directory (fully resolved)
-export FORGE_USER_DIR="$(pwd -P)"
-
 # Dev mode: use packaged tarball with isolated dev-home
 export FORGE_HOME="${project_root}/dev-home/forge"
 export FORGE_NODE_MODULES="${FORGE_HOME}/node_modules"
@@ -155,12 +152,9 @@ run_forge() {
     exit 1
   fi
 
-  # Use --cwd to set Bun's working directory to FORGE_HOME
-  # This makes Bun find the config files (bunfig.toml, tsconfig.json) we created above
-  # User's actual cwd remains unchanged in FORGE_USER_DIR
   # Use --preserve-symlinks to prevent Bun from resolving through symlinks
   # This allows user commands symlinked into node_modules to resolve forge correctly
-  bun --cwd="${FORGE_HOME}" run --preserve-symlinks "${cli_path}" "${@:2}"
+  bun run --preserve-symlinks "${cli_path}" "${@:2}"
 }
 
 #

@@ -98,7 +98,7 @@ function bootstrap(cliArgs: string[]): BootstrapConfig {
     logFormat: opts.logFormat as "json" | "pretty" | undefined,
     colorMode,
     root: opts.root,
-    userDir: process.env.FORGE_USER_DIR || process.cwd(),
+    userDir: process.cwd(),
     isRestarted,
   };
 }
@@ -133,7 +133,6 @@ function initializeLogging(config: ResolvedConfig): void {
   log.debug(`cwd: ${process.cwd()}`);
   log.debug(`projectPresent: ${config.projectPresent}`);
   log.debug(`projectRoot: ${config.projectRoot || "(none)"}`);
-  log.debug(`FORGE_USER_DIR: ${process.env.FORGE_USER_DIR}`);
 }
 
 // ============================================================================

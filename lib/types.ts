@@ -111,5 +111,5 @@ export interface ForgeConfig {
 export interface ProjectConfig {
   projectRoot: FilePath;  // Fully resolved project root directory
   forgeDir: FilePath;     // Fully resolved .forge2/ directory
-  userDir: FilePath;      // Fully resolved user's working directory (from FORGE_USER_DIR)
+  userDir: FilePath;      // Fully resolved user's working directory
 }

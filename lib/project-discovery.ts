@@ -15,12 +15,12 @@ import type { FilePath } from './types';
  * Searches for .forge2/ directory starting from startDir and moving up
  * until it finds one or reaches the filesystem root.
  *
- * @param startDir - Directory to start searching from (defaults to FORGE_USER_DIR or cwd)
+ * @param startDir - Directory to start searching from (defaults to cwd)
  * @returns Project root directory, or null if not found
  */
 export async function discoverProject(startDir?: FilePath): Promise<FilePath | null> {
-  // Start from explicit dir, or FORGE_USER_DIR (user's actual location), or fall back to cwd
-  let dir = startDir || process.env.FORGE_USER_DIR || process.cwd();
+  // Start from explicit dir, or fall back to cwd
+  let dir = startDir || process.cwd();
 
   // Walk up to root
   while (dir !== '/' && dir !== '.') {

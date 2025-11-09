@@ -178,7 +178,7 @@ export async function resolveConfig(
   //   - FORGE_INSTALL_MODE=manual
   //   - FORGE_OFFLINE=true
   //   - etc.
-  // Current: Only FORGE_PROJECT, FORGE_USER_DIR, FORGE_HOME supported
+  // Current: Only FORGE_PROJECT, FORGE_HOME supported
 
   // 5. Build ResolvedConfig
   const resolved: ResolvedConfig = {
