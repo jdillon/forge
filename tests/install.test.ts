@@ -227,7 +227,7 @@ describe('Installation and Uninstallation', () => {
     const versionOutput = await Bun.file(
       join(logs.logDir, "forge-version-stdout.log"),
     ).text();
-    expect(versionOutput.trim()).toMatch(/^\d+\.\d+\.\d+/);
+    expect(versionOutput.trim()).toMatch(/^forge version \d+\.\d+\.\d+/);
   }, 60000);
 
   test("creates meta-project package.json", async (ctx) => {

@@ -126,6 +126,39 @@ EOF
     bun install
   )
 
+  # Generate version.json (similar to install.sh)
+  echo "  → Generating version info..." >&2
+  local pkg_dir="${FORGE_HOME}/node_modules/@planet57/forge"
+  local version=$(node -p "require('${pkg_dir}/package.json').version" 2>/dev/null || echo "dev")
+
+  # Get git info from project root (not the installed package)
+  local hash=$(cd "${project_root}" && git rev-parse --short HEAD 2>/dev/null || echo "dev")
+  local hash_full=$(cd "${project_root}" && git rev-parse HEAD 2>/dev/null || echo "dev")
+  local timestamp=$(cd "${project_root}" && git log -1 --format=%cI HEAD 2>/dev/null || date -u +"%Y-%m-%dT%H:%M:%SZ")
+  local timestamp_unix=$(cd "${project_root}" && git log -1 --format=%ct HEAD 2>/dev/null || date +%s)
+  local branch=$(cd "${project_root}" && git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "dev")
+  local dirty=$(cd "${project_root}" && git diff-index --quiet HEAD 2>/dev/null && echo "false" || echo "true")
+
+  # Extract date component (YYYYMMDD)
+  local date_part=$(echo "$timestamp" | cut -d'T' -f1 | tr -d '-')
+
+  # Build semver
+  local semver="${version}+${date_part}.${hash}"
+
+  # Write version.json to forge home
+  cat > "${FORGE_HOME}/version.json" <<EOF
+{
+  "version": "$version",
+  "hash": "$hash",
+  "hashFull": "$hash_full",
+  "timestamp": "$timestamp",
+  "timestampUnix": $timestamp_unix,
+  "branch": "$branch",
+  "dirty": $dirty,
+  "semver": "$semver"
+}
+EOF
+
   # Save new checksum
   compute_checksum > "${FORGE_HOME}/.forge-checksum"
 

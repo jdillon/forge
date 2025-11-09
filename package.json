@@ -1,6 +1,6 @@
 {
   "name": "@planet57/forge",
-  "version": "2.0.0-alpha.1",
+  "version": "2.0.0-dev",
   "description": "Modern CLI framework for deployments - TypeScript/Bun implementation",
   "author": "Jason Dillon",
   "license": "Apache-2.0",

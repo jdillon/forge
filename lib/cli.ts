@@ -34,6 +34,14 @@ export async function main(): Promise<void> {
   const cliArgs = process.argv.slice(2);
   log.debug("Args: %o", cliArgs);
 
+  // Handle --version early (before config resolution)
+  if (cliArgs.includes('--version') || cliArgs.includes('-V')) {
+    const { getVersionString } = await import('./version');
+    const version = await getVersionString();
+    console.log(`forge version ${version}`);
+    process.exit(0);
+  }
+
   try {
     // Phase 1: Bootstrap - extract CLI options (permissive)
     const bootstrapConfig = bootstrap(cliArgs);

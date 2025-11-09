@@ -94,11 +94,22 @@ if [[ -z "${FORGE_REPO:-}" ]]; then
   REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
   # Check if we're in the forge git repo and have a local tarball
-  if [[ -d "${REPO_ROOT}/.git" ]] && [[ -f "${REPO_ROOT}/build/planet57-forge-2.0.0-alpha.1.tgz" ]]; then
-    # Use local tarball for development
-    FORGE_REPO="file://${REPO_ROOT}/build/planet57-forge-2.0.0-alpha.1.tgz"
-    FORGE_BRANCH=""
-    info "Detected local development mode - using tarball from ${REPO_ROOT}/build/"
+  if [[ -d "${REPO_ROOT}/.git" ]]; then
+    # Find any planet57-forge-*.tgz tarball
+    TARBALL=$(ls -t "${REPO_ROOT}/build/planet57-forge-"*.tgz 2>/dev/null | head -n1)
+    if [[ -n "${TARBALL}" ]]; then
+      # Use local tarball for development
+      FORGE_REPO="file://${TARBALL}"
+      FORGE_BRANCH=""
+      info "Detected local development mode - using tarball: $(basename "${TARBALL}")"
+    else
+      # Use GitHub for production installs
+      FORGE_REPO="git+ssh://git@github.com/jdillon/forge"
+      # Determine branch (default to module-system for Phase 1, unless explicitly set to empty)
+      if [[ -z "${FORGE_BRANCH+x}" ]]; then
+        FORGE_BRANCH="module-system"
+      fi
+    fi
   else
     # Use GitHub for production installs
     FORGE_REPO="git+ssh://git@github.com/jdillon/forge"
@@ -197,6 +208,57 @@ FORGE_PKG_DIR="${FORGE_HOME}/node_modules/@planet57/forge"
 if [[ ! -d "${FORGE_PKG_DIR}" ]]; then
   die "Installation verification failed: package not found at ${FORGE_PKG_DIR}"
 fi
+
+# Generate version.json
+info "Generating version information..."
+
+# Read base version from package.json
+VERSION=$(node -p "require('${FORGE_PKG_DIR}/package.json').version" 2>/dev/null || echo "unknown")
+
+# Try to get git info (works if package was installed with .git directory)
+if cd "${FORGE_PKG_DIR}" 2>/dev/null && git rev-parse --git-dir &>/dev/null; then
+  HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+  HASH_FULL=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+  TIMESTAMP=$(git log -1 --format=%cI HEAD 2>/dev/null || date -u +"%Y-%m-%dT%H:%M:%SZ")
+  TIMESTAMP_UNIX=$(git log -1 --format=%ct HEAD 2>/dev/null || echo "0")
+  BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+  DIRTY=$(git diff-index --quiet HEAD 2>/dev/null && echo "false" || echo "true")
+else
+  # Fallback if no git info available (e.g., npm/tarball install)
+  HASH="unknown"
+  HASH_FULL="unknown"
+  TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  TIMESTAMP_UNIX=$(date +%s)
+  BRANCH="unknown"
+  DIRTY="false"
+fi
+
+# Extract date component (YYYYMMDD) from timestamp
+DATE=$(echo "$TIMESTAMP" | cut -d'T' -f1 | tr -d '-')
+
+# Build semver string
+if [[ "$HASH" != "unknown" ]]; then
+  SEMVER="${VERSION}+${DATE}.${HASH}"
+else
+  SEMVER="${VERSION}+${DATE}"
+fi
+
+# Write version.json to forge home
+cat > "${FORGE_HOME}/version.json" <<EOF
+{
+  "version": "$VERSION",
+  "hash": "$HASH",
+  "hashFull": "$HASH_FULL",
+  "timestamp": "$TIMESTAMP",
+  "timestampUnix": $TIMESTAMP_UNIX,
+  "branch": "$BRANCH",
+  "dirty": $DIRTY,
+  "semver": "$SEMVER"
+}
+EOF
+
+cd "${FORGE_HOME}"
+info "Version: $SEMVER"
 
 # Find the CLI entry point
 if [[ -f "${FORGE_PKG_DIR}/bin/forge" ]]; then

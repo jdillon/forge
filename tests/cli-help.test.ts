@@ -72,7 +72,7 @@ describe('CLI Help Output', () => {
 
     expect(result.exitCode).toBe(0);
     const output = await Bun.file(result.stdoutLog).text();
-    expect(output).toMatch(/\d+\.\d+\.\d+/); // version pattern
+    expect(output).toMatch(/forge version \d+\.\d+\.\d+/); // version pattern with "forge version" prefix
   });
 
   test('should show version with -V', async (ctx) => {
@@ -86,7 +86,7 @@ describe('CLI Help Output', () => {
 
     expect(result.exitCode).toBe(0);
     const output = await Bun.file(result.stdoutLog).text();
-    expect(output).toMatch(/\d+\.\d+\.\d+/);
+    expect(output).toMatch(/forge version \d+\.\d+\.\d+/);
   });
 
   test('should show terse error for unknown options', async (ctx) => {

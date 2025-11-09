@@ -6,6 +6,7 @@
 
 import process from 'node:process';
 import { getForgeHomePath } from './forge-home';
+import { getVersion } from './version';
 import type { ForgeCommand, ForgeModuleMetadata } from './types';
 
 /**
@@ -14,6 +15,27 @@ import type { ForgeCommand, ForgeModuleMetadata } from './types';
 export const __module__: ForgeModuleMetadata = {
   group: false,
   description: 'Built-in commands',
+};
+
+/**
+ * Show detailed version information.
+ */
+export const version: ForgeCommand = {
+  description: 'Show detailed version information',
+  execute: async () => {
+    const info = await getVersion();
+
+    console.log('Forge Version Information:');
+    console.log();
+    console.log(`  Version:    ${info.version}`);
+    console.log(`  Full:       ${info.semver}`);
+    console.log(`  Commit:     ${info.hashFull}`);
+    console.log(`  Branch:     ${info.branch}`);
+    console.log(`  Built:      ${info.timestamp}`);
+    console.log(`  Dirty:      ${info.dirty ? 'yes (uncommitted changes)' : 'no'}`);
+    console.log();
+    console.log(`Install location: ${getForgeHomePath()}`);
+  },
 };
 
 /**
