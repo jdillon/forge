@@ -29,7 +29,10 @@
     "clean": "rm -rf build/",
     "pack": "bun pm pack --destination build/ --quiet",
     "testsuite": "bun clean && bun install && bun pack && bun test",
-    "reinstall": "bin/uninstall.sh -y && bun pm pack --destination build/ --quiet && bin/install.sh -y"
+    "reinstall": "bin/uninstall.sh -y && bun pm pack --destination build/ --quiet && bin/install.sh -y",
+    "license:check": "license-check-and-add check -f license-checker.config.json",
+    "license:add": "license-check-and-add add -f license-checker.config.json",
+    "license:remove": "license-check-and-add remove -f license-checker.config.json"
   },
   "dependencies": {
     "boxen": "^7.1.1",
@@ -48,9 +51,10 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
-    "bun-types": "latest",
-    "@types/bun": "^1.3.1",
     "@commander-js/extra-typings": "^12.0.0",
+    "@types/bun": "^1.3.1",
+    "bun-types": "latest",
+    "license-check-and-add": "^4.0.5",
     "typescript": "^5.7.0"
   },
   "optionalDependencies": {

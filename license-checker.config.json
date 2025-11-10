@@ -1,0 +1,49 @@
+{
+  "src": [
+    "lib/**/*.ts",
+    "bin/install.sh",
+    "bin/uninstall.sh",
+    "tests/**/*.ts"
+  ],
+  "path": "license-header.txt",
+  "ignore": [
+    "node_modules/**/*",
+    "build/**/*",
+    "tmp/**/*",
+    "dev-home/**/*",
+    "**/*.d.ts",
+    ".beads/**/*",
+    ".claude/**/*",
+    ".idea/**/*",
+    "sandbox/**/*",
+    "docs/**/*",
+    "examples/**/*",
+    "**/*.md",
+    "**/*.json",
+    "**/*.yml",
+    "**/*.yaml",
+    "**/*.toml",
+    "**/*.lock",
+    ".DS_Store",
+    ".gitignore",
+    ".gitattributes",
+    ".npmignore",
+    "bin/forge",
+    "bin/forge-dev"
+  ],
+  "license": "license-header.txt",
+  "licenseFormats": {
+    "ts|js": {
+      "eachLine": {
+        "prepend": "// "
+      }
+    },
+    "sh": {
+      "eachLine": {
+        "prepend": "# "
+      }
+    }
+  },
+  "trailingWhitespace": "TRIM",
+  "insert": "true"
+}
