@@ -13,16 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Forge v2 - Configuration Resolver
- *
- * Discovers project, loads config, and returns ResolvedConfig.
- * This module runs before logger initialization, so uses private log() for tracing.
- *
- * Future: Full config merge strategy (user → project → forge-home → defaults)
- * Future: Extended ENV var support beyond current FORGE_* vars
- */
-
 import process from "node:process";
 import { resolve, join, dirname } from "node:path";
 import { existsSync } from "node:fs";

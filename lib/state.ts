@@ -13,12 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Forge v2 - State Management
- *
- * Simple JSON-based state management for project and user state
- */
-
 import { join } from 'path';
 import { existsSync } from 'fs';
 import { readJsonFile, writeJsonFile } from './runtime';

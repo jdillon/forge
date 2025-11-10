@@ -1,4 +1,4 @@
-# Awesome CLI Experience for Forge v2
+# Awesome CLI Experience for Forge
 
 **Philosophy**: "It's for me mostly, so I like awesome"
 

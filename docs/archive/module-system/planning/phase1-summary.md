@@ -17,7 +17,7 @@
 | Question | Decision |
 |----------|----------|
 | **Task breakdown?** | One Phase 1 Story issue (#10) with inline checklist |
-| **Branching?** | Create `module-system` branch off `v2-prototype` |
+| **Branching?** | Create `module-system` branch off `module-system` |
 | **Merge when?** | After all 5 phases complete |
 
 ---
@@ -25,18 +25,18 @@
 ## Branch Strategy
 
 ```
-v2-prototype (stable base - protected)
+module-system (stable base - protected)
 └── module-system (all 5 phases work here)
     └── merge back when epic complete
 ```
 
 **Workflow**:
 ```bash
-git checkout v2-prototype
+git checkout module-system
 git checkout -b module-system
 git push -u origin module-system
 # Work on all phases here
-# When done: merge back to v2-prototype
+# When done: merge back to module-system
 ```
 
 ---
@@ -96,12 +96,12 @@ From issue #10 and WIP doc:
 ## Next Steps
 
 **Current State**:
-- Branch: `v2-prototype`
+- Branch: `module-system`
 - Tests: 39 passing
 - Examples: Working with local modules
 
 **First Steps**:
-1. Create `module-system` branch from `v2-prototype`
+1. Create `module-system` branch from `module-system`
 2. Create `package.json` in repo root
 3. Create `install.sh` script
 4. Test installation flow

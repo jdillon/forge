@@ -1,4 +1,4 @@
-# Package Management Strategy for Forge v2
+# Package Management Strategy for Forge
 
 **Key Insight**: Use Bun's package manager for modules, not just npm packages!
 

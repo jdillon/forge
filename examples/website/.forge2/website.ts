@@ -59,7 +59,7 @@ export const build: ForgeCommand = {
       await Bun.sleep(500);
 
       // In real project: await $`npm run build`;
-      await $`echo "<h1>Hello from Forge v2</h1>" > ${CONFIG.buildDir}/index.html`;
+      await $`echo "<h1>Hello from Forge</h1>" > ${CONFIG.buildDir}/index.html`;
 
       if (options.optimize) {
         spinner.text = 'Optimizing...';
@@ -203,7 +203,7 @@ export const publish: ForgeCommand = {
         skip: () => options.skipBuild && 'Build skipped',
         task: async (ctx, task) => {
           await $`mkdir -p ${CONFIG.buildDir}`;
-          await $`echo "<h1>Hello from Forge v2</h1>" > ${CONFIG.buildDir}/index.html`;
+          await $`echo "<h1>Hello from Forge</h1>" > ${CONFIG.buildDir}/index.html`;
           await Bun.sleep(800);
           ctx.buildTime = 850;
         }

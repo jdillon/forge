@@ -13,21 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Forge Home Management
- *
- * Manages the forge home directory where shared dependencies and configuration live.
- *
- * Location: ~/.forge/ (or $FORGE_HOME)
- * Structure:
- *   - package.json (managed by bun)
- *   - bun.lockb (managed by bun)
- *   - node_modules/ (installed dependencies)
- *   - config/ (user-level configuration)
- *   - state/ (user-level state)
- *   - cache/ (cache data)
- *   - logs/ (global logs)
- */
 
 import process from 'node:process';
 import { join } from 'path';

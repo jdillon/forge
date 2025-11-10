@@ -4,7 +4,7 @@
 **Issue**: [#10 Phase 1: Basic Installation & Local Modules](https://github.com/jdillon/forge-bash/issues/10)
 **Spec Reference**: [installation-and-module-system.md](../../planning/installation-and-module-system.md#phase-1-basic-installation--local-modules)
 **Status**: Ready to Start
-**Branch**: `module-system` (to be created from `v2-prototype`)
+**Branch**: `module-system` (to be created from `module-system`)
 
 **Related Docs**:
 - [phase1-execution-plan.md](./phase1-execution-plan.md) - Full execution plan with branching strategy
@@ -73,7 +73,7 @@ One-line installation script.
 **Responsibilities:**
 1. Check prerequisites (Bun, Git)
 2. Create meta project at `~/.local/share/forge/`
-3. Install forge via `bun add github:jdillon/forge#v2-prototype`
+3. Install forge via `bun add github:jdillon/forge#module-system`
 4. Create wrapper script at `~/.local/bin/forge`
 5. Verify installation works
 6. Provide PATH instructions if needed
@@ -99,7 +99,7 @@ cd ~/.local/share/forge
 echo '{"name":"forge-meta","version":"1.0.0"}' > package.json
 
 # Install forge
-bun add github:jdillon/forge#v2-prototype
+bun add github:jdillon/forge#module-system
 
 # Create wrapper
 mkdir -p ~/.local/bin
@@ -280,7 +280,7 @@ process.exit(await result.exited);
 
 ## Current State
 
-**Branch**: Working on `v2-prototype`
+**Branch**: Working on `module-system`
 **Tests**: 39 passing, 0 skipping, 0 failing
 **Examples**: `examples/website/` working with local modules
 **Module loading**: Currently loads from `.forge2/*.ts` only

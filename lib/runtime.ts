@@ -13,17 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Runtime Abstraction Layer
- *
- * This module isolates all runtime-specific APIs (Bun, Deno, Node, etc.)
- * so the rest of the codebase can be runtime-agnostic.
- *
- * IMPORTANT: This is the ONLY file that should import from 'bun' or Deno.*
- *
- * Current implementation: Bun
- * Future: Switch to Deno by changing imports in this file only
- */
 
 import process from 'node:process';
 

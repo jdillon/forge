@@ -1,4 +1,4 @@
-# Session Notes - Forge v2 Progress
+# Session Notes - Forge Progress
 
 **Date**: 2025-10-29
 
@@ -145,7 +145,7 @@ Make the CLI **actually enjoyable** to use:
 cd ~/.local/share
 git clone <repo> forge2
 cd forge2
-git checkout v2-prototype
+git checkout module-system
 
 # Install dependencies
 bun install
@@ -411,7 +411,7 @@ Auto checks once per day, shows box if update available.
 
 ## Repo Status
 
-### Branch: `v2-prototype`
+### Branch: `module-system`
 
 **Structure:**
 ```

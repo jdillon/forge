@@ -76,7 +76,7 @@ According to `docs/github-issue-strategy.md`:
 ### Context
 
 **Current state**:
-- Branch: `v2-prototype`
+- Branch: `module-system`
 - Status: Active development, 39 tests passing
 - Main branch: (not specified in docs, likely `main` or `master`)
 
@@ -89,7 +89,7 @@ According to `docs/github-issue-strategy.md`:
 
 #### Option A: Per-Phase Branches
 ```
-v2-prototype (current)
+module-system (current)
 ├── phase-1-installation
 ├── phase-2-meta-project
 ├── phase-3-git-modules
@@ -112,7 +112,7 @@ v2-prototype (current)
 #### Option B: Per-Epic Branch (Current Approach)
 ```
 main/master
-└── v2-prototype (epic branch for all 5 phases)
+└── module-system (epic branch for all 5 phases)
 ```
 
 **Pros**:
@@ -129,14 +129,14 @@ main/master
 
 #### Option C: Hybrid - Branch Only When Needed
 ```
-v2-prototype (default)
+module-system (default)
 ├── phase-3-experiment (only if trying risky approach)
 └── phase-4-refactor (only if major rework needed)
 ```
 
 **Pros**:
 - ✅ Flexibility when needed
-- ✅ Simple default (work on v2-prototype)
+- ✅ Simple default (work on module-system)
 - ✅ Can branch for risky/experimental work
 - ✅ Low overhead
 
@@ -147,36 +147,36 @@ v2-prototype (default)
 ### Recommendation: **Option D - Epic Branch with Phase Feature Branches**
 
 **Rationale**:
-- `v2-prototype` is stable base (like main)
-- Create feature branches off v2-prototype for each epic/plan
-- Merge back to v2-prototype when complete
+- `module-system` is stable base (like main)
+- Create feature branches off module-system for each epic/plan
+- Merge back to module-system when complete
 - Protects stable state while allowing development
 
 **Branch structure**:
 ```
-v2-prototype (stable base - protected)
+module-system (stable base - protected)
 └── module-system (epic branch for module distribution work)
     ├── work happens here sequentially (Phase 1 → 2 → 3 → 4 → 5)
-    └── merge back to v2-prototype when epic complete
+    └── merge back to module-system when epic complete
 ```
 
 **Workflow**:
 ```bash
 # Start epic
-git checkout v2-prototype
+git checkout module-system
 git checkout -b module-system
 
 # Work on phases sequentially on module-system branch
 # Phase 1 → commit → Phase 2 → commit → etc.
 
 # When epic complete (all 5 phases done)
-git checkout v2-prototype
+git checkout module-system
 git merge module-system
 git branch -d module-system  # or keep for reference
 ```
 
 **Benefits**:
-- ✅ Protects v2-prototype from in-progress work
+- ✅ Protects module-system from in-progress work
 - ✅ Clean separation of epics
 - ✅ Can still do sequential phase work (no branch per phase)
 - ✅ Easy to abandon epic if needed (just delete branch)
@@ -193,11 +193,11 @@ git branch -d module-system  # or keep for reference
 
 ### Step 0: Create Epic Branch (1 min)
 
-**Create module-system branch off v2-prototype**:
+**Create module-system branch off module-system**:
 
 ```bash
-# Ensure we're on latest v2-prototype
-git checkout v2-prototype
+# Ensure we're on latest module-system
+git checkout module-system
 git pull  # if needed
 
 # Create epic branch
@@ -281,14 +281,14 @@ git push -u origin module-system
 git status
 git push origin module-system
 
-# Switch to v2-prototype
-git checkout v2-prototype
+# Switch to module-system
+git checkout module-system
 
 # Merge epic branch
 git merge module-system
 
-# Push updated v2-prototype
-git push origin v2-prototype
+# Push updated module-system
+git push origin module-system
 
 # Optionally delete epic branch (or keep for reference)
 # git branch -d module-system
@@ -306,8 +306,8 @@ git push origin v2-prototype
 | Question | Decision | Rationale |
 |----------|----------|-----------|
 | **Break Phase 1 into task issues?** | No - Use simplified approach with one Story issue | Phase 1 is straightforward, < 2 days, no unknowns |
-| **Branching strategy?** | Create `module-system` branch off `v2-prototype` | Protects stable base, clear epic isolation |
-| **When to create branches?** | Per epic/plan, off `v2-prototype` | Keeps stable base clean, easy to abandon if needed |
+| **Branching strategy?** | Create `module-system` branch off `module-system` | Protects stable base, clear epic isolation |
+| **When to create branches?** | Per epic/plan, off `module-system` | Keeps stable base clean, easy to abandon if needed |
 | **When to merge back?** | After epic complete (all 5 phases) | Merge complete work, not in-progress |
 
 ### Next Actions for Jason
@@ -349,10 +349,10 @@ git push origin v2-prototype
 - Use progress notes in Phase 1 issue
 - WIP doc has full detail
 
-### Epic Branch off v2-prototype (vs. Working Directly on v2-prototype)
+### Epic Branch off module-system (vs. Working Directly on module-system)
 
 **Benefits**:
-- 🛡️  Protects stable v2-prototype
+- 🛡️  Protects stable module-system
 - 🚀 Simple workflow within epic (no per-phase branches)
 - 🧩 Natural progression, no merge conflicts
 - 🗑️  Easy to abandon if epic doesn't work out
@@ -372,9 +372,9 @@ git push origin v2-prototype
 ## Open Questions
 
 1. **What is the main branch name?** (`main`, `master`, `trunk`?)
-   - Affects where we eventually merge `v2-prototype`
+   - Affects where we eventually merge `module-system`
 
-2. **When to merge v2-prototype to main?**
+2. **When to merge module-system to main?**
    - After Phase 5 complete?
    - After each phase? (probably not)
    - When ready for release?

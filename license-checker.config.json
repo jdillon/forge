@@ -48,7 +48,8 @@
     "sh|^forge|^forge-dev": {
       "eachLine": {
         "prepend": "# "
-      }
+      },
+      "append": ""
     }
   },
   "trailingWhitespace": "TRIM",

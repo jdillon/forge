@@ -13,14 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Module Symlink Manager
- *
- * Creates symlinks to user .forge2 directories in forge-home/node_modules/.forge-project/
- * This allows user commands to import from '@planet57/forge' and get the correct module instance.
- *
- * Requires bun --preserve-symlinks to work correctly.
- */
 
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';

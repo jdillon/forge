@@ -23,7 +23,7 @@
 
 ## Overview
 
-This specification defines the installation, upgrade, and module system for Forge v2. The system enables:
+This specification defines the installation, upgrade, and module system for Forge. The system enables:
 
 - **Simple installation** via one-line install script
 - **Shared module storage** using a meta-project pattern
@@ -162,7 +162,7 @@ The `install.sh` script:
 
 3. **Install forge**
    ```bash
-   bun add github:jdillon/forge#v2-prototype
+   bun add github:jdillon/forge#module-system
    ```
 
 4. **Create wrapper script**
@@ -170,7 +170,7 @@ The `install.sh` script:
    mkdir -p ~/.local/bin
    cat > ~/.local/bin/forge << 'EOF'
    #!/usr/bin/env bash
-   # Forge v2 wrapper
+   # Forge wrapper
    exec bun ~/.local/share/forge/node_modules/@planet57/forge/cli.ts "$@"
    EOF
    chmod +x ~/.local/bin/forge
@@ -707,7 +707,7 @@ if (await shouldCheckForUpdates()) {
   - `bin`: Entry point
   - `exports`: Module exports
 - [ ] Test installation flow
-  - From git: `bun add github:jdillon/forge#v2-prototype`
+  - From git: `bun add github:jdillon/forge#module-system`
   - Via install script
 - [ ] Verify wrapper script works
 - [ ] Document installation process

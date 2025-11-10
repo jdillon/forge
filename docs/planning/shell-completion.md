@@ -10,7 +10,7 @@
 
 ## Overview
 
-Generate and install shell completion for bash, zsh, and fish, enabling users to auto-complete Forge v2 commands, subcommands, and flags.
+Generate and install shell completion for bash, zsh, and fish, enabling users to auto-complete Forge commands, subcommands, and flags.
 
 ---
 

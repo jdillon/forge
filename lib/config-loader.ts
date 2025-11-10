@@ -13,25 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Forge v2 - Configuration Loader
- *
- * Layered configuration system using cosmiconfig
- * Priority (highest to lowest):
- * 1. Environment variables (FORGE_*)
- * 2. Local project config (.forge2/config.local.*) - gitignored
- * 3. Project config (.forge2/config.*)
- * 4. User config (~/.forge/config/config.*)
- * 5. Defaults
- *
- * Supports multiple formats via cosmiconfig:
- * - .forge2/config.yml (YAML - recommended for pure data)
- * - .forge2/config.ts (TypeScript - for type safety)
- * - .forge2/config.json (JSON)
- * - .forge2/config.js (JavaScript)
- * - .forge2rc (various formats)
- */
-
 import { cosmiconfig } from "cosmiconfig";
 import { join } from "path";
 import type { ForgeConfig } from "./types";

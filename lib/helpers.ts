@@ -13,11 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Forge v2 - Helper Functions
- *
- * Utility functions for use in commands
- */
 
 import chalk from 'chalk';
 

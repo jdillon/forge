@@ -1,6 +1,6 @@
 # Basic Example
 
-Minimal Forge v2 module demonstrating simple command patterns.
+Minimal Forge module demonstrating simple command patterns.
 
 ## What This Demonstrates
 

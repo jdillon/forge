@@ -13,12 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Forge v2 - Types
- *
- * Extensible types and interfaces for Forge commands and modules
- */
-
 import type { Command } from 'commander';
 
 // ============================================================================

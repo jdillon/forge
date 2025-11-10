@@ -72,7 +72,7 @@ Following XDG provides several benefits:
 
 ---
 
-## Forge v2 Directory Layout
+## Forge Directory Layout
 
 ### System-Wide Installation
 
@@ -399,7 +399,7 @@ export default {
 
 ## Summary
 
-Forge v2 follows XDG standards for a cleaner, more maintainable installation:
+Forge follows XDG standards for a cleaner, more maintainable installation:
 
 - ✅ Executable in `~/.local/bin/` (standard location, likely in PATH)
 - ✅ Data in `~/.local/share/forge2/` (modules, runtime)

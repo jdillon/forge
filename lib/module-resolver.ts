@@ -13,18 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Module Resolver
- *
- * Resolves module paths with priority: local → shared
- *
- * Priority order:
- * 1. Local modules: .forge2/modulename.ts (or path in config)
- * 2. Shared modules: ~/.local/share/forge2/node_modules/package-name
- *
- * Note: Project node_modules/ is intentionally NOT in resolution path.
- * Forge modules should not depend on project build tooling.
- */
 
 import { resolve, join } from 'path';
 import { existsSync } from 'fs';

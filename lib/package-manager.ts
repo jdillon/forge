@@ -13,16 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Package Manager Abstraction
- *
- * Handles dependency installation for npm packages, file: URLs, and git+ URLs.
- * This provides a runtime-agnostic API for installing dependencies.
- *
- * Implementation:
- * - Currently uses Bun via runtime.spawn
- * - Future: Switch to Deno (update import maps in deno.jsonc)
- */
 
 import { spawn } from './runtime';
 import { createLogger } from './logging';

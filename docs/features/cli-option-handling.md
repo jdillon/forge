@@ -1,10 +1,10 @@
 # CLI Option Handling Specification
 
-This document specifies how Forge v2 CLI option and argument parsing should work.
+This document specifies how Forge CLI option and argument parsing should work.
 
 ## Specification vs Implementation
 
-**This specification defines the canonical behavior** - the "way" Forge v2 CLI should work. The implementation uses Commander.js, which may be slightly more permissive in certain areas for better UX. This is acceptable as long as:
+**This specification defines the canonical behavior** - the "way" Forge CLI should work. The implementation uses Commander.js, which may be slightly more permissive in certain areas for better UX. This is acceptable as long as:
 
 1. The implementation doesn't require custom argv parsing hacks
 2. The implementation doesn't violate other parts of this spec

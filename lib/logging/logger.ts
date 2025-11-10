@@ -13,11 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Logging setup for Forge v2
- *
- * Uses Pino for structured logging with pretty mode in development
- */
 
 import process from 'node:process';
 import pino from 'pino';

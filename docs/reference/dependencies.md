@@ -1,4 +1,4 @@
-# Dependency Policy for Forge v2
+# Dependency Policy for Forge
 
 **Philosophy**: Minimize dependencies, vet thoroughly, prefer small packages over frameworks.
 

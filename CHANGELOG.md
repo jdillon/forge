@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2025-11-09
+
+### Changed
+- First stable release of TypeScript/Bun implementation
+- Renamed from "Forge v2" to "Forge" (bash version was 0.1, saved in forge-bash branch)
+- Removed module documentation headers from source files (Apache 2.0 license headers remain)
+
 ### Added
 - Installation system via `install.sh` script (Phase 1 of Module Distribution System)
 - Package metadata in `package.json` with `@planet57/forge` scoped package name

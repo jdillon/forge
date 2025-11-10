@@ -13,11 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Forge Built-in Commands
- *
- * Commands that are always available, no config required
- */
 
 import process from 'node:process';
 import { getForgeHomePath } from './forge-home';

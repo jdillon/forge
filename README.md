@@ -1,4 +1,4 @@
-# Forge v2 - Modern CLI Framework
+# Forge - Modern CLI Framework
 
 **Philosophy**: *"It's for me mostly, so I like awesome."*
 
@@ -113,7 +113,7 @@ export const publish: ForgeCommand = {
 curl -fsSL https://bun.sh/install | bash
 ```
 
-### Try Forge v2 (Prototype)
+### Try Forge
 
 ```bash
 git clone <repo> forge-v2

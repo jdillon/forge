@@ -13,16 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Forge v2 - CLI Implementation
- *
- * Execution flow:
- * 1. Bootstrap: Parse CLI args to extract forge options (permissive)
- * 2. Config Resolution: Discover project, load config
- * 3. Logging Init: Initialize logger with resolved config
- * 4. CLI Build & Execute: Create Forge, build Commander program, execute
- */
-
 import process from "node:process";
 import { Command } from "commander";
 import { styleText } from "node:util";

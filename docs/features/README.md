@@ -1,6 +1,6 @@
 # Features
 
-Documentation for key Forge v2 features.
+Documentation for key Forge features.
 
 ---
 

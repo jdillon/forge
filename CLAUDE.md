@@ -98,7 +98,7 @@ This file provides guidance to Claude Code when working with this repository.
 
 ## Project Quick Reference
 
-**What**: Forge v2 - Modern CLI framework for deployments (TypeScript/Bun)
+**What**: Forge - Modern CLI framework for deployments (TypeScript/Bun)
 **Branch**: `module-system` (active development)
 **Status**: Working prototype, tests passing
 

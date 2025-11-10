@@ -14,7 +14,7 @@ fixtures/
 
 ## test-project
 
-A minimal Forge v2 project configured specifically for testing. Unlike `examples/`, this fixture:
+A minimal Forge project configured specifically for testing. Unlike `examples/`, this fixture:
 
 - Has minimal configuration
 - Includes commands designed for test verification

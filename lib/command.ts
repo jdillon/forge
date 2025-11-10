@@ -13,19 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Forge v2 - Command API
- *
- * Single namespace for command authors - batteries included!
- *
- * Usage:
- *   import { chalk, ora, createLogger, type ForgeCommand } from '@forge/command';
- *
- * Provides:
- * - Core types (ForgeCommand, ForgeContext, etc.)
- * - Utilities (createLogger, confirm, die)
- * - Third-party packages (chalk, ora, boxen, etc.)
- */
 
 // ============================================================================
 // Types - Command authors implement these

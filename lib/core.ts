@@ -13,11 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Forge v2 - Core Framework
- *
- * Pure Bun/TypeScript implementation
- */
 
 import { Command } from 'commander';
 import { StateManager } from './state';

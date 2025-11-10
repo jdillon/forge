@@ -1,4 +1,4 @@
-# Forge v2 Roadmap
+# Forge Roadmap
 
 **Last Updated**: 2025-10-30
 **Primary Tracking**: [GitHub Project Board](https://github.com/users/jdillon/projects/3)
@@ -8,7 +8,7 @@
 
 ## Overview
 
-Forge v2 is a modern CLI framework for deployments built with TypeScript/Bun. This roadmap tracks planned features from conception through implementation.
+Forge is a modern CLI framework for deployments built with TypeScript/Bun. This roadmap tracks planned features from conception through implementation.
 
 **Current Status**: Working prototype (v2.0.0)
 - ✅ Core framework complete (39 tests passing)
@@ -50,7 +50,7 @@ Forge v2 is a modern CLI framework for deployments built with TypeScript/Bun. Th
 ## v2.1 - Module Ecosystem
 
 **Target**: Q1 2025 (March 31, 2025)
-**Focus**: Make Forge v2 modules shareable and discoverable
+**Focus**: Make Forge modules shareable and discoverable
 
 ### High Priority
 

@@ -1,6 +1,6 @@
-# Forge v2 Tests
+# Forge Tests
 
-This directory contains Bun tests for the Forge v2 CLI framework.
+This directory contains Bun tests for the Forge CLI framework.
 
 ## Running Tests
 

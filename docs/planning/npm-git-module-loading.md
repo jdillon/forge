@@ -10,7 +10,7 @@
 
 ## Overview
 
-Enable Forge v2 to load modules from npm packages and git repositories, not just local `.forge2/` directories.
+Enable Forge to load modules from npm packages and git repositories, not just local `.forge2/` directories.
 
 ---
 
@@ -148,7 +148,7 @@ modules:
 
 ### npm Package Structure
 
-**Forge v2 module as npm package**:
+**Forge module as npm package**:
 
 ```
 @myorg/forge-aws/
@@ -173,7 +173,7 @@ modules:
 
 ### Git Repository Structure
 
-**Forge v2 module as git repo**:
+**Forge module as git repo**:
 
 ```
 forge-website/

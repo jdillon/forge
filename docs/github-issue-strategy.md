@@ -704,7 +704,7 @@ If you can't use AI assistance, follow the manual steps in the sections below.
 
 1. **Create Project** (via UI or CLI)
    ```bash
-   gh project create --title "Forge v2 Module System" --owner jdillon
+   gh project create --title "Forge Module System" --owner jdillon
    ```
 
 2. **Choose Template**: Board (Kanban-style)
@@ -1145,7 +1145,7 @@ gh project item-edit \
   --field-id <status-field-id> \
   --single-select-option-id <option-id>
 
-# Example (for issue #10 on Forge v2 Roadmap project):
+# Example (for issue #10 on Forge Roadmap project):
 gh project item-edit \
   --id PVTI_lAHNTpLOARt9es4IJgNB \
   --project-id PVT_kwHNTpLOARt9eg \

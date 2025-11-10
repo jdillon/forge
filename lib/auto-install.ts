@@ -13,16 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * Auto-Install Flow
- *
- * Coordinates dependency installation and restart mechanism.
- *
- * Restart Flow:
- * 1. First run: Missing deps → install → exit 42
- * 2. Wrapper detects 42 → re-run with --forge-restarted flag
- * 3. Second run: If deps still missing → FAIL (not exit 42)
- */
 
 import { syncDependencies, isInstalled } from './forge-home';
 import { createLogger } from './logging';
