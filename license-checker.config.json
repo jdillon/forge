@@ -1,8 +1,7 @@
 {
   "src": [
+    "bin/*.sh",
     "lib/**/*.ts",
-    "bin/install.sh",
-    "bin/uninstall.sh",
     "tests/**/*.ts"
   ],
   "path": "license-header.txt",
@@ -46,7 +45,7 @@
         "prepend": " * "
       }
     },
-    "sh": {
+    "sh|^forge|^forge-dev": {
       "eachLine": {
         "prepend": "# "
       }
