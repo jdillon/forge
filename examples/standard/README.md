@@ -15,7 +15,7 @@ This example demonstrates using the `@jdillon/forge-standard` package to load re
 
 ```bash
 cd ~/.local/share/forge
-bun add file:/Users/jason/ws/jdillon/forge-standard
+bun add file:../../../forge-standard
 ```
 
 This creates symlinks, so changes to forge-standard are immediately reflected.
@@ -51,7 +51,7 @@ Commands: greet, info
 
 ## How It Works
 
-1. **Config declares dependency**: `file:/Users/jason/ws/jdillon/forge-standard`
+1. **Config declares dependency**: `file:../../../forge-standard` (relative path)
 2. **Auto-install**: Forge installs to `~/.local/share/forge/node_modules/@jdillon/forge-standard/`
 3. **Module loading**: `@jdillon/forge-standard/hello` resolves to `hello.ts`
 4. **Group name**: Last path segment `hello` becomes the command group
@@ -63,7 +63,7 @@ See `.forge2/config.yml`:
 
 ```yaml
 dependencies:
-  - file:/Users/jason/ws/jdillon/forge-standard
+  - file:../../../forge-standard  # Relative path for portability
 
 modules:
   - "@jdillon/forge-standard/hello"

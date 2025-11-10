@@ -4,9 +4,9 @@
 # to forge home (~/.local/share/forge/node_modules/)
 
 dependencies:
-  # For local development, use file: reference for fast iteration
+  # For local development, use relative path for portability
   # For production use: git+ssh://git@github.com/jdillon/forge-standard.git#release
-  - file:/Users/jason/ws/jdillon/forge-standard
+  - file:../../../forge-standard
 
 modules:
   # Load the hello module from forge-standard
