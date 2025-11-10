@@ -185,6 +185,7 @@ cat > tsconfig.json << 'EOF'
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
+      "@forge/*": ["./node_modules/@planet57/forge/lib/*"]
     }
   }
 }
