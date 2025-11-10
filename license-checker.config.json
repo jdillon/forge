@@ -31,10 +31,19 @@
     "**/*.lock"
   ],
   "license": "license-header.txt",
+  "default_format": {
+    "prepend": "/*",
+    "append": " */",
+    "eachLine": {
+      "prepend": " * "
+    }
+  },
   "licenseFormats": {
     "ts|js": {
+      "prepend": "/*",
+      "append": " */",
       "eachLine": {
-        "prepend": "// "
+        "prepend": " * "
       }
     },
     "sh": {
