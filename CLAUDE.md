@@ -41,10 +41,6 @@ This file provides guidance to Claude Code when working with this repository.
 ### Workflow: Proposals in sandbox/
 - **For significant changes**: Create proposal doc in `sandbox/` (e.g., `sandbox/refactor-proposal.md`)
 - **Let Jason review first** - He can adjust before execution
-- **Why it works**:
-  - Clear documentation of what will change and why
-  - Easy to discuss trade-offs
-  - Can be referenced later to understand decisions
 - **When to use**: Reorganizations, refactors, architectural changes, deleting things
 - **Format**: Markdown with problem, solution, trade-offs, questions
 
@@ -53,12 +49,6 @@ This file provides guidance to Claude Code when working with this repository.
 - **Always include**:
   - `README.md` - What you're testing, questions to answer, success criteria
   - `findings.md` - Results, what worked/didn't work, recommendations
-- **Why it works**:
-  - Self-contained and easy to understand later
-  - Clear documentation of what was learned
-  - Easy to reference in decisions
-  - Can be moved to `docs/archive/experiments/` if valuable
-- **Examples**: `sandbox/experiments/test-plugin/`, `sandbox/experiments/deno-prototype/`
 
 ### Documentation Principles
 **Before writing documentation, always check for duplication - it becomes stale**:
@@ -68,17 +58,6 @@ This file provides guidance to Claude Code when working with this repository.
 2. Will this need updating when code changes? → Don't write it, reference working examples
 3. Is this better as working code in `examples/`? → Write code, not docs
 4. Does this belong in feature docs or library docs? → Put it there, not here
-
-**What to write**:
-- ✅ HOW it works (concepts, architecture) - stays stable
-- ✅ WHERE to find things (references to examples/) - stays current
-- ✅ WHY decisions were made (in docs/archive/) - stays relevant
-
-**What NOT to write**:
-- ❌ Code examples (copy working examples/ instead - tested code stays current)
-- ❌ Current status (put in README.md at high level only)
-- ❌ What changed (use CHANGELOG.md)
-- ❌ Duplicate feature lists (one place only)
 
 **Single source of truth**:
 - Features list → README.md
@@ -120,132 +99,48 @@ This file provides guidance to Claude Code when working with this repository.
 ## Project Quick Reference
 
 **What**: Forge v2 - Modern CLI framework for deployments (TypeScript/Bun)
-**Branch**: `v2-prototype` (active development)
-**Status**: Working prototype, 39 tests passing
+**Branch**: `module-system` (active development)
+**Status**: Working prototype, tests passing
 
 **Key Files**:
 - `README.md` - User-facing feature docs
 - `docs/` - Architecture and design docs
 - `lib/` - Framework implementation
-- `examples/website/` - Working example (DO NOT modify in tests)
+- `examples/` - Working examples (DO NOT modify in tests)
 - `tests/fixtures/` - Use for testing only
 
----
-
-## Development Commands
-```bash
-# Testing
-bun test                    # Run all tests
-CLAUDECODE=1 bun test       # AI-friendly output (failures only)
-
-# Current status: 39 pass, 0 skip, 0 fail
-```
+**Test command**: `bun test` or `CLAUDECODE=1 bun test` (failures only)
 
 ---
 
 ## Code Conventions
 
 ### File Naming
+- **kebab-case**: Source code, docs, configs (`my-module.ts`, `api-reference.md`)
+- **UPPERCASE**: Only for standard files (`README.md`, `CHANGELOG.md`, `CLAUDE.md`, `LICENSE`)
 
-**Use kebab-case for most files:**
-- Source code: `my-module.ts`, `user-service.ts`
-- Documentation: `getting-started.md`, `api-reference.md`
-- Configs: `bunfig.toml`, `tsconfig.json`
-
-**Use UPPERCASE only for standard/conventional files:**
-- `README.md` - Project readme
-- `CHANGELOG.md` - Version history
-- `CLAUDE.md` - AI assistant instructions
-- `LICENSE` - License file
-- `CONTRIBUTING.md` - Contribution guidelines
-
-**Examples:**
-- ✅ `sandbox/deno-evaluation.md`
-- ✅ `docs/module-resolution.md`
-- ❌ `sandbox/DENO-EVALUATION.md`
-- ❌ `docs/Module-Resolution.md`
-
-### Error Handling
-- `die(message)` - Fatal error, exits with code 1
-- `error(message)` - Non-fatal error, continues
-- `log.error()` - App error respecting --silent flag
-
-### Logging
-
-**ALWAYS use the logger** - No `console.log/error/warn` except:
-- Bash scripts (no logger available)
-- Very early initialization before logger configured
-
-**Import and use:**
-```typescript
-import { log } from './logger';  // or createLogger('moduleName')
-
-log.debug({ key: value }, 'Terse message');  // Debug info
-log.info('User-facing status');              // Normal info
-log.warn('Something unusual');               // Warnings
-log.error({ error }, 'What failed');         // Errors
-```
-
-**Style guidelines**:
-- Terse messages - simple, to the point
-- Use structured data (first param object) not string concatenation
-- No fancy rendering - logger handles formatting
-- Minimal use of separators/special chars
-
-**CLI flags**:
-- `-d/--debug` - Sets log level to debug
-- `-q/--quiet` - Sets log level to warn
-- `-s/--silent` - Disables all logging
-- `--log-level <level>` - Explicit level
-- `--log-format <format>` - pretty (default) or json
-- `--no-color` - Disable colors (respects `NO_COLOR` env var)
+### Error Handling & Logging
+- Use `die(message)` for fatal errors (exits with code 1)
+- Use `error(message)` for non-fatal errors
+- **ALWAYS use logger** - Import from `lib/logging/logger` or `lib/logging/bootstrap`
+- No `console.log/error/warn` except in bash scripts or very early init
+- Keep log messages terse
 
 ---
 
-## Architecture Overview
+## Where to Find Things
 
-For detailed architecture, see:
-- `README.md` - Feature overview
-- `docs/command-patterns.md` - How to write commands
-- `lib/core.ts` - Framework implementation
+**Architecture & Implementation**:
+- Bootstrap flow → `lib/cli.ts`
+- Module loading → `lib/core.ts`
+- Command patterns → `docs/command-patterns.md`
+- Examples → `examples/website/.forge2/`
 
-### Quick Summary
+**Testing**:
+- Test patterns → `tests/`
+- Use fixtures in `tests/fixtures/`, not `examples/`
 
-**Bootstrap** (`cli.ts`):
-1. Parse early options (for logger config)
-2. Discover project root (walk up from CWD, like git)
-3. Load config from `.forge2/config.yml`
-4. Register commands via Commander.js
-5. Execute command
-
-**Module Loading** (`core.ts`):
-- Modules listed in `.forge2/config.yml` under `modules:` array
-- Auto-discover exports (named or default)
-- Group name from filename (`website.ts` → `website` group)
-- Override with `__module__` export: `{ group: 'custom', description: '...' }`
-
-**Command Pattern**:
-```typescript
-export const myCommand: ForgeCommand = {
-  description: 'What this command does',
-  execute: async (options, args, context) => {
-    // context.forge, context.config, context.state, etc.
-  }
-};
-```
-
-**State**:
-- Project: `.forge2/state.json` (gitignored)
-- User: `~/.config/forge2/state.json`
-- API: `context.state.get(key)` / `context.state.set(key, value)`
-
----
-
-## When You Need Details
-
-- **Architecture deep dive**: See `lib/core.ts` source code
-- **Command examples**: See `examples/website/.forge2/`
-- **Testing patterns**: See `tests/`
-- **Library usage**: See `docs/libraries/`
-- **Design decisions**: See `docs/archive/`
-- **Experiments & research**: See `sandbox/experiments/`
+**Design & Research**:
+- Decisions → `docs/archive/`
+- Experiments → `sandbox/experiments/`
+- Active proposals → `sandbox/`
