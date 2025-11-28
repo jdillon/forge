@@ -275,7 +275,7 @@ function showCommanderError(message: string): never {
   const cleanMessage = message.replace(/^error:\s*/i, "");
   console.error(`ERROR: ${cleanMessage}`);
   console.error(`Try 'forge --help' for more information.`);
-  exit(1);
+  runtimeExit(1);
 }
 
 // ============================================================================
