@@ -42,6 +42,34 @@ resolve_paths() {
   SCRIPT_DIR="$(cd "$(dirname "${script_path}")" && pwd)"
 }
 
+#
+# Homebrew detection
+#
+
+detect_homebrew_install() {
+  # Check if we're running from a Homebrew Cellar path
+  # Pattern: /opt/homebrew/Cellar/forge/<version>/libexec/bin
+  # or: /usr/local/Cellar/forge/<version>/libexec/bin (Intel Mac)
+  if [[ "${SCRIPT_DIR}" == */Cellar/forge/*/libexec/bin ]]; then
+    # Return libexec path (parent of bin)
+    echo "${SCRIPT_DIR%/bin}"
+    return 0
+  fi
+  return 1
+}
+
+run_homebrew_bootstrap() {
+  local libexec="$1"
+  local bootstrap_script="${SCRIPT_DIR}/brew-bootstrap.sh"
+
+  if [[ ! -f "${bootstrap_script}" ]]; then
+    echo "ERROR: Homebrew bootstrap script not found at ${bootstrap_script}" >&2
+    exit 1
+  fi
+
+  "${bootstrap_script}" "${libexec}"
+}
+
 setup_environment() {
   # Set FORGE_HOME if not already set (e.g., by tests)
   if [[ -z "${FORGE_HOME:-}" ]]; then
@@ -59,9 +87,20 @@ setup_environment() {
 
 validate_installation() {
   if [[ ! -f "${FORGE_CLI}" ]]; then
-    echo "ERROR: Forge not found at ${FORGE_CLI}" >&2
-    echo "Run install.sh to reinstall forge" >&2
-    exit 1
+    local libexec
+    if libexec=$(detect_homebrew_install); then
+      # Homebrew install detected, run bootstrap
+      run_homebrew_bootstrap "${libexec}"
+      # Verify bootstrap succeeded
+      if [[ ! -f "${FORGE_CLI}" ]]; then
+        echo "ERROR: Homebrew bootstrap failed - forge CLI not found" >&2
+        exit 1
+      fi
+    else
+      echo "ERROR: Forge installation is corrupted" >&2
+      echo "Expected: ${FORGE_CLI}" >&2
+      exit 1
+    fi
   fi
 }
 

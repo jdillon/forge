@@ -76,65 +76,26 @@ class Forge < Formula
   depends_on "oven-sh/bun/bun"
 
   def install
-    # Stage package to libexec for Homebrew tracking
-    # Actual installation happens in post_install
+    # Stage package to libexec
     libexec.install Dir["*"]
-  end
-
-  def post_install
-    forge_home = ENV["FORGE_HOME"] || "#{Dir.home}/.forge"
-
-    # Create directory structure
-    system "mkdir", "-p",
-      "#{forge_home}/config",
-      "#{forge_home}/state",
-      "#{forge_home}/cache",
-      "#{forge_home}/logs"
-
-    # Write package.json (meta-project)
-    File.write("#{forge_home}/package.json", <<~JSON)
-      {
-        "name": "forge-meta",
-        "version": "1.0.0",
-        "private": true
-      }
-    JSON
-
-    # Write bunfig.toml
-    File.write("#{forge_home}/bunfig.toml", <<~TOML)
-      [install]
-      exact = true
-      dev = false
-      peer = true
-      optional = false
-      auto = "disable"
-    TOML
-
-    # Install package to forge_home using bun
-    Dir.chdir(forge_home) do
-      system Formula["bun"].opt_bin/"bun", "add", "file://#{libexec}"
-    end
-
-    # Verify installation
-    forge_bin = "#{forge_home}/node_modules/@planet57/forge/bin/forge"
-    unless File.exist?(forge_bin)
-      odie "Installation failed: forge CLI not found at #{forge_bin}"
-    end
 
     # Symlink the wrapper script
-    bin.install_symlink forge_bin => "forge"
+    # First run will auto-bootstrap ~/.forge
+    bin.install_symlink libexec/"bin/forge" => "forge"
   end
 
   def caveats
     <<~EOS
-      Forge installed to #{ENV["FORGE_HOME"] || "~/.forge"}
+      First run will complete installation to ~/.forge
 
       User data (config, plugins, state) persists across upgrades.
+      To fully remove, also delete ~/.forge after uninstall.
     EOS
   end
 
   test do
-    assert_match "forge", shell_output("#{bin}/forge --help")
+    # Just verify the wrapper exists and is executable
+    assert_predicate bin/"forge", :executable?
   end
 end
 FORMULA
